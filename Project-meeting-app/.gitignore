@@ -1,0 +1,12 @@
+# Environment variables
+backend/.env
+frontend/.env.local
+frontend/.env.production
+
+# Production builds
+backend/dist/
+frontend/.next/
+frontend/out/
+
+node_modules/
+*.log
