@@ -1,16 +1,39 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { io } from 'socket.io-client';
+
 export default function Home() {
+  const [socketId, setSocketId] = useState('');
+
+  useEffect(() => {
+    // Kết nối tới cổng 5000 của Backend
+    const socket = io('http://localhost:5000');
+
+    socket.on('connect', () => {
+      console.log('Đã kết nối Socket thành công!');
+      setSocketId(socket.id ?? '');
+    });
+
+    // Dọn dẹp (cleanup) khi tắt component
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen flex items-center justify-center gradient-bg">
-      <div className="text-center text-white">
-        <h1 className="text-6xl font-bold mb-4">Meeting App</h1>
-        <p className="text-xl mb-8">Họp trực tuyến chuyên nghiệp</p>
-        <a
-          href="/login"
-          className="bg-white text-blue-600 px-8 py-4 rounded-2xl font-semibold text-lg hover:bg-gray-100"
-        >
-          Bắt đầu ngay
-        </a>
-      </div>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+      <h1 className="text-3xl font-bold mb-4">MERN Video Conference Test</h1>
+      <p className="text-lg">
+        Trạng thái Socket.io:{' '}
+        {socketId ? (
+          <span className="text-green-600 font-bold">
+            🟢 Đã kết nối (ID: {socketId})
+          </span>
+        ) : (
+          <span className="text-red-600 font-bold">🔴 Đang chờ kết nối...</span>
+        )}
+      </p>
     </div>
   );
 }
