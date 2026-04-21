@@ -1,6 +1,0 @@
-# Environment variables
-backend/.env
-
-#Node modules and logs
-node_modules/
-*.log
