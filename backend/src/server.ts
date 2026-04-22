@@ -15,9 +15,11 @@ app.use(cors());
 app.use(express.json()); // Middleware parse JSON
 
 // Cấu hình Socket.io cho WebRTC Signaling
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000", // Chỉ cho phép frontend Next.js kết nối tới
+    origin: FRONTEND_URL, // Chỉ cho phép frontend Next.js kết nối tới
     methods: ["GET", "POST", "PUT", "DELETE"], // Các phương thức HTTP được phép
   },
 });

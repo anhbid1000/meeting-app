@@ -7,8 +7,10 @@ export default function Home() {
   const [socketId, setSocketId] = useState("");
 
   useEffect(() => {
-    // Kết nối tới cổng 5000 của Backend
-    const socket = io("http://localhost:5000");
+    // Kết nối tới cổng của Backend
+    const BACKEND_URL =
+      process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+    const socket = io(BACKEND_URL);
 
     socket.on("connect", () => {
       console.log("Đã kết nối Socket thành công!");
