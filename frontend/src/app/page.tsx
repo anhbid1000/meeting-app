@@ -27,7 +27,7 @@ export default function Home() {
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
       <h1 className="text-3xl font-bold mb-4">MERN Video Conference Test</h1>
       <div>
-        <h1>Đang kết nối tới: {process.env.NEXT_PUBLIC_BACKEND_URL}</h1>
+        <h1>Đang kết nối tới:: {process.env.NEXT_PUBLIC_BACKEND_URL}</h1>
       </div>
       <p className="text-lg">
         Trạng thái Socket.io:{" "}
