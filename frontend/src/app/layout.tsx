@@ -3,20 +3,21 @@ import './globals.css';
 import { Toaster } from 'react-hot-toast';
 
 export const metadata: Metadata = {
-  title: 'Meeting App - Họp Trực Tuyến',
-  description: 'Nền tảng họp trực tuyến với chat, video và whiteboard',
+  title: 'ViMeet - Video Conferencing Platform',
+  description: 'High-fidelity video meetings with AI-powered summaries and real-time collaboration',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="vi">
-      <body className="antialiased bg-slate-50">
+
+      <head>
+        {/* Google Fonts */}
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+      </head>
+      <body className="antialiased min-h-screen flex flex-col">
         {children}
-        <Toaster position="top-center" />
       </body>
     </html>
   );
