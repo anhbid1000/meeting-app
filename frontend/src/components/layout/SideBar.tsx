@@ -1,23 +1,27 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export default function Sidebar() {
   const pathname = usePathname();
 
+  const isItemActive = (href: string) => {
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
+
   const navItems = [
-    { label: "Home", href: "/dashboard", icon: "home" },
-    { label: "Meetings", href: "/meetings", icon: "videocam" },
-    { label: "Groups", href: "/groups", icon: "groups" },
-    { label: "Channels", href: "/channels", icon: "tag" },
-    { label: "History", href: "/history", icon: "history" },
-    { label: "Files", href: "/files", icon: "folder" },
+    { label: 'Home', href: '/dashboard', icon: 'home' },
+    { label: 'Meetings', href: '/meetings', icon: 'videocam' },
+    { label: 'Groups', href: '/groups', icon: 'groups' },
+    { label: 'Channels', href: '/channels', icon: 'tag' },
+    { label: 'History', href: '/history', icon: 'history' },
+    { label: 'Files', href: '/files', icon: 'folder' },
   ];
 
   const footerItems = [
-    { label: "Profile", href: "/profile", icon: "person" },
-    { label: "Settings", href: "/settings", icon: "settings" },
+    { label: 'Profile', href: '/profile', icon: 'person' },
+    { label: 'Settings', href: '/settings', icon: 'settings' },
   ];
 
   return (
@@ -51,15 +55,15 @@ export default function Sidebar() {
       {/* Main Navigation */}
       <div className="flex-1 overflow-y-auto flex flex-col gap-xs">
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = isItemActive(item.href);
           return (
             <Link
               key={item.href}
               href={item.href}
               className={`flex items-center gap-md px-md py-sm rounded-lg font-label-md text-label-md transition-all duration-200 ease-in-out ${
                 isActive
-                  ? "bg-secondary-container dark:bg-on-secondary-fixed-variant text-on-secondary-container dark:text-secondary-fixed border-l-4 border-primary"
-                  : "text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant/50 hover:bg-surface-container-high dark:hover:bg-surface-container"
+                  ? 'bg-secondary-container dark:bg-on-secondary-fixed-variant text-on-secondary-container dark:text-secondary-fixed border-l-4 border-primary'
+                  : 'text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high dark:hover:bg-surface-container'
               }`}
             >
               <span
@@ -79,15 +83,15 @@ export default function Sidebar() {
       {/* Footer Navigation */}
       <div className="mt-auto border-t border-outline-variant pt-sm flex flex-col gap-xs">
         {footerItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = isItemActive(item.href);
           return (
             <Link
               key={item.href}
               href={item.href}
               className={`flex items-center gap-md px-md py-sm rounded-lg font-label-md text-label-md transition-all duration-200 ease-in-out ${
                 isActive
-                  ? "bg-secondary-container text-on-secondary-container"
-                  : "text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant/50 hover:bg-surface-container-high dark:hover:bg-surface-container"
+                  ? 'bg-secondary-container text-on-secondary-container'
+                  : 'text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high dark:hover:bg-surface-container'
               }`}
             >
               <span className="material-symbols-outlined">{item.icon}</span>
