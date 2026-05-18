@@ -17,6 +17,7 @@ router.post(
   workspaceController.handleCreateWorkspace // 3. Xử lý logic
 );
 
+router.post('/:workspaceId/members', auth, workspaceController.addWorkspaceMember);
 router.delete('/:workspaceId', auth, workspaceController.deleteWorkspace);
 
 

@@ -9,6 +9,16 @@ const workspaceInviteDAO = new WorkspaceInviteDAO();
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
+const getMemberUserId = (member: any) => member?.userId || member;
+
+const hasWorkspaceRole = (workspace: any, userId: string, roles: string[]) => {
+  if (workspace.ownerId.toString() === userId) return true;
+  return workspace.members.some((member: any) => {
+    const memberUserId = getMemberUserId(member);
+    return memberUserId?.toString() === userId && roles.includes(member.role);
+  });
+};
+
 export const createWorkspaceInvite = async ({
   workspaceId,
   createdBy,
@@ -27,7 +37,7 @@ export const createWorkspaceInvite = async ({
   }
 
   const isMember = workspace.members.some(
-    (memberId: any) => memberId.toString() === createdBy
+    (member: any) => getMemberUserId(member)?.toString() === createdBy
   );
 
   if (!isMember) {
@@ -37,7 +47,7 @@ export const createWorkspaceInvite = async ({
     );
   }
 
-  const isAdmin = workspace.ownerId.toString() === createdBy;
+  const isAdmin = hasWorkspaceRole(workspace, createdBy, ['owner', 'admin']);
 
   let code = generateInviteCode();
   let existing = await workspaceInviteDAO.findByCode(code);
@@ -126,7 +136,7 @@ export const acceptWorkspaceInvite = async ({
   }
 
   const alreadyMember = workspace.members.some(
-    (memberId: any) => memberId.toString() === userId
+    (member: any) => getMemberUserId(member)?.toString() === userId
   );
 
   if (alreadyMember) {
@@ -140,9 +150,24 @@ export const acceptWorkspaceInvite = async ({
     invite.workspaceId.toString(),
     {
       $addToSet: {
-        members: new Types.ObjectId(userId)
+        members: {
+          userId: new Types.ObjectId(userId),
+          role: 'member',
+          joinedAt: new Date()
+        }
       }
     }
+  );
+
+  await import('../models/User.model').then(({ default: User }) =>
+    User.findByIdAndUpdate(userId, {
+      $addToSet: {
+        workspaces: {
+          workspaceId: invite.workspaceId,
+          role: 'member'
+        }
+      }
+    })
   );
 
   await workspaceInviteDAO.incrementUsedCount(invite._id.toString());
@@ -176,7 +201,7 @@ export const reviewWorkspaceInvite = async ({
     throw Object.assign(new Error('Workspace không tồn tại'), { status: 404 });
   }
 
-  const isAdmin = workspace.ownerId.toString() === reviewerId;
+  const isAdmin = hasWorkspaceRole(workspace, reviewerId, ['owner', 'admin']);
 
   if (!isAdmin) {
     throw Object.assign(
@@ -214,7 +239,7 @@ export const listPendingWorkspaceInvites = async ({
     throw Object.assign(new Error('Workspace không tồn tại'), { status: 404 });
   }
 
-  const isAdmin = workspace.ownerId.toString() === reviewerId;
+  const isAdmin = hasWorkspaceRole(workspace, reviewerId, ['owner', 'admin']);
   if (!isAdmin) {
     throw Object.assign(new Error('Bạn không có quyền xem pending invites'), { status: 403 });
   }

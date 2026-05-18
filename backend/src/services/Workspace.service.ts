@@ -77,10 +77,21 @@ export const createWorkspace = async (payload: {
     slug: slug,
     description: payload.description || '',
     ownerId: ownerObjectId,
-    members: [ownerObjectId],
+    members: [{ userId: ownerObjectId, role: 'owner', joinedAt: new Date() }],
     plan: 'standard', // Mặc định là standard, sau này có thể nâng cấp dựa trên userPlan
     channelCount: 0
   });
+
+  await import('../models/User.model').then(({ default: User }) =>
+    User.findByIdAndUpdate(payload.ownerId, {
+      $addToSet: {
+        workspaces: {
+          workspaceId: workspace._id,
+          role: 'owner'
+        }
+      }
+    })
+  );
 
   return workspace;
 };

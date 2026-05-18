@@ -1,18 +1,44 @@
-import mongoose, { Schema, Document, Types } from 'mongoose';
+import mongoose, { Document, Model, Schema, Types } from "mongoose";
+import { WorkspaceRole } from "../types";
 
-export type WorkspacePlan = 'standard' | 'pro';
+export type WorkspacePlan = "standard" | "pro";
 
 export interface IWorkspace extends Document {
   name: string;
   slug: string;
   description?: string;
   ownerId: Types.ObjectId;
-  members: Types.ObjectId[];
+  members: {
+    userId: Types.ObjectId;
+    role: WorkspaceRole;
+    joinedAt: Date;
+  }[];
   plan: WorkspacePlan;
   channelCount: number;
   createdAt: Date;
   updatedAt: Date;
 }
+
+const workspaceMemberSchema = new Schema(
+  {
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    role: {
+      type: String,
+      enum: ["admin", "owner", "member"],
+      default: "member",
+      required: true,
+    },
+    joinedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  { _id: false }
+);
 
 const workspaceSchema = new Schema<IWorkspace>(
   {
@@ -20,7 +46,7 @@ const workspaceSchema = new Schema<IWorkspace>(
       type: String,
       required: true,
       trim: true,
-      maxlength: 100
+      maxlength: 100,
     },
     slug: {
       type: String,
@@ -28,42 +54,40 @@ const workspaceSchema = new Schema<IWorkspace>(
       unique: true,
       trim: true,
       lowercase: true,
-      maxlength: 100
+      maxlength: 120,
     },
     description: {
       type: String,
       trim: true,
       maxlength: 500,
-      default: ''
+      default: "",
     },
     ownerId: {
       type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
+      ref: "User",
+      required: true,
     },
-    members: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: 'User'
-      }
-    ],
+    members: {
+      type: [workspaceMemberSchema],
+      default: [],
+    },
     plan: {
       type: String,
-      enum: ['standard', 'pro'],
-      default: 'standard'
+      enum: ["standard", "pro"],
+      default: "standard",
     },
     channelCount: {
       type: Number,
       default: 0,
-      min: 0
-    }
+      min: 0,
+    },
   },
-  {
-    timestamps: true
-  }
+  { timestamps: true }
 );
 
-workspaceSchema.index({ slug: 1 }, { unique: true });
-workspaceSchema.index({ members: 1, updatedAt: -1 });
+workspaceSchema.index({ "members.userId": 1, updatedAt: -1 });
 
-export default mongoose.model<IWorkspace>('Workspace', workspaceSchema);
+const Workspace: Model<IWorkspace> =
+  mongoose.models.Workspace || mongoose.model<IWorkspace>("Workspace", workspaceSchema);
+
+export default Workspace;
