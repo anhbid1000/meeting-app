@@ -1,14 +1,28 @@
-import Link from "next/link";
-const isAuthenticated = false; // Placeholder for auth state
+"use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import api from "@/services/api";
+import { useAuthStore } from "@/store/authStore";
 
 export default function TopNav() {
+  const router = useRouter();
+  const { user, isAuthenticated, clearAuth } = useAuthStore();
   const navLinks = [
     { label: "Tính năng", href: "/features" },
     { label: "Giải pháp", href: "/solutions" },
     { label: "Bảng giá", href: "/pricing" },
     { label: "Tài nguyên", href: "/resources" },
   ];
+
+  const logout = async () => {
+    try {
+      await api.post("/auth/logout");
+    } finally {
+      clearAuth();
+      router.push("/login");
+    }
+  };
 
   return (
     <nav className="bg-surface dark:bg-inverse-surface border-b border-outline-variant dark:border-outline shadow-sm flex justify-between items-center w-full px-6 h-16 sticky top-0 z-50">
@@ -52,14 +66,14 @@ export default function TopNav() {
               href="/dashboard"
               className="bg-primary text-on-primary font-label-md text-label-md px-4 py-1 rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
             >
-              Dashboard
+              Bang dieu khien
             </Link>
 
             <button
               onClick={logout}
               className="font-label-md text-label-md text-secondary hover:text-error transition-colors hidden md:block"
             >
-              Logout
+              Dang xuat
             </button>
           </>
         ) : (
