@@ -1,16 +1,13 @@
-"use client";
-
 import Link from "next/link";
-import { useAuthStore } from "@/store/authStore";
+const isAuthenticated = false; // Placeholder for auth state
+
 
 export default function TopNav() {
-  const { isAuthenticated, user, logout } = useAuthStore();
-
   const navLinks = [
-    { label: "Tính năng", href: "#features" },
-    { label: "Giải pháp", href: "#solutions" },
-    { label: "Bảng giá", href: "#pricing" },
-    { label: "Tài nguyên", href: "#resources" },
+    { label: "Tính năng", href: "/features" },
+    { label: "Giải pháp", href: "/solutions" },
+    { label: "Bảng giá", href: "/pricing" },
+    { label: "Tài nguyên", href: "/resources" },
   ];
 
   return (
@@ -25,7 +22,7 @@ export default function TopNav() {
         <div className="hidden md:flex gap-6 font-label-md text-label-md">
           {navLinks.map((l) => (
             <Link key={l.label} href={l.href}
-              className="text-md dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed transition-colors"
+              className="text-label-md dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed transition-colors"
             >
               {l.label}
             </Link>
@@ -68,20 +65,20 @@ export default function TopNav() {
         ) : (
           // Chưa đăng nhập
           <>
-            <Link href="/login"
-              className="font-label-md text-label-md text-secondary hover:text-primary transition-colors hidden md:block"
-            >
-              Sign In
-            </Link>
+        <Link href="/login"
+          className="font-label-md text-label-md text-secondary hover:text-primary transition-colors hidden md:block"
+        >
+          Đăng nhập
+        </Link>
 
-            <Link href="/register"
-              className="bg-primary text-on-primary font-label-md text-label-md px-4 py-1 rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
-            >
-              Get Started
-            </Link>
-          </>
-        )}
+        <Link href="/register"
+          className="bg-primary text-on-primary font-label-md text-label-md px-4 py-1 rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
+        >
+          Bắt đầu ngay
+        </Link>
+        </> )}
       </div>
+      
     </nav>
   );
 }
