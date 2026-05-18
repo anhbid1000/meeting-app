@@ -4,6 +4,7 @@ import { Server } from "socket.io";
 import cors from "cors";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
+import routes from "./routes"; // Import tất cả routes từ thư mục routes
 
 dotenv.config(); // Nạp biến môi trường
 
@@ -13,6 +14,8 @@ const server = http.createServer(app);
 //Middleware
 app.use(cors());
 app.use(express.json()); // Middleware parse JSON
+
+app.use("/api/v1", routes);
 
 // Cấu hình Socket.io cho WebRTC Signaling
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
