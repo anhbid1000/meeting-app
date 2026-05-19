@@ -1,59 +1,111 @@
-
 import mongoose, { Schema, Document, Types } from 'mongoose';
 
+export type MessageType = 'text' | 'file' | 'system' | 'meeting';
+
+export interface IMessageAttachment {
+  url: string;
+  name: string;
+  mimeType: string;
+  size: number;
+}
+
 export interface IMessage extends Document {
-  /** Workspace mà kênh này thuộc (để query nhanh theo workspace) */
   workspaceId: Types.ObjectId;
-  /** Kênh mà tin nhắn được gửi vào */
   channelId: Types.ObjectId;
-  /** Người gửi – luôn là một User */
   userId: Types.ObjectId;
-  /** Nội dung tin nhắn, tối đa 2000 ký tự */
+  type: MessageType;
   content: string;
-  /** Khi nào tin nhắn được tạo (được tạo tự động bởi timestamps) */
+  attachments?: IMessageAttachment[];
+  threadCount: number;
+  isEdited: boolean;
+  editedAt?: Date;
+  isDeleted: boolean;
+  deletedAt?: Date;
+  mentions?: Types.ObjectId[];
+  isPinned: boolean;
   createdAt: Date;
-  /** Khi nào tin nhắn bị sửa (nếu có) */
   updatedAt: Date;
 }
 
-/* -------------------------------------------------------------
-   Schema
-   ------------------------------------------------------------- */
+const messageAttachmentSchema = new Schema<IMessageAttachment>(
+  {
+    url: { type: String, required: true },
+    name: { type: String, required: true, trim: true },
+    mimeType: { type: String, required: true, trim: true },
+    size: { type: Number, required: true }
+  },
+  { _id: false }
+);
+
 const messageSchema = new Schema<IMessage>(
   {
     workspaceId: {
       type: Schema.Types.ObjectId,
       ref: 'Workspace',
       required: true,
-      index: true               // query messages của một workspace nhanh
+      index: true
     },
     channelId: {
       type: Schema.Types.ObjectId,
       ref: 'Channel',
       required: true,
-      index: true               // cần cho compound index dưới
+      index: true
     },
     userId: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true
     },
+    type: {
+      type: String,
+      enum: ['text', 'file', 'system', 'meeting'],
+      default: 'text'
+    },
     content: {
       type: String,
       required: true,
       maxlength: 2000,
       trim: true
+    },
+    attachments: {
+      type: [messageAttachmentSchema],
+      default: []
+    },
+    threadCount: {
+      type: Number,
+      default: 0
+    },
+    isEdited: {
+      type: Boolean,
+      default: false
+    },
+    editedAt: {
+      type: Date
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false
+    },
+    deletedAt: {
+      type: Date
+    },
+    mentions: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+      }
+    ],
+    isPinned: {
+      type: Boolean,
+      default: false
     }
   },
-  {
-    timestamps: true            // tự động tạo createdAt / updatedAt
-  }
+  { timestamps: true }
 );
 
-// Index
+// Indexes
 messageSchema.index({ channelId: 1, createdAt: -1 });
-
-// 2Full‑text search trên nội dung tin nhắn (Atlas Search / text index)
 messageSchema.index({ content: 'text' });
+messageSchema.index({ channelId: 1, isPinned: 1 });
 
 export default mongoose.model<IMessage>('Message', messageSchema);
