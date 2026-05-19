@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useState } from 'react';
 import api from '@/services/api';
 import { useAuthStore } from '@/store/authStore';
 
@@ -9,6 +10,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, clearAuth } = useAuthStore();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const isItemActive = (href: string) => {
     return pathname === href || pathname.startsWith(`${href}/`);
@@ -38,6 +40,7 @@ export default function Sidebar() {
   };
 
   return (
+    <>
     <nav className="hidden md:flex flex-col py-lg px-md gap-sm bg-surface-container-low dark:bg-surface-container-lowest border-r border-outline-variant w-sidebar_width h-screen fixed left-0 top-0 z-40">
       {/* Header */}
       <div className="flex items-center gap-md px-sm py-sm mb-md">
@@ -121,8 +124,8 @@ export default function Sidebar() {
           );
         })}
         <button
-          onClick={logout}
-          className="flex items-center gap-md px-md py-sm rounded-lg font-label-md text-label-md text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high dark:hover:bg-surface-container transition-all duration-200 ease-in-out"
+          onClick={() => setShowLogoutConfirm(true)}
+          className="flex cursor-pointer items-center gap-md px-md py-sm rounded-lg font-label-md text-label-md text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high dark:hover:bg-surface-container transition-all duration-200 ease-in-out"
           type="button"
         >
           <span className="material-symbols-outlined">logout</span>
@@ -130,5 +133,34 @@ export default function Sidebar() {
         </button>
       </div>
     </nav>
+    {showLogoutConfirm && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 px-4">
+        <div className="w-full max-w-[380px] rounded-xl border border-outline-variant bg-surface p-6 shadow-xl">
+          <h2 className="font-headline-sm text-headline-sm font-semibold text-on-surface">
+            Sign out?
+          </h2>
+          <p className="mt-2 font-body-md text-body-md text-on-surface-variant">
+            You will need to sign in again to access your workspace.
+          </p>
+          <div className="mt-6 flex justify-end gap-3">
+            <button
+              className="cursor-pointer rounded-lg border border-outline-variant px-4 py-2 font-label-md text-label-md text-on-surface hover:bg-surface-container-high"
+              onClick={() => setShowLogoutConfirm(false)}
+              type="button"
+            >
+              Cancel
+            </button>
+            <button
+              className="cursor-pointer rounded-lg bg-primary px-4 py-2 font-label-md text-label-md text-on-primary hover:bg-primary/90"
+              onClick={logout}
+              type="button"
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

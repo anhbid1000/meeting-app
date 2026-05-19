@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { CookieOptions, NextFunction, Request, Response } from "express";
+import { OAuth2Client } from "google-auth-library";
 import { JwtPayload } from "jsonwebtoken";
 import User, { IUser } from "../models/User.model";
 import { sendPasswordResetEmail } from "../services/mail.service";
@@ -10,6 +11,7 @@ import { getCookie, REFRESH_COOKIE_NAME } from "../utils/cookies";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../utils/token";
 
 const refreshTokenMaxAgeMs = 7 * 24 * 60 * 60 * 1000;
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const cookieOptions: CookieOptions = {
   httpOnly: true,
@@ -122,6 +124,70 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     res.status(200).json({
       success: true,
       message: "Dang nhap thanh cong",
+      data: {
+        user: toSafeUser(user),
+        accessToken,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const googleLogin = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { credential } = req.body as { credential?: string };
+
+    if (!credential) {
+      throw new AppError("Google credential la bat buoc", 400, "GOOGLE_CREDENTIAL_REQUIRED");
+    }
+
+    if (!process.env.GOOGLE_CLIENT_ID) {
+      throw new AppError("Thieu GOOGLE_CLIENT_ID", 500, "GOOGLE_CONFIG_MISSING");
+    }
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+
+    if (!payload?.email || !payload.sub) {
+      throw new AppError("Khong the lay thong tin tai khoan Google", 401, "GOOGLE_PROFILE_MISSING");
+    }
+
+    if (!payload.email_verified) {
+      throw new AppError("Email Google chua duoc xac thuc", 401, "GOOGLE_EMAIL_NOT_VERIFIED");
+    }
+
+    const email = payload.email.toLowerCase();
+    let user = await User.findOne({ email }).select("+refreshTokens");
+
+    if (!user) {
+      user = await User.create({
+        name: payload.name || email.split("@")[0],
+        email,
+        avatar: payload.picture || "",
+        googleId: payload.sub,
+        authProvider: "google",
+        role: "member",
+      });
+    } else {
+      user.googleId = user.googleId || payload.sub;
+      user.authProvider = user.authProvider || "google";
+
+      if (!user.avatar && payload.picture) {
+        user.avatar = payload.picture;
+      }
+
+      await user.save();
+    }
+
+    const accessToken = await issueTokens(res, user, req.headers["user-agent"]);
+
+    res.status(200).json({
+      success: true,
+      message: "Dang nhap Google thanh cong",
       data: {
         user: toSafeUser(user),
         accessToken,

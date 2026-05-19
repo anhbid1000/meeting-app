@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { z } from "zod";
+import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
 import api from "@/services/api";
 import { useAuthStore } from "@/store/authStore";
 
@@ -63,15 +64,7 @@ export default function RegisterPage() {
           </p>
         </div>
 
-        <button
-          className="mt-[42px] flex h-[72px] w-full items-center justify-center gap-[18px] rounded-[8px] border border-[#bfc5d6] bg-white text-[18px] font-medium text-[#111827] transition hover:bg-[#f8fafc]"
-          type="button"
-        >
-          <span className="grid h-[28px] w-[28px] place-items-center bg-white text-[18px] font-semibold text-[#4285f4]">
-            G
-          </span>
-          Continue with Google
-        </button>
+        <GoogleAuthButton text="signup_with" />
 
         <div className="my-[34px] flex items-center gap-[20px] text-[16px] text-[#374151]">
           <span className="h-px flex-1 bg-[#d6d9e2]" />

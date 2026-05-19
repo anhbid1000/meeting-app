@@ -5,8 +5,10 @@ import { AppRole, WorkspaceRole } from "../types";
 export interface IUser extends Document {
   name: string;
   email: string;
-  password: string;
+  password?: string;
   avatar?: string;
+  googleId?: string;
+  authProvider: "local" | "google";
   role: AppRole;
   workspaces: {
     workspaceId: Types.ObjectId;
@@ -78,7 +80,9 @@ const userSchema = new Schema<IUser>(
     },
     password: {
       type: String,
-      required: true,
+      required: function (this: IUser) {
+        return this.authProvider === "local";
+      },
       minlength: 8,
       select: false,
     },
@@ -91,6 +95,16 @@ const userSchema = new Schema<IUser>(
       type: String,
       enum: ["admin", "member"],
       default: "member",
+    },
+    googleId: {
+      type: String,
+      trim: true,
+      sparse: true,
+    },
+    authProvider: {
+      type: String,
+      enum: ["local", "google"],
+      default: "local",
     },
     workspaces: {
       type: [workspaceMembershipSchema],
@@ -114,7 +128,7 @@ const userSchema = new Schema<IUser>(
 );
 
 userSchema.pre("save", async function hashPassword() {
-  if (!this.isModified("password")) {
+  if (!this.isModified("password") || !this.password) {
     return;
   }
 
@@ -122,10 +136,15 @@ userSchema.pre("save", async function hashPassword() {
 });
 
 userSchema.methods.comparePassword = function comparePassword(candidate: string) {
+  if (!this.password) {
+    return Promise.resolve(false);
+  }
+
   return bcrypt.compare(candidate, this.password);
 };
 
 userSchema.index({ "workspaces.workspaceId": 1 });
+userSchema.index({ googleId: 1 }, { sparse: true });
 
 const User: Model<IUser> = mongoose.models.User || mongoose.model<IUser>("User", userSchema);
 
