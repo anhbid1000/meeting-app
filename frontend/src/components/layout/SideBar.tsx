@@ -1,10 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import api from '@/services/api';
+import { useAuthStore } from '@/store/authStore';
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, clearAuth } = useAuthStore();
 
   const isItemActive = (href: string) => {
     return pathname === href || pathname.startsWith(`${href}/`);
@@ -24,19 +28,36 @@ export default function Sidebar() {
     { label: 'Settings', href: '/settings', icon: 'settings' },
   ];
 
+  const logout = async () => {
+    try {
+      await api.post('/auth/logout');
+    } finally {
+      clearAuth();
+      router.push('/login');
+    }
+  };
+
   return (
     <nav className="hidden md:flex flex-col py-lg px-md gap-sm bg-surface-container-low dark:bg-surface-container-lowest border-r border-outline-variant w-sidebar_width h-screen fixed left-0 top-0 z-40">
       {/* Header */}
       <div className="flex items-center gap-md px-sm py-sm mb-md">
-        <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-on-primary font-headline-sm text-headline-sm font-bold">
-          V
-        </div>
+        {user?.avatar ? (
+          <img
+            src={user.avatar}
+            alt={user.name}
+            className="w-10 h-10 rounded-lg object-cover"
+          />
+        ) : (
+          <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-on-primary font-headline-sm text-headline-sm font-bold">
+            {user?.name?.charAt(0).toUpperCase() || 'V'}
+          </div>
+        )}
         <div>
           <h2 className="font-headline-sm text-headline-sm font-black text-primary dark:text-inverse-primary">
-            Workspace
+            {user?.name || 'Workspace'}
           </h2>
           <p className="font-label-sm text-label-sm text-on-surface-variant">
-            Premium Plan
+            {user?.email || 'Premium Plan'}
           </p>
         </div>
       </div>
@@ -99,6 +120,14 @@ export default function Sidebar() {
             </Link>
           );
         })}
+        <button
+          onClick={logout}
+          className="flex items-center gap-md px-md py-sm rounded-lg font-label-md text-label-md text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high dark:hover:bg-surface-container transition-all duration-200 ease-in-out"
+          type="button"
+        >
+          <span className="material-symbols-outlined">logout</span>
+          Sign out
+        </button>
       </div>
     </nav>
   );
