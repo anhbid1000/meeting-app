@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { CookieOptions, NextFunction, Request, Response } from "express";
 import { JwtPayload } from "jsonwebtoken";
 import User, { IUser } from "../models/User.model";
+import { sendPasswordResetEmail } from "../services/mail.service";
 import { AppRole } from "../types";
 import { AppError } from "../utils/AppError";
 import { getCookie, REFRESH_COOKIE_NAME } from "../utils/cookies";
@@ -233,13 +234,16 @@ export const forgotPassword = async (req: Request, res: Response, next: NextFunc
       user.passwordResetTokenHash = crypto.createHash("sha256").update(resetToken).digest("hex");
       user.passwordResetExpires = new Date(Date.now() + 15 * 60 * 1000);
       await user.save();
-      // Khi co dich vu gui email, gan provider tai day. O moi truong dev tra token de de test.
+      await sendPasswordResetEmail({
+        to: user.email,
+        name: user.name,
+        resetToken,
+      });
     }
 
     res.status(200).json({
       success: true,
       message: "Neu email ton tai, huong dan dat lai mat khau da duoc gui",
-      ...(process.env.NODE_ENV !== "production" && user ? { data: { resetToken } } : {}),
     });
   } catch (error) {
     next(error);

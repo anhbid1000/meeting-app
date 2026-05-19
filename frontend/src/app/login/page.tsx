@@ -96,9 +96,9 @@ export default function LoginPage() {
           <label className="block">
             <div className="flex items-center justify-between">
               <span className="text-[15px] font-semibold text-[#111827]">Password</span>
-              <button className="text-[15px] font-semibold text-[#004ac6]" type="button">
+              <Link className="text-[15px] font-semibold text-[#004ac6]" href="/forgot-password">
                 Forgot password?
-              </button>
+              </Link>
             </div>
             <div className="mt-[8px] flex h-[52px] items-center gap-[12px] rounded-[8px] border border-[#bfc5d6] bg-[#fbfcff] px-[18px] focus-within:border-[#004ac6]">
               <LockKeyhole className="h-[22px] w-[22px] text-[#6b7280]" />
