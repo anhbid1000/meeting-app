@@ -44,7 +44,24 @@ export const FavoriteChannelDTO = z.object({
   isFavorite: z.boolean()
 });
 
+// ChannelJoinRequest DTOs
+export const CreateChannelJoinRequestDTO = z.object({
+  message: z
+    .string()
+    .max(500, 'Message must be less than 500 characters')
+    .optional()
+});
+
+export const RejectChannelJoinRequestDTO = z.object({
+  reason: z
+    .string()
+    .max(500, 'Reason must be less than 500 characters')
+    .optional()
+});
+
 export type CreateChannelInput = z.infer<typeof CreateChannelDTO>;
 export type UpdateChannelInput = z.infer<typeof UpdateChannelDTO>;
 export type MuteChannelInput = z.infer<typeof MuteChannelDTO>;
 export type FavoriteChannelInput = z.infer<typeof FavoriteChannelDTO>;
+export type CreateChannelJoinRequestInput = z.infer<typeof CreateChannelJoinRequestDTO>;
+export type RejectChannelJoinRequestInput = z.infer<typeof RejectChannelJoinRequestDTO>;
