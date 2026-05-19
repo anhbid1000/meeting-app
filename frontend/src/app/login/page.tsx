@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { AxiosError } from "axios";
 import { LockKeyhole, Mail, Video } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -37,7 +38,13 @@ export default function LoginPage() {
       setAuth(user, accessToken);
       toast.success("Dang nhap thanh cong");
       router.replace("/dashboard");
-    } catch {
+    } catch (error) {
+      const axiosError = error as AxiosError<{ code?: string; message?: string }>;
+      if (axiosError.response?.data?.code === "EMAIL_NOT_VERIFIED") {
+        toast.error("Please verify your email before signing in");
+        return;
+      }
+
       toast.error("Email hoac mat khau chua dung");
     }
   };

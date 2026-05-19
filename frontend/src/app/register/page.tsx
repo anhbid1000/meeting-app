@@ -1,15 +1,14 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { LockKeyhole, Mail, UserRound, Video } from "lucide-react";
+import { CheckCircle2, LockKeyhole, Mail, UserRound, Video } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { z } from "zod";
 import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
 import api from "@/services/api";
-import { useAuthStore } from "@/store/authStore";
 
 const registerSchema = z.object({
   name: z.string().min(2, "Ten toi thieu 2 ky tu"),
@@ -20,8 +19,7 @@ const registerSchema = z.object({
 type RegisterValues = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
-  const router = useRouter();
-  const setAuth = useAuthStore((state) => state.setAuth);
+  const [registeredEmail, setRegisteredEmail] = useState("");
   const {
     register,
     handleSubmit,
@@ -33,13 +31,22 @@ export default function RegisterPage() {
 
   const onSubmit = async (values: RegisterValues) => {
     try {
-      const response = await api.post("/auth/register", values);
-      const { user, accessToken } = response.data.data;
-      setAuth(user, accessToken);
-      toast.success("Tao tai khoan thanh cong");
-      router.replace("/dashboard");
+      await api.post("/auth/register", values);
+      setRegisteredEmail(values.email);
+      toast.success("Check your email to verify your account");
     } catch {
       toast.error("Khong the tao tai khoan voi email nay");
+    }
+  };
+
+  const resendVerification = async () => {
+    if (!registeredEmail) return;
+
+    try {
+      await api.post("/auth/resend-verification", { email: registeredEmail });
+      toast.success("Verification email sent");
+    } catch {
+      toast.error("Unable to resend verification email");
     }
   };
 
@@ -71,6 +78,27 @@ export default function RegisterPage() {
           <span>or continue with email</span>
           <span className="h-px flex-1 bg-[#d6d9e2]" />
         </div>
+
+        {registeredEmail && (
+          <div className="mb-[24px] rounded-[8px] border border-[#c7d5ff] bg-[#f4f7ff] p-[16px]">
+            <div className="flex items-start gap-[10px]">
+              <CheckCircle2 className="mt-[2px] h-[20px] w-[20px] text-[#0b55d9]" />
+              <div>
+                <p className="text-[15px] font-semibold text-[#004ac6]">Check your email</p>
+                <p className="mt-[6px] text-[14px] leading-[20px] text-[#374151]">
+                  We sent a verification link to {registeredEmail}. Please verify your account before signing in.
+                </p>
+                <button
+                  className="mt-[10px] text-[14px] font-semibold text-[#004ac6]"
+                  onClick={resendVerification}
+                  type="button"
+                >
+                  Resend verification email
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <form className="space-y-[20px]" onSubmit={handleSubmit(onSubmit)}>
           <label className="block">

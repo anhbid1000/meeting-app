@@ -6,6 +6,12 @@ interface SendPasswordResetEmailParams {
   resetToken: string;
 }
 
+interface SendEmailVerificationParams {
+  to: string;
+  name: string;
+  verificationToken: string;
+}
+
 const requiredEnv = (name: string) => {
   const value = process.env[name];
   if (!value) {
@@ -31,12 +37,13 @@ const getTransporter = () => {
 
 const getFrontendUrl = () => process.env.FRONTEND_URL || "http://localhost:3000";
 
+const getMailFrom = () => process.env.SMTP_FROM || process.env.SMTP_USER || "ViMeet <no-reply@vimeet.local>";
+
 export const sendPasswordResetEmail = async ({ to, name, resetToken }: SendPasswordResetEmailParams) => {
   const resetUrl = `${getFrontendUrl()}/reset-password?token=${encodeURIComponent(resetToken)}`;
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || "ViMeet <no-reply@vimeet.local>";
 
   await getTransporter().sendMail({
-    from,
+    from: getMailFrom(),
     to,
     subject: "Reset your ViMeet password",
     text: [
@@ -60,6 +67,40 @@ export const sendPasswordResetEmail = async ({ to, name, resetToken }: SendPassw
           </a>
         </p>
         <p>This link expires in 15 minutes. If you did not request this, you can ignore this email.</p>
+        <p>ViMeet Team</p>
+      </div>
+    `,
+  });
+};
+
+export const sendEmailVerificationEmail = async ({ to, name, verificationToken }: SendEmailVerificationParams) => {
+  const verifyUrl = `${getFrontendUrl()}/verify-email?token=${encodeURIComponent(verificationToken)}`;
+
+  await getTransporter().sendMail({
+    from: getMailFrom(),
+    to,
+    subject: "Verify your ViMeet account",
+    text: [
+      `Hi ${name},`,
+      "",
+      "Welcome to ViMeet. Please verify your email address before signing in.",
+      `Open this link to verify your account: ${verifyUrl}`,
+      "",
+      "This link expires in 24 hours.",
+      "",
+      "ViMeet Team",
+    ].join("\n"),
+    html: `
+      <div style="font-family: Arial, sans-serif; color: #111827; line-height: 1.6;">
+        <h2 style="color: #0b55d9;">Verify your ViMeet account</h2>
+        <p>Hi ${name},</p>
+        <p>Welcome to ViMeet. Please verify your email address before signing in.</p>
+        <p>
+          <a href="${verifyUrl}" style="display: inline-block; background: #0b55d9; color: white; padding: 12px 18px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+            Verify Email
+          </a>
+        </p>
+        <p>This link expires in 24 hours.</p>
         <p>ViMeet Team</p>
       </div>
     `,

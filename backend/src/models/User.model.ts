@@ -9,6 +9,9 @@ export interface IUser extends Document {
   avatar?: string;
   googleId?: string;
   authProvider: "local" | "google";
+  emailVerified: boolean;
+  emailVerificationTokenHash?: string;
+  emailVerificationExpires?: Date;
   role: AppRole;
   workspaces: {
     workspaceId: Types.ObjectId;
@@ -105,6 +108,18 @@ const userSchema = new Schema<IUser>(
       type: String,
       enum: ["local", "google"],
       default: "local",
+    },
+    emailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    emailVerificationTokenHash: {
+      type: String,
+      select: false,
+    },
+    emailVerificationExpires: {
+      type: Date,
+      select: false,
     },
     workspaces: {
       type: [workspaceMembershipSchema],

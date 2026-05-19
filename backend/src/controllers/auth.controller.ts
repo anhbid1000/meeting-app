@@ -4,13 +4,14 @@ import { CookieOptions, NextFunction, Request, Response } from "express";
 import { OAuth2Client } from "google-auth-library";
 import { JwtPayload } from "jsonwebtoken";
 import User, { IUser } from "../models/User.model";
-import { sendPasswordResetEmail } from "../services/mail.service";
+import { sendEmailVerificationEmail, sendPasswordResetEmail } from "../services/mail.service";
 import { AppRole } from "../types";
 import { AppError } from "../utils/AppError";
 import { getCookie, REFRESH_COOKIE_NAME } from "../utils/cookies";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../utils/token";
 
 const refreshTokenMaxAgeMs = 7 * 24 * 60 * 60 * 1000;
+const emailVerificationTokenMaxAgeMs = 24 * 60 * 60 * 1000;
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const cookieOptions: CookieOptions = {
@@ -27,11 +28,21 @@ const toSafeUser = (user: IUser) => ({
   email: user.email,
   avatar: user.avatar || "",
   role: user.role,
+  emailVerified: user.emailVerified,
   workspaces: user.workspaces.map((item) => ({
     workspaceId: String(item.workspaceId),
     role: item.role,
   })),
 });
+
+const hashToken = (token: string) => crypto.createHash("sha256").update(token).digest("hex");
+
+const createEmailVerificationToken = () => crypto.randomBytes(32).toString("hex");
+
+const setEmailVerificationToken = (user: IUser, token: string) => {
+  user.emailVerificationTokenHash = hashToken(token);
+  user.emailVerificationExpires = new Date(Date.now() + emailVerificationTokenMaxAgeMs);
+};
 
 const issueTokens = async (res: Response, user: IUser, userAgent?: string) => {
   const authUser = {
@@ -88,17 +99,24 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       name,
       email,
       password,
+      authProvider: "local",
       role: "member",
     });
 
-    const accessToken = await issueTokens(res, user, req.headers["user-agent"]);
+    const verificationToken = createEmailVerificationToken();
+    setEmailVerificationToken(user, verificationToken);
+    await user.save();
+    await sendEmailVerificationEmail({
+      to: user.email,
+      name: user.name,
+      verificationToken,
+    });
 
     res.status(201).json({
       success: true,
-      message: "Dang ky thanh cong",
+      message: "Dang ky thanh cong. Vui long kiem tra email de xac minh tai khoan",
       data: {
-        user: toSafeUser(user),
-        accessToken,
+        email: user.email,
       },
     });
   } catch (error) {
@@ -117,6 +135,10 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     const user = await User.findOne({ email: email.toLowerCase() }).select("+password +refreshTokens");
     if (!user || !(await user.comparePassword(password))) {
       throw new AppError("Email hoac mat khau khong dung", 401, "INVALID_CREDENTIALS");
+    }
+
+    if (!user.emailVerified) {
+      throw new AppError("Vui long xac minh email truoc khi dang nhap", 403, "EMAIL_NOT_VERIFIED");
     }
 
     const accessToken = await issueTokens(res, user, req.headers["user-agent"]);
@@ -170,11 +192,13 @@ export const googleLogin = async (req: Request, res: Response, next: NextFunctio
         avatar: payload.picture || "",
         googleId: payload.sub,
         authProvider: "google",
+        emailVerified: true,
         role: "member",
       });
     } else {
       user.googleId = user.googleId || payload.sub;
       user.authProvider = user.authProvider || "google";
+      user.emailVerified = true;
 
       if (!user.avatar && payload.picture) {
         user.avatar = payload.picture;
@@ -192,6 +216,67 @@ export const googleLogin = async (req: Request, res: Response, next: NextFunctio
         user: toSafeUser(user),
         accessToken,
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const verifyEmail = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { token } = req.body as { token?: string };
+    if (!token) {
+      throw new AppError("Token xac minh email la bat buoc", 400, "VERIFY_TOKEN_REQUIRED");
+    }
+
+    const user = await User.findOne({
+      emailVerificationTokenHash: hashToken(token),
+      emailVerificationExpires: { $gt: new Date() },
+    }).select("+emailVerificationTokenHash +emailVerificationExpires");
+
+    if (!user) {
+      throw new AppError("Token xac minh email khong hop le hoac da het han", 400, "VERIFY_TOKEN_INVALID");
+    }
+
+    user.emailVerified = true;
+    user.emailVerificationTokenHash = undefined;
+    user.emailVerificationExpires = undefined;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Email da duoc xac minh",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resendVerificationEmail = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email } = req.body as { email?: string };
+    if (!email) {
+      throw new AppError("Email la bat buoc", 400, "VALIDATION_ERROR");
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase() }).select(
+      "+emailVerificationTokenHash +emailVerificationExpires"
+    );
+
+    if (user && !user.emailVerified) {
+      const verificationToken = createEmailVerificationToken();
+      setEmailVerificationToken(user, verificationToken);
+      await user.save();
+      await sendEmailVerificationEmail({
+        to: user.email,
+        name: user.name,
+        verificationToken,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Neu email can xac minh, chung toi da gui lai huong dan",
     });
   } catch (error) {
     next(error);
@@ -297,7 +382,7 @@ export const forgotPassword = async (req: Request, res: Response, next: NextFunc
     const resetToken = crypto.randomBytes(32).toString("hex");
 
     if (user) {
-      user.passwordResetTokenHash = crypto.createHash("sha256").update(resetToken).digest("hex");
+      user.passwordResetTokenHash = hashToken(resetToken);
       user.passwordResetExpires = new Date(Date.now() + 15 * 60 * 1000);
       await user.save();
       await sendPasswordResetEmail({
@@ -327,7 +412,7 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
       throw new AppError("Mat khau phai co it nhat 8 ky tu", 400, "WEAK_PASSWORD");
     }
 
-    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    const tokenHash = hashToken(token);
     const user = await User.findOne({
       passwordResetTokenHash: tokenHash,
       passwordResetExpires: { $gt: new Date() },
