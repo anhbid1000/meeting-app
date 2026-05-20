@@ -8,10 +8,13 @@ import { sendEmailVerificationEmail, sendPasswordResetEmail } from "../services/
 import { AppRole } from "../types";
 import { AppError } from "../utils/AppError";
 import { getCookie, REFRESH_COOKIE_NAME } from "../utils/cookies";
+import { assertRateLimit, hitRateLimit, rateLimitKeys, resetRateLimit } from "../utils/rateLimit";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../utils/token";
 
 const refreshTokenMaxAgeMs = 7 * 24 * 60 * 60 * 1000;
 const emailVerificationTokenMaxAgeMs = 24 * 60 * 60 * 1000;
+const loginRateLimitMaxAttempts = 5;
+const loginRateLimitWindowMs = 15 * 60 * 1000;
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const cookieOptions: CookieOptions = {
@@ -83,16 +86,16 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     const { name, email, password } = req.body as { name?: string; email?: string; password?: string };
 
     if (!name || !email || !password) {
-      throw new AppError("Ten, email va mat khau la bat buoc", 400, "VALIDATION_ERROR");
+      throw new AppError("Name, email, and password are required", 400, "VALIDATION_ERROR");
     }
 
     if (password.length < 8) {
-      throw new AppError("Mat khau phai co it nhat 8 ky tu", 400, "WEAK_PASSWORD");
+      throw new AppError("Password must be at least 8 characters", 400, "WEAK_PASSWORD");
     }
 
     const existing = await User.findOne({ email: email.toLowerCase() }).lean();
     if (existing) {
-      throw new AppError("Email da ton tai", 409, "EMAIL_EXISTS");
+      throw new AppError("An account with this email already exists", 409, "EMAIL_EXISTS");
     }
 
     const user = await User.create({
@@ -114,7 +117,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 
     res.status(201).json({
       success: true,
-      message: "Dang ky thanh cong. Vui long kiem tra email de xac minh tai khoan",
+      message: "Account created. Please check your email to verify your account",
       data: {
         email: user.email,
       },
@@ -127,25 +130,59 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 export const login = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, password } = req.body as { email?: string; password?: string };
+    const loginEmailKey = `login:${rateLimitKeys.emailOrIp(req)}`;
+    const loginIpKey = `login:ip:${rateLimitKeys.ip(req)}`;
 
     if (!email || !password) {
-      throw new AppError("Email va mat khau la bat buoc", 400, "VALIDATION_ERROR");
+      throw new AppError("Email and password are required", 400, "VALIDATION_ERROR");
     }
+
+    assertRateLimit(
+      loginEmailKey,
+      loginRateLimitMaxAttempts,
+      loginRateLimitWindowMs,
+      "Too many failed sign-in attempts. Please try again later",
+      "LOGIN_RATE_LIMITED"
+    );
+    assertRateLimit(
+      loginIpKey,
+      loginRateLimitMaxAttempts,
+      loginRateLimitWindowMs,
+      "Too many failed sign-in attempts from this network. Please try again later",
+      "LOGIN_RATE_LIMITED"
+    );
 
     const user = await User.findOne({ email: email.toLowerCase() }).select("+password +refreshTokens");
     if (!user || !(await user.comparePassword(password))) {
-      throw new AppError("Email hoac mat khau khong dung", 401, "INVALID_CREDENTIALS");
+      hitRateLimit(
+        loginEmailKey,
+        loginRateLimitMaxAttempts,
+        loginRateLimitWindowMs,
+        "Too many failed sign-in attempts. Please try again later",
+        "LOGIN_RATE_LIMITED"
+      );
+      hitRateLimit(
+        loginIpKey,
+        loginRateLimitMaxAttempts,
+        loginRateLimitWindowMs,
+        "Too many failed sign-in attempts from this network. Please try again later",
+        "LOGIN_RATE_LIMITED"
+      );
+      throw new AppError("Incorrect email or password", 401, "INVALID_CREDENTIALS");
     }
 
     if (!user.emailVerified) {
-      throw new AppError("Vui long xac minh email truoc khi dang nhap", 403, "EMAIL_NOT_VERIFIED");
+      throw new AppError("Please verify your email before signing in", 403, "EMAIL_NOT_VERIFIED");
     }
+
+    resetRateLimit(loginEmailKey);
+    resetRateLimit(loginIpKey);
 
     const accessToken = await issueTokens(res, user, req.headers["user-agent"]);
 
     res.status(200).json({
       success: true,
-      message: "Dang nhap thanh cong",
+      message: "Signed in successfully",
       data: {
         user: toSafeUser(user),
         accessToken,
@@ -161,11 +198,11 @@ export const googleLogin = async (req: Request, res: Response, next: NextFunctio
     const { credential } = req.body as { credential?: string };
 
     if (!credential) {
-      throw new AppError("Google credential la bat buoc", 400, "GOOGLE_CREDENTIAL_REQUIRED");
+      throw new AppError("Google credential is required", 400, "GOOGLE_CREDENTIAL_REQUIRED");
     }
 
     if (!process.env.GOOGLE_CLIENT_ID) {
-      throw new AppError("Thieu GOOGLE_CLIENT_ID", 500, "GOOGLE_CONFIG_MISSING");
+      throw new AppError("GOOGLE_CLIENT_ID is missing", 500, "GOOGLE_CONFIG_MISSING");
     }
 
     const ticket = await googleClient.verifyIdToken({
@@ -175,11 +212,11 @@ export const googleLogin = async (req: Request, res: Response, next: NextFunctio
     const payload = ticket.getPayload();
 
     if (!payload?.email || !payload.sub) {
-      throw new AppError("Khong the lay thong tin tai khoan Google", 401, "GOOGLE_PROFILE_MISSING");
+      throw new AppError("Unable to read your Google account information", 401, "GOOGLE_PROFILE_MISSING");
     }
 
     if (!payload.email_verified) {
-      throw new AppError("Email Google chua duoc xac thuc", 401, "GOOGLE_EMAIL_NOT_VERIFIED");
+      throw new AppError("Your Google email is not verified", 401, "GOOGLE_EMAIL_NOT_VERIFIED");
     }
 
     const email = payload.email.toLowerCase();
@@ -211,7 +248,7 @@ export const googleLogin = async (req: Request, res: Response, next: NextFunctio
 
     res.status(200).json({
       success: true,
-      message: "Dang nhap Google thanh cong",
+      message: "Signed in with Google",
       data: {
         user: toSafeUser(user),
         accessToken,
@@ -226,7 +263,7 @@ export const verifyEmail = async (req: Request, res: Response, next: NextFunctio
   try {
     const { token } = req.body as { token?: string };
     if (!token) {
-      throw new AppError("Token xac minh email la bat buoc", 400, "VERIFY_TOKEN_REQUIRED");
+      throw new AppError("Verification token is required", 400, "VERIFY_TOKEN_REQUIRED");
     }
 
     const user = await User.findOne({
@@ -235,7 +272,7 @@ export const verifyEmail = async (req: Request, res: Response, next: NextFunctio
     }).select("+emailVerificationTokenHash +emailVerificationExpires");
 
     if (!user) {
-      throw new AppError("Token xac minh email khong hop le hoac da het han", 400, "VERIFY_TOKEN_INVALID");
+      throw new AppError("Verification token is invalid or has expired", 400, "VERIFY_TOKEN_INVALID");
     }
 
     user.emailVerified = true;
@@ -245,7 +282,7 @@ export const verifyEmail = async (req: Request, res: Response, next: NextFunctio
 
     res.status(200).json({
       success: true,
-      message: "Email da duoc xac minh",
+      message: "Email has been verified",
     });
   } catch (error) {
     next(error);
@@ -256,7 +293,7 @@ export const resendVerificationEmail = async (req: Request, res: Response, next:
   try {
     const { email } = req.body as { email?: string };
     if (!email) {
-      throw new AppError("Email la bat buoc", 400, "VALIDATION_ERROR");
+      throw new AppError("Email is required", 400, "VALIDATION_ERROR");
     }
 
     const user = await User.findOne({ email: email.toLowerCase() }).select(
@@ -276,7 +313,7 @@ export const resendVerificationEmail = async (req: Request, res: Response, next:
 
     res.status(200).json({
       success: true,
-      message: "Neu email can xac minh, chung toi da gui lai huong dan",
+      message: "If this email needs verification, we sent new instructions",
     });
   } catch (error) {
     next(error);
@@ -287,24 +324,24 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
   try {
     const refreshToken = getCookie(req, REFRESH_COOKIE_NAME);
     if (!refreshToken) {
-      throw new AppError("Can refresh token de cap lai phien dang nhap", 401, "REFRESH_REQUIRED");
+      throw new AppError("A refresh token is required to renew your session", 401, "REFRESH_REQUIRED");
     }
 
     const decoded = verifyRefreshToken(refreshToken) as JwtPayload;
     if (!decoded.sub || typeof decoded.sub !== "string") {
-      throw new AppError("Refresh token khong hop le", 401, "REFRESH_INVALID");
+      throw new AppError("Refresh token is invalid", 401, "REFRESH_INVALID");
     }
 
     const user = await User.findById(decoded.sub).select("+refreshTokens");
     if (!user) {
-      throw new AppError("Nguoi dung khong con ton tai", 401, "USER_NOT_FOUND");
+      throw new AppError("User no longer exists", 401, "USER_NOT_FOUND");
     }
 
     const tokenIndex = await findRefreshTokenIndex(user, refreshToken);
     if (tokenIndex < 0) {
       user.refreshTokens = [];
       await user.save();
-      throw new AppError("Refresh token da bi thu hoi", 401, "REFRESH_REVOKED");
+      throw new AppError("Refresh token has been revoked", 401, "REFRESH_REVOKED");
     }
 
     user.refreshTokens.splice(tokenIndex, 1);
@@ -318,7 +355,7 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
       },
     });
   } catch (error) {
-    next(error instanceof AppError ? error : new AppError("Refresh token khong hop le", 401, "REFRESH_INVALID"));
+    next(error instanceof AppError ? error : new AppError("Refresh token is invalid", 401, "REFRESH_INVALID"));
   }
 };
 
@@ -341,7 +378,7 @@ export const logout = async (req: Request, res: Response, next: NextFunction) =>
     }
 
     res.clearCookie(REFRESH_COOKIE_NAME, { ...cookieOptions, maxAge: undefined });
-    res.status(200).json({ success: true, message: "Dang xuat thanh cong" });
+    res.status(200).json({ success: true, message: "Signed out successfully" });
   } catch (error) {
     next(error);
   }
@@ -350,12 +387,12 @@ export const logout = async (req: Request, res: Response, next: NextFunction) =>
 export const me = async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.user) {
-      throw new AppError("Can dang nhap de thuc hien thao tac nay", 401, "AUTH_REQUIRED");
+      throw new AppError("You must sign in to perform this action", 401, "AUTH_REQUIRED");
     }
 
     const user = await User.findById(req.user.id);
     if (!user) {
-      throw new AppError("Nguoi dung khong con ton tai", 401, "USER_NOT_FOUND");
+      throw new AppError("User no longer exists", 401, "USER_NOT_FOUND");
     }
 
     res.status(200).json({
@@ -373,7 +410,7 @@ export const forgotPassword = async (req: Request, res: Response, next: NextFunc
   try {
     const { email } = req.body as { email?: string };
     if (!email) {
-      throw new AppError("Email la bat buoc", 400, "VALIDATION_ERROR");
+      throw new AppError("Email is required", 400, "VALIDATION_ERROR");
     }
 
     const user = await User.findOne({ email: email.toLowerCase() }).select(
@@ -394,7 +431,7 @@ export const forgotPassword = async (req: Request, res: Response, next: NextFunc
 
     res.status(200).json({
       success: true,
-      message: "Neu email ton tai, huong dan dat lai mat khau da duoc gui",
+      message: "If this email exists, password reset instructions have been sent",
     });
   } catch (error) {
     next(error);
@@ -405,11 +442,11 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
   try {
     const { token, password } = req.body as { token?: string; password?: string };
     if (!token || !password) {
-      throw new AppError("Token va mat khau la bat buoc", 400, "VALIDATION_ERROR");
+      throw new AppError("Token and password are required", 400, "VALIDATION_ERROR");
     }
 
     if (password.length < 8) {
-      throw new AppError("Mat khau phai co it nhat 8 ky tu", 400, "WEAK_PASSWORD");
+      throw new AppError("Password must be at least 8 characters", 400, "WEAK_PASSWORD");
     }
 
     const tokenHash = hashToken(token);
@@ -419,7 +456,7 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
     }).select("+password +refreshTokens +passwordResetTokenHash +passwordResetExpires");
 
     if (!user) {
-      throw new AppError("Token dat lai mat khau khong hop le hoac da het han", 400, "RESET_TOKEN_INVALID");
+      throw new AppError("Reset token is invalid or has expired", 400, "RESET_TOKEN_INVALID");
     }
 
     user.password = password;
@@ -429,7 +466,7 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
     await user.save();
 
     res.clearCookie(REFRESH_COOKIE_NAME, { ...cookieOptions, maxAge: undefined });
-    res.status(200).json({ success: true, message: "Mat khau da duoc dat lai" });
+    res.status(200).json({ success: true, message: "Password has been reset" });
   } catch (error) {
     next(error);
   }

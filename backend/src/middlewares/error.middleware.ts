@@ -3,11 +3,16 @@ import { Error as MongooseError } from "mongoose";
 import { AppError } from "../utils/AppError";
 
 export const notFound = (req: Request, _res: Response, next: NextFunction) => {
-  next(new AppError(`Khong tim thay route ${req.method} ${req.originalUrl}`, 404, "NOT_FOUND"));
+  next(new AppError(`Route not found: ${req.method} ${req.originalUrl}`, 404, "NOT_FOUND"));
 };
 
 export const errorHandler = (
-  err: Error & { statusCode?: number; code?: string | number; keyValue?: Record<string, unknown> },
+  err: Error & {
+    statusCode?: number;
+    code?: string | number;
+    keyValue?: Record<string, unknown>;
+    retryAfterSeconds?: number;
+  },
   _req: Request,
   res: Response,
   _next: NextFunction
@@ -27,7 +32,7 @@ export const errorHandler = (
   if (err.code === 11000) {
     statusCode = 409;
     const field = Object.keys(err.keyValue || {})[0] || "field";
-    message = `${field} da ton tai`;
+    message = `${field} already exists`;
     code = "DUPLICATE_VALUE";
   }
 
@@ -35,9 +40,13 @@ export const errorHandler = (
     console.error(err);
   }
 
+  if (statusCode === 429 && err.retryAfterSeconds) {
+    res.setHeader("Retry-After", String(err.retryAfterSeconds));
+  }
+
   res.status(statusCode).json({
     success: false,
-    message: statusCode >= 500 ? "May chu tam thoi khong kha dung" : message,
+    message: statusCode >= 500 ? "Server is temporarily unavailable" : message,
     code,
   });
 };

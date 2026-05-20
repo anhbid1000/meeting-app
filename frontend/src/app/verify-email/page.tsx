@@ -1,28 +1,42 @@
 "use client";
 
+import { AxiosError } from "axios";
 import { CheckCircle2, Loader2, XCircle, Video } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import api from "@/services/api";
+import { rawApi } from "@/services/api";
 
 type VerifyState = "loading" | "success" | "error";
 
+const getTokenFromUrl = () => {
+  const hashToken = new URLSearchParams(window.location.hash.replace(/^#/, "")).get("token");
+  return hashToken || new URLSearchParams(window.location.search).get("token");
+};
+
 export default function VerifyEmailPage() {
   const [state, setState] = useState<VerifyState>("loading");
+  const [errorMessage, setErrorMessage] = useState(
+    "This verification link is invalid or has expired. Please request a new link."
+  );
 
   useEffect(() => {
-    const token = new URLSearchParams(window.location.search).get("token");
-
-    if (!token) {
-      setState("error");
-      return;
-    }
-
     const verify = async () => {
+      const token = getTokenFromUrl();
+      window.history.replaceState(null, "", window.location.pathname);
+
+      if (!token) {
+        setState("error");
+        return;
+      }
+
       try {
-        await api.post("/auth/verify-email", { token });
+        await rawApi.post("/auth/verify-email", { token });
         setState("success");
-      } catch {
+      } catch (error) {
+        const axiosError = error as AxiosError<{ code?: string }>;
+        if (axiosError.response?.data?.code === "VERIFY_EMAIL_RATE_LIMITED") {
+          setErrorMessage("Too many verification attempts. Please try again later.");
+        }
         setState("error");
       }
     };
@@ -61,7 +75,7 @@ export default function VerifyEmailPage() {
           <p className="mt-[8px] max-w-[390px] text-[18px] leading-[26px] text-[#374151]">
             {state === "loading" && "Please wait while we verify your account."}
             {isSuccess && "Your email has been verified. You can now sign in to your workspace."}
-            {state === "error" && "This verification link is invalid or has expired. Please request a new link."}
+            {state === "error" && errorMessage}
           </p>
         </div>
 

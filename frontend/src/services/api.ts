@@ -4,6 +4,24 @@ import { useAuthStore } from "@/store/authStore";
 type RetriableRequest = InternalAxiosRequestConfig & { _retry?: boolean };
 
 const baseURL = `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/v1`;
+const authRefreshExcludedPaths = [
+  "/auth/login",
+  "/auth/register",
+  "/auth/google",
+  "/auth/forgot-password",
+  "/auth/reset-password",
+  "/auth/verify-email",
+  "/auth/resend-verification",
+];
+
+const shouldAttemptRefresh = (error: AxiosError, request?: RetriableRequest) => {
+  if (error.response?.status !== 401 || !request || request._retry) {
+    return false;
+  }
+
+  const requestUrl = request.url || "";
+  return !authRefreshExcludedPaths.some((path) => requestUrl.endsWith(path));
+};
 
 const rawApi = axios.create({
   baseURL,
@@ -30,7 +48,7 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as RetriableRequest | undefined;
 
-    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+    if (shouldAttemptRefresh(error, originalRequest)) {
       originalRequest._retry = true;
 
       try {

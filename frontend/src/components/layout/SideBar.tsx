@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 import api from '@/services/api';
 import { useAuthStore } from '@/store/authStore';
 
@@ -33,6 +34,9 @@ export default function Sidebar() {
   const logout = async () => {
     try {
       await api.post('/auth/logout');
+      toast.success('Signed out successfully');
+    } catch {
+      toast.error('Unable to contact the server. You have been signed out locally.');
     } finally {
       clearAuth();
       router.push('/login');

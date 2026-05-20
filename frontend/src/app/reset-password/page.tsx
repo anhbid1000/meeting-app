@@ -1,14 +1,15 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, KeyRound, LockKeyhole, Video } from "lucide-react";
+import { AxiosError } from "axios";
+import { ArrowLeft, LockKeyhole, Video } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { z } from "zod";
-import api from "@/services/api";
+import { rawApi } from "@/services/api";
 
 const resetPasswordSchema = z.object({
   token: z.string().min(1, "Reset token is required"),
@@ -16,6 +17,18 @@ const resetPasswordSchema = z.object({
 });
 
 type ResetPasswordValues = z.infer<typeof resetPasswordSchema>;
+
+const resetPasswordErrorMessages: Record<string, string> = {
+  RESET_PASSWORD_RATE_LIMITED: "Too many password reset attempts. Please try again later",
+  RESET_TOKEN_INVALID: "This reset link is invalid or has expired",
+  VALIDATION_ERROR: "Please use the reset link from your email and enter a new password",
+  WEAK_PASSWORD: "Password must be at least 8 characters",
+};
+
+const getTokenFromUrl = () => {
+  const hashToken = new URLSearchParams(window.location.hash.replace(/^#/, "")).get("token");
+  return hashToken || new URLSearchParams(window.location.search).get("token");
+};
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -30,19 +43,22 @@ export default function ResetPasswordPage() {
   });
 
   useEffect(() => {
-    const token = new URLSearchParams(window.location.search).get("token");
+    const token = getTokenFromUrl();
     if (token) {
       setValue("token", token);
+      window.history.replaceState(null, "", window.location.pathname);
     }
   }, [setValue]);
 
   const onSubmit = async (values: ResetPasswordValues) => {
     try {
-      await api.post("/auth/reset-password", values);
+      await rawApi.post("/auth/reset-password", values);
       toast.success("Password has been reset");
       router.replace("/login");
-    } catch {
-      toast.error("Reset token is invalid or expired");
+    } catch (error) {
+      const axiosError = error as AxiosError<{ code?: string }>;
+      const errorCode = axiosError.response?.data?.code;
+      toast.error((errorCode && resetPasswordErrorMessages[errorCode]) || "Unable to reset your password");
     }
   };
 
@@ -63,23 +79,22 @@ export default function ResetPasswordPage() {
             Create New Password
           </h1>
           <p className="mt-[8px] max-w-[390px] text-[18px] leading-[26px] text-[#374151]">
-            Paste your reset token and choose a new password for your account.
+            Choose a new password for your account.
           </p>
         </div>
 
-        <form className="mt-[42px] space-y-[20px]" onSubmit={handleSubmit(onSubmit)}>
-          <label className="block">
-            <span className="text-[15px] font-semibold text-[#111827]">Reset Token</span>
-            <div className="mt-[8px] flex h-[52px] items-center gap-[12px] rounded-[8px] border border-[#bfc5d6] bg-[#fbfcff] px-[18px] focus-within:border-[#004ac6]">
-              <KeyRound className="h-[22px] w-[22px] text-[#6b7280]" />
-              <input
-                {...register("token")}
-                className="h-full w-full bg-transparent text-[17px] text-[#111827] outline-none placeholder:text-[#7b8191]"
-                placeholder="Paste reset token"
-              />
-            </div>
-            {errors.token && <span className="mt-[6px] block text-[14px] text-red-600">{errors.token.message}</span>}
-          </label>
+        <form
+          className="mt-[42px] space-y-[20px]"
+          method="post"
+          noValidate
+          onSubmit={handleSubmit(onSubmit)}
+        >
+          <input {...register("token")} type="hidden" />
+          {errors.token && (
+            <span className="block rounded-[8px] bg-red-50 px-[14px] py-[10px] text-[14px] text-red-600">
+              This reset link is missing or invalid. Please request a new password reset email.
+            </span>
+          )}
 
           <label className="block">
             <span className="text-[15px] font-semibold text-[#111827]">New Password</span>
@@ -87,6 +102,7 @@ export default function ResetPasswordPage() {
               <LockKeyhole className="h-[22px] w-[22px] text-[#6b7280]" />
               <input
                 {...register("password")}
+                autoComplete="new-password"
                 className="h-full w-full bg-transparent text-[17px] text-[#111827] outline-none placeholder:text-[#7b8191]"
                 placeholder="At least 8 characters"
                 type="password"
