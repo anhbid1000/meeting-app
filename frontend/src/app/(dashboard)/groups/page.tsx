@@ -1,6 +1,20 @@
+"use client";
+
 import Link from 'next/link';
+import {useState} from 'react';
+import { CreateWorkspaceModal } from '@/components/workspace/CreateWorkspaceForm';
 
 const Page = () => {
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  function showCreateWorkspaceModal() {
+    setShowCreateModal(true);
+  }
+
+  function hideCreateWorkspaceModal() {
+    setShowCreateModal(false);
+  }
+
   return (
     <div className="pt-24 px-lg pb-lg">
       {/* Dashboard Header Section */}
@@ -18,7 +32,10 @@ const Page = () => {
             <span className="material-symbols-outlined">link</span>
             Join Workspace
           </button>
-          <button className="bg-primary text-on-primary px-lg py-md rounded-xl font-label-md text-label-md hover:bg-opacity-90 active:scale-95 transition-all shadow-md flex items-center gap-sm">
+          <button
+            onClick={showCreateWorkspaceModal}
+            className="bg-primary text-on-primary px-lg py-md rounded-xl font-label-md text-label-md hover:bg-opacity-90 active:scale-95 transition-all shadow-md flex items-center gap-sm"
+          >
             <span className="material-symbols-outlined">add_circle</span>
             Create Workspace
           </button>
@@ -265,6 +282,11 @@ const Page = () => {
           </Link>
         </div>
       </div>
+
+      <CreateWorkspaceModal
+        open={showCreateModal}
+        onClose={hideCreateWorkspaceModal}
+      />
 
       {/* Workspace Analytics / Activity (Bento Section) */}
       <div className="mt-xl grid grid-cols-1 lg:grid-cols-4 gap-gutter">

@@ -17,12 +17,12 @@ export class WorkspaceDAO extends BaseDAO<IWorkspace> {
 
     const [items, total] = await Promise.all([
       this.model
-        .find({ members: uid })
+        .find({ 'members.userId': uid })
         .sort({ updatedAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean(),
-      this.model.countDocuments({ members: uid })
+      this.model.countDocuments({ 'members.userId': uid })
     ]);
 
     return { items, total };

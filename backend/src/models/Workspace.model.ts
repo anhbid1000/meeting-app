@@ -1,12 +1,27 @@
 import mongoose, { Document, Model, Schema, Types } from "mongoose";
 import { WorkspaceRole } from "../types";
 
+<<<<<<< Updated upstream
 export type WorkspacePlan = "standard" | "pro";
+=======
+export type WorkspacePlan = 'standard' | 'pro';
+export type WorkspaceCategory = 
+  | 'work'
+  | 'education'
+  | 'community'
+  | 'personal'
+  | 'events'
+  | 'projects'
+  | 'social'
+  | 'gaming'
+  | 'other';
+>>>>>>> Stashed changes
 
 export interface IWorkspace extends Document {
   name: string;
   slug: string;
   description?: string;
+  category: WorkspaceCategory; // thêm
   ownerId: Types.ObjectId;
   members: {
     userId: Types.ObjectId;
@@ -61,6 +76,13 @@ const workspaceSchema = new Schema<IWorkspace>(
       trim: true,
       maxlength: 500,
       default: "",
+    },
+    category: {
+      type: String,
+      enum: ['work', 'education', 'community', 'personal', 'events', 'projects', 'social', 'gaming', 'other'],
+      trim: true, 
+      maxlength: 50,
+      default: 'work'
     },
     ownerId: {
       type: Schema.Types.ObjectId,
