@@ -9,15 +9,52 @@ import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { z } from "zod";
 import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
-import api from "@/services/api";
+import { rawApi } from "@/services/api";
 import { useAuthStore } from "@/store/authStore";
 
 const loginSchema = z.object({
-  email: z.string().email("Email khong hop le"),
-  password: z.string().min(8, "Mat khau toi thieu 8 ky tu"),
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
 type LoginValues = z.infer<typeof loginSchema>;
+
+const loginErrorMessages: Record<string, string> = {
+  EMAIL_NOT_VERIFIED: "Please verify your email before signing in",
+  INVALID_CREDENTIALS: "Incorrect email or password",
+  LOGIN_RATE_LIMITED: "Too many failed sign-in attempts. Please try again later",
+  VALIDATION_ERROR: "Please enter your email and password",
+};
+
+const getLoginErrorMessage = (error: AxiosError<{ code?: string; message?: string }>) => {
+  const errorCode = error.response?.data?.code;
+
+  if (errorCode && loginErrorMessages[errorCode]) {
+    return loginErrorMessages[errorCode];
+  }
+
+  if (!error.response) {
+    return "Unable to reach the server. Please check your connection and try again";
+  }
+
+  if (error.response.status === 401) {
+    return "Incorrect email or password";
+  }
+
+  if (error.response.status === 403) {
+    return "Please verify your email before signing in";
+  }
+
+  if (error.response.status === 400) {
+    return "Please enter your email and password";
+  }
+
+  if (error.response.status >= 500) {
+    return "Server is temporarily unavailable. Please try again later";
+  }
+
+  return "Sign-in failed. Please check your details and try again";
+};
 
 export default function LoginPage() {
   const router = useRouter();
@@ -33,19 +70,14 @@ export default function LoginPage() {
 
   const onSubmit = async (values: LoginValues) => {
     try {
-      const response = await api.post("/auth/login", values);
+      const response = await rawApi.post("/auth/login", values);
       const { user, accessToken } = response.data.data;
       setAuth(user, accessToken);
-      toast.success("Dang nhap thanh cong");
+      toast.success("Signed in successfully");
       router.replace("/dashboard");
     } catch (error) {
       const axiosError = error as AxiosError<{ code?: string; message?: string }>;
-      if (axiosError.response?.data?.code === "EMAIL_NOT_VERIFIED") {
-        toast.error("Please verify your email before signing in");
-        return;
-      }
-
-      toast.error("Email hoac mat khau chua dung");
+      toast.error(getLoginErrorMessage(axiosError));
     }
   };
 
@@ -78,13 +110,14 @@ export default function LoginPage() {
           <span className="h-px flex-1 bg-[#d6d9e2]" />
         </div>
 
-        <form className="space-y-[20px]" onSubmit={handleSubmit(onSubmit)}>
+        <form className="space-y-[20px]" method="post" noValidate onSubmit={handleSubmit(onSubmit)}>
           <label className="block">
             <span className="text-[15px] font-semibold text-[#111827]">Work Email</span>
             <div className="mt-[8px] flex h-[52px] items-center gap-[12px] rounded-[8px] border border-[#bfc5d6] bg-[#fbfcff] px-[18px] focus-within:border-[#004ac6]">
               <Mail className="h-[22px] w-[22px] text-[#6b7280]" />
               <input
                 {...register("email")}
+                autoComplete="email"
                 className="h-full w-full bg-transparent text-[17px] text-[#111827] outline-none placeholder:text-[#7b8191]"
                 placeholder="name@company.com"
                 type="email"
@@ -104,6 +137,7 @@ export default function LoginPage() {
               <LockKeyhole className="h-[22px] w-[22px] text-[#6b7280]" />
               <input
                 {...register("password")}
+                autoComplete="current-password"
                 className="h-full w-full bg-transparent text-[17px] text-[#111827] outline-none placeholder:text-[#7b8191]"
                 placeholder="••••••••"
                 type="password"

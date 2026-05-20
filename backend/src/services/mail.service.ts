@@ -15,7 +15,7 @@ interface SendEmailVerificationParams {
 const requiredEnv = (name: string) => {
   const value = process.env[name];
   if (!value) {
-    throw new Error(`Thieu bien moi truong ${name} de gui email`);
+    throw new Error(`Missing ${name} environment variable for email delivery`);
   }
 
   return value;
@@ -40,7 +40,7 @@ const getFrontendUrl = () => process.env.FRONTEND_URL || "http://localhost:3000"
 const getMailFrom = () => process.env.SMTP_FROM || process.env.SMTP_USER || "ViMeet <no-reply@vimeet.local>";
 
 export const sendPasswordResetEmail = async ({ to, name, resetToken }: SendPasswordResetEmailParams) => {
-  const resetUrl = `${getFrontendUrl()}/reset-password?token=${encodeURIComponent(resetToken)}`;
+  const resetUrl = `${getFrontendUrl()}/reset-password#token=${encodeURIComponent(resetToken)}`;
 
   await getTransporter().sendMail({
     from: getMailFrom(),
@@ -74,7 +74,7 @@ export const sendPasswordResetEmail = async ({ to, name, resetToken }: SendPassw
 };
 
 export const sendEmailVerificationEmail = async ({ to, name, verificationToken }: SendEmailVerificationParams) => {
-  const verifyUrl = `${getFrontendUrl()}/verify-email?token=${encodeURIComponent(verificationToken)}`;
+  const verifyUrl = `${getFrontendUrl()}/verify-email#token=${encodeURIComponent(verificationToken)}`;
 
   await getTransporter().sendMail({
     from: getMailFrom(),

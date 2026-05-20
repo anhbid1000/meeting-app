@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { AxiosError } from "axios";
 import { CheckCircle2, LockKeyhole, Mail, UserRound, Video } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -8,15 +9,29 @@ import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { z } from "zod";
 import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
-import api from "@/services/api";
+import { rawApi } from "@/services/api";
 
 const registerSchema = z.object({
-  name: z.string().min(2, "Ten toi thieu 2 ky tu"),
-  email: z.string().email("Email khong hop le"),
-  password: z.string().min(8, "Mat khau toi thieu 8 ky tu"),
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string().min(1, "Please confirm your password"),
+}).refine((values) => values.password === values.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
 });
 
 type RegisterValues = z.infer<typeof registerSchema>;
+
+const registerErrorMessages: Record<string, string> = {
+  EMAIL_EXISTS: "An account with this email already exists",
+  VALIDATION_ERROR: "Please complete all required fields",
+  WEAK_PASSWORD: "Password must be at least 8 characters",
+};
+
+const resendVerificationErrorMessages: Record<string, string> = {
+  RESEND_VERIFICATION_RATE_LIMITED: "Too many verification email requests. Please try again later",
+};
 
 export default function RegisterPage() {
   const [registeredEmail, setRegisteredEmail] = useState("");
@@ -26,16 +41,22 @@ export default function RegisterPage() {
     formState: { errors, isSubmitting },
   } = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { name: "", email: "", password: "" },
+    defaultValues: { name: "", email: "", password: "", confirmPassword: "" },
   });
 
   const onSubmit = async (values: RegisterValues) => {
     try {
-      await api.post("/auth/register", values);
+      await rawApi.post("/auth/register", {
+        name: values.name,
+        email: values.email,
+        password: values.password,
+      });
       setRegisteredEmail(values.email);
       toast.success("Check your email to verify your account");
-    } catch {
-      toast.error("Khong the tao tai khoan voi email nay");
+    } catch (error) {
+      const axiosError = error as AxiosError<{ code?: string }>;
+      const errorCode = axiosError.response?.data?.code;
+      toast.error((errorCode && registerErrorMessages[errorCode]) || "Unable to create an account");
     }
   };
 
@@ -43,10 +64,14 @@ export default function RegisterPage() {
     if (!registeredEmail) return;
 
     try {
-      await api.post("/auth/resend-verification", { email: registeredEmail });
+      await rawApi.post("/auth/resend-verification", { email: registeredEmail });
       toast.success("Verification email sent");
-    } catch {
-      toast.error("Unable to resend verification email");
+    } catch (error) {
+      const axiosError = error as AxiosError<{ code?: string }>;
+      const errorCode = axiosError.response?.data?.code;
+      toast.error(
+        (errorCode && resendVerificationErrorMessages[errorCode]) || "Unable to resend verification email"
+      );
     }
   };
 
@@ -100,15 +125,21 @@ export default function RegisterPage() {
           </div>
         )}
 
-        <form className="space-y-[20px]" onSubmit={handleSubmit(onSubmit)}>
+        <form
+          className="space-y-[20px]"
+          method="post"
+          noValidate
+          onSubmit={handleSubmit(onSubmit)}
+        >
           <label className="block">
             <span className="text-[15px] font-semibold text-[#111827]">Full Name</span>
             <div className="mt-[8px] flex h-[52px] items-center gap-[12px] rounded-[8px] border border-[#bfc5d6] bg-[#fbfcff] px-[18px] focus-within:border-[#004ac6]">
               <UserRound className="h-[22px] w-[22px] text-[#6b7280]" />
               <input
                 {...register("name")}
+                autoComplete="name"
                 className="h-full w-full bg-transparent text-[17px] text-[#111827] outline-none placeholder:text-[#7b8191]"
-                placeholder="Nguyen Van A"
+                placeholder="Alex Nguyen"
               />
             </div>
             {errors.name && <span className="mt-[6px] block text-[14px] text-red-600">{errors.name.message}</span>}
@@ -120,6 +151,7 @@ export default function RegisterPage() {
               <Mail className="h-[22px] w-[22px] text-[#6b7280]" />
               <input
                 {...register("email")}
+                autoComplete="email"
                 className="h-full w-full bg-transparent text-[17px] text-[#111827] outline-none placeholder:text-[#7b8191]"
                 placeholder="name@company.com"
                 type="email"
@@ -134,6 +166,7 @@ export default function RegisterPage() {
               <LockKeyhole className="h-[22px] w-[22px] text-[#6b7280]" />
               <input
                 {...register("password")}
+                autoComplete="new-password"
                 className="h-full w-full bg-transparent text-[17px] text-[#111827] outline-none placeholder:text-[#7b8191]"
                 placeholder="••••••••"
                 type="password"
@@ -141,6 +174,23 @@ export default function RegisterPage() {
             </div>
             {errors.password && (
               <span className="mt-[6px] block text-[14px] text-red-600">{errors.password.message}</span>
+            )}
+          </label>
+
+          <label className="block">
+            <span className="text-[15px] font-semibold text-[#111827]">Confirm Password</span>
+            <div className="mt-[8px] flex h-[52px] items-center gap-[12px] rounded-[8px] border border-[#bfc5d6] bg-[#fbfcff] px-[18px] focus-within:border-[#004ac6]">
+              <LockKeyhole className="h-[22px] w-[22px] text-[#6b7280]" />
+              <input
+                {...register("confirmPassword")}
+                autoComplete="new-password"
+                className="h-full w-full bg-transparent text-[17px] text-[#111827] outline-none placeholder:text-[#7b8191]"
+                placeholder="Re-enter your password"
+                type="password"
+              />
+            </div>
+            {errors.confirmPassword && (
+              <span className="mt-[6px] block text-[14px] text-red-600">{errors.confirmPassword.message}</span>
             )}
           </label>
 

@@ -1,19 +1,25 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { AxiosError } from "axios";
 import { ArrowLeft, CheckCircle2, Mail, Video } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { z } from "zod";
-import api from "@/services/api";
+import { rawApi } from "@/services/api";
 
 const forgotPasswordSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
 });
 
 type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>;
+
+const forgotPasswordErrorMessages: Record<string, string> = {
+  FORGOT_PASSWORD_RATE_LIMITED: "Too many password reset requests. Please try again later",
+  VALIDATION_ERROR: "Please enter your email address",
+};
 
 export default function ForgotPasswordPage() {
   const [sent, setSent] = useState(false);
@@ -28,11 +34,13 @@ export default function ForgotPasswordPage() {
 
   const onSubmit = async (values: ForgotPasswordValues) => {
     try {
-      await api.post("/auth/forgot-password", values);
+      await rawApi.post("/auth/forgot-password", values);
       setSent(true);
       toast.success("Password reset instructions have been sent");
-    } catch {
-      toast.error("Unable to create a reset request");
+    } catch (error) {
+      const axiosError = error as AxiosError<{ code?: string }>;
+      const errorCode = axiosError.response?.data?.code;
+      toast.error((errorCode && forgotPasswordErrorMessages[errorCode]) || "Unable to create a reset request");
     }
   };
 
@@ -57,13 +65,19 @@ export default function ForgotPasswordPage() {
           </p>
         </div>
 
-        <form className="mt-[42px] space-y-[20px]" onSubmit={handleSubmit(onSubmit)}>
+        <form
+          className="mt-[42px] space-y-[20px]"
+          method="post"
+          noValidate
+          onSubmit={handleSubmit(onSubmit)}
+        >
           <label className="block">
             <span className="text-[15px] font-semibold text-[#111827]">Work Email</span>
             <div className="mt-[8px] flex h-[52px] items-center gap-[12px] rounded-[8px] border border-[#bfc5d6] bg-[#fbfcff] px-[18px] focus-within:border-[#004ac6]">
               <Mail className="h-[22px] w-[22px] text-[#6b7280]" />
               <input
                 {...register("email")}
+                autoComplete="email"
                 className="h-full w-full bg-transparent text-[17px] text-[#111827] outline-none placeholder:text-[#7b8191]"
                 placeholder="name@company.com"
                 type="email"
