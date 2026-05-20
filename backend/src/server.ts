@@ -5,6 +5,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import index from "./routes"; // Import tất cả routes từ thư mục routes
+import { setupSocketHandlers } from "./sockets";
 
 dotenv.config(); // Nạp biến môi trường
 
@@ -27,15 +28,7 @@ const io = new Server(server, {
   },
 });
 
-// Lắng nghe sự kiện kết nối cơ bản (Socket handshake)
-io.on("connection", (socket) => {
-  console.log("🟢 Một người dùng vừa kết nối với ID:", socket.id);
-
-  // Lắng nghe khi người dùng ngắt kết nối
-  socket.on("disconnect", () => {
-    console.log("🔴 Người dùng đã ngắt kết nối:", socket.id);
-  });
-});
+setupSocketHandlers(io);
 
 // Kết nối MongoDB
 mongoose
