@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
-import { ChannelJoinRequestService } from '../services/ChannelJoinRequest.service';
+import { Request, Response, NextFunction } from "express";
+import { ChannelJoinRequestService } from "../services/ChannelJoinRequest.service";
 
 const parseParam = (param: string | string[]): string => {
   return Array.isArray(param) ? param[0] : param;
@@ -8,7 +8,7 @@ const parseParam = (param: string | string[]): string => {
 export const createRequest = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user.id;
@@ -18,7 +18,7 @@ export const createRequest = async (
     const result = await ChannelJoinRequestService.createRequest({
       channelId,
       userId,
-      message
+      message,
     });
 
     // If auto-joined, return 200. Otherwise 201 for new request.
@@ -32,7 +32,7 @@ export const createRequest = async (
 export const getPendingRequests = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user.id;
@@ -48,7 +48,7 @@ export const getPendingRequests = async (
       channelId,
       userId,
       page: pageStr ? Number(pageStr) : 1,
-      limit: limitStr ? Number(limitStr) : 20
+      limit: limitStr ? Number(limitStr) : 20,
     });
 
     return res.status(200).json(result);
@@ -60,7 +60,7 @@ export const getPendingRequests = async (
 export const approveRequest = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user.id;
@@ -68,7 +68,7 @@ export const approveRequest = async (
 
     const result = await ChannelJoinRequestService.approveRequest({
       requestId,
-      userId
+      userId,
     });
 
     return res.status(200).json(result);
@@ -80,7 +80,7 @@ export const approveRequest = async (
 export const rejectRequest = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user.id;
@@ -90,7 +90,7 @@ export const rejectRequest = async (
     const result = await ChannelJoinRequestService.rejectRequest({
       requestId,
       userId,
-      reason
+      reason,
     });
 
     return res.status(200).json(result);
@@ -105,11 +105,28 @@ export const rejectRequest = async (
 export const getMyPendingRequests = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user.id;
     const result = await ChannelJoinRequestService.getMyPendingRequests(userId);
+    return res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get latest requests sent by current user (grouped by channel on service layer).
+ */
+export const getMyRequests = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = (req as any).user.id;
+    const result = await ChannelJoinRequestService.getMyRequests(userId);
     return res.status(200).json(result);
   } catch (error) {
     next(error);

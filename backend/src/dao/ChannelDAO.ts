@@ -8,7 +8,7 @@ export interface ChannelListOptions {
   search?: string;
   page?: number;
   limit?: number;
-  sort?: 'activity' | 'alphabetical' | 'members';
+  sort?: 'activity' | 'alphabetical' | 'members' | 'name' | 'memberCount' | 'createdAt';
 }
 
 export class ChannelDAO extends BaseDAO<IChannel> {
@@ -43,12 +43,21 @@ export class ChannelDAO extends BaseDAO<IChannel> {
 
     const skip = (page - 1) * limit;
 
+    const normalizedSort =
+      sort === 'name'
+        ? 'alphabetical'
+        : sort === 'memberCount'
+          ? 'members'
+          : sort;
+
     const sortSpec: any =
-      sort === 'alphabetical'
+      normalizedSort === 'alphabetical'
         ? { name: 1 }
-        : sort === 'members'
+        : normalizedSort === 'members'
           ? { memberCount: -1, updatedAt: -1 }
-          : { lastMessageAt: -1, updatedAt: -1 };
+          : normalizedSort === 'createdAt'
+            ? { createdAt: -1, updatedAt: -1 }
+            : { lastMessageAt: -1, updatedAt: -1 };
 
     const [items, total] = await Promise.all([
       this.model

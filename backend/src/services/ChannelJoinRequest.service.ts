@@ -1,10 +1,10 @@
-import { Types } from 'mongoose';
-import { ChannelJoinRequestDAO } from '../dao/ChannelJoinRequestDAO';
-import { ChannelMemberService } from './ChannelMember.service';
-import { PermissionService } from './Permission.service';
-import Channel from '../models/Channel.model';
-import ChannelJoinRequest from '../models/ChannelJoinRequest.model';
-import { realtimeBus } from '../utils/realtime';
+import { Types } from "mongoose";
+import { ChannelJoinRequestDAO } from "../dao/ChannelJoinRequestDAO";
+import { ChannelMemberService } from "./ChannelMember.service";
+import { PermissionService } from "./Permission.service";
+import Channel from "../models/Channel.model";
+import ChannelJoinRequest from "../models/ChannelJoinRequest.model";
+import { realtimeBus } from "../utils/realtime";
 
 const requestDAO = new ChannelJoinRequestDAO();
 
@@ -22,40 +22,66 @@ export class ChannelJoinRequestService {
 
     // 1. Get channel and check type
     const channel = await Channel.findById(channelId)
-      .select('type workspaceId members isArchived')
+      .select("type workspaceId members isArchived")
       .lean();
     if (!channel) {
-      throw Object.assign(new Error('Channel not found'), { status: 404 });
+      throw Object.assign(new Error("Channel not found"), { status: 404 });
     }
 
     if (channel.isArchived) {
-      throw Object.assign(new Error('Cannot request to join archived channel'), {
-        status: 400
-      });
+      throw Object.assign(
+        new Error("Cannot request to join archived channel"),
+        {
+          status: 400,
+        },
+      );
     }
 
     // 2. Check user is not already member
     const isMember = channel.members.some((m: any) => m.toString() === userId);
     if (isMember) {
-      throw Object.assign(new Error('You are already a member of this channel'), {
-        status: 400
-      });
+      throw Object.assign(
+        new Error("You are already a member of this channel"),
+        {
+          status: 400,
+        },
+      );
+    }
+
+    // 2b. Ensure the user is a member of the workspace containing this channel
+    const Workspace = (await import("../models/Workspace.model")).default;
+    const workspace = await Workspace.findById(channel.workspaceId)
+      .select("ownerId members")
+      .lean();
+    if (!workspace) {
+      throw Object.assign(new Error("Workspace not found"), { status: 404 });
+    }
+
+    const isWorkspaceOwner = workspace.ownerId?.toString?.() === userId;
+    const isWorkspaceMember =
+      Array.isArray(workspace.members) &&
+      workspace.members.some((m: any) => m.toString() === userId);
+    if (!isWorkspaceOwner && !isWorkspaceMember) {
+      throw Object.assign(
+        new Error("Forbidden: you are not a member of the workspace"),
+        { status: 403 },
+      );
     }
 
     // 3. For public channels, auto-add user (no request needed)
-    if (channel.type === 'public') {
+    if (channel.type === "public") {
       return {
-        message: 'Auto-joined public channel',
-        autoJoined: true
+        message: "Auto-joined public channel",
+        autoJoined: true,
       };
     }
 
     // 4. For private channels, check if request already pending
     const existing = await requestDAO.findByChannelAndUser(channelId, userId);
-    if (existing && existing.status === 'pending') {
+    if (existing && existing.status === "pending") {
       throw Object.assign(
-        new Error('You already have a pending request for this channel'),
-        { status: 400 }
+        new Error("You already have a pending request for this channel"),
+        { status: 400 },
       );
     }
 
@@ -64,17 +90,17 @@ export class ChannelJoinRequestService {
       channelId: new Types.ObjectId(channelId),
       workspaceId: new Types.ObjectId(channel.workspaceId),
       senderId: new Types.ObjectId(userId),
-      type: 'request',
-      status: 'pending',
-      message: message?.trim() || ''
+      type: "request",
+      status: "pending",
+      message: message?.trim() || "",
     } as any);
 
     // 6. Emit realtime event
-    realtimeBus.emitEvent('join_request:new', {
+    realtimeBus.emitEvent("join_request:new", {
       requestId: request._id,
       channelId,
       userId,
-      message
+      message,
     });
 
     // 7. TODO: Send notification to channel owner/admins
@@ -83,7 +109,7 @@ export class ChannelJoinRequestService {
     return {
       success: true,
       data: request,
-      message: 'Request sent to channel admins'
+      message: "Request sent to channel admins",
     };
   }
 
@@ -92,60 +118,59 @@ export class ChannelJoinRequestService {
    * Admin/owner of workspace can approve.
    * Adds user to channel and updates request status.
    */
-  static async approveRequest(params: {
-    requestId: string;
-    userId: string;
-  }) {
+  static async approveRequest(params: { requestId: string; userId: string }) {
     const { requestId, userId } = params;
 
     // 1. Get request
     const request = await requestDAO.findById(requestId);
     if (!request) {
-      throw Object.assign(new Error('Request not found'), { status: 404 });
+      throw Object.assign(new Error("Request not found"), { status: 404 });
     }
 
-    if (request.status !== 'pending') {
+    if (request.status !== "pending") {
       throw Object.assign(
-        new Error(`Cannot approve non-pending request (status: ${request.status})`),
-        { status: 400 }
+        new Error(
+          `Cannot approve non-pending request (status: ${request.status})`,
+        ),
+        { status: 400 },
       );
     }
 
     // 2. Check approver is workspace owner/admin
     const canApprove = await PermissionService.canApproveRequest(
       userId,
-      request.channelId.toString()
+      request.channelId.toString(),
     );
     if (!canApprove) {
       throw Object.assign(
-        new Error('Forbidden: only workspace owner/admin can approve requests'),
-        { status: 403 }
+        new Error("Forbidden: only workspace owner/admin can approve requests"),
+        { status: 403 },
       );
     }
 
     // 3. Add user to channel
     const channel = await Channel.findById(request.channelId)
-      .select('workspaceId')
+      .select("workspaceId")
       .lean();
     if (!channel) {
-      throw Object.assign(new Error('Channel not found'), { status: 404 });
+      throw Object.assign(new Error("Channel not found"), { status: 404 });
     }
 
     await ChannelMemberService.addMember(
       request.channelId.toString(),
       request.senderId.toString(),
       channel.workspaceId.toString(),
-      'member'
+      "member",
     );
 
     // 4. Update request status
-    const updated = await requestDAO.updateStatus(requestId, 'accepted');
+    const updated = await requestDAO.updateStatus(requestId, "accepted");
 
     // 5. Emit realtime event
-    realtimeBus.emitEvent('join_request:approved', {
+    realtimeBus.emitEvent("join_request:approved", {
       requestId,
       channelId: request.channelId,
-      userId: request.senderId
+      userId: request.senderId,
     });
 
     // 6. TODO: Send notification to user
@@ -154,7 +179,7 @@ export class ChannelJoinRequestService {
     return {
       success: true,
       data: updated,
-      message: 'Request approved. User added to channel.'
+      message: "Request approved. User added to channel.",
     };
   }
 
@@ -172,37 +197,39 @@ export class ChannelJoinRequestService {
     // 1. Get request
     const request = await requestDAO.findById(requestId);
     if (!request) {
-      throw Object.assign(new Error('Request not found'), { status: 404 });
+      throw Object.assign(new Error("Request not found"), { status: 404 });
     }
 
-    if (request.status !== 'pending') {
+    if (request.status !== "pending") {
       throw Object.assign(
-        new Error(`Cannot reject non-pending request (status: ${request.status})`),
-        { status: 400 }
+        new Error(
+          `Cannot reject non-pending request (status: ${request.status})`,
+        ),
+        { status: 400 },
       );
     }
 
     // 2. Check approver is workspace owner/admin
     const canApprove = await PermissionService.canApproveRequest(
       userId,
-      request.channelId.toString()
+      request.channelId.toString(),
     );
     if (!canApprove) {
       throw Object.assign(
-        new Error('Forbidden: only workspace owner/admin can reject requests'),
-        { status: 403 }
+        new Error("Forbidden: only workspace owner/admin can reject requests"),
+        { status: 403 },
       );
     }
 
     // 3. Update request status
-    const updated = await requestDAO.updateStatus(requestId, 'rejected');
+    const updated = await requestDAO.updateStatus(requestId, "rejected");
 
     // 4. Emit realtime event
-    realtimeBus.emitEvent('join_request:rejected', {
+    realtimeBus.emitEvent("join_request:rejected", {
       requestId,
       channelId: request.channelId,
       userId: request.senderId,
-      reason
+      reason,
     });
 
     // 5. TODO: Send notification to user
@@ -211,7 +238,7 @@ export class ChannelJoinRequestService {
     return {
       success: true,
       data: updated,
-      message: 'Request rejected.'
+      message: "Request rejected.",
     };
   }
 
@@ -228,18 +255,21 @@ export class ChannelJoinRequestService {
     const { channelId, userId, page = 1, limit = 20 } = params;
 
     // Check permission
-    const canApprove = await PermissionService.canApproveRequest(userId, channelId);
+    const canApprove = await PermissionService.canApproveRequest(
+      userId,
+      channelId,
+    );
     if (!canApprove) {
       throw Object.assign(
-        new Error('Forbidden: only workspace owner/admin can view requests'),
-        { status: 403 }
+        new Error("Forbidden: only workspace owner/admin can view requests"),
+        { status: 403 },
       );
     }
 
     const result = await requestDAO.findByChannel(channelId, {
-      status: 'pending',
+      status: "pending",
       page,
-      limit
+      limit,
     });
 
     return result;
@@ -253,7 +283,19 @@ export class ChannelJoinRequestService {
     return {
       success: true,
       data: requests,
-      count: requests.length
+      count: requests.length,
+    };
+  }
+
+  /**
+   * Get latest request status per channel sent by current user.
+   */
+  static async getMyRequests(userId: string) {
+    const requests = await requestDAO.findLatestBySender(userId);
+    return {
+      success: true,
+      data: requests,
+      count: requests.length,
     };
   }
 }

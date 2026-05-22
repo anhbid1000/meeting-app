@@ -1,8 +1,11 @@
-import Link from "next/link";
-const isAuthenticated = false; // Placeholder for auth state
+'use client';
 
+import Link from "next/link";
+import { useAuthStore } from '@/store/authStore';
 
 export default function TopNav() {
+  const { isAuthenticated, user, logout: authLogout } = useAuthStore();
+
   const navLinks = [
     { label: "Tính năng", href: "/features" },
     { label: "Giải pháp", href: "/solutions" },
@@ -56,7 +59,7 @@ export default function TopNav() {
             </Link>
 
             <button
-              onClick={logout}
+              onClick={authLogout}
               className="font-label-md text-label-md text-secondary hover:text-error transition-colors hidden md:block"
             >
               Logout
@@ -65,20 +68,20 @@ export default function TopNav() {
         ) : (
           // Chưa đăng nhập
           <>
-        <Link href="/login"
-          className="font-label-md text-label-md text-secondary hover:text-primary transition-colors hidden md:block"
-        >
-          Đăng nhập
-        </Link>
+            <Link href="/login"
+              className="font-label-md text-label-md text-secondary hover:text-primary transition-colors hidden md:block"
+            >
+              Đăng nhập
+            </Link>
 
-        <Link href="/register"
-          className="bg-primary text-on-primary font-label-md text-label-md px-4 py-1 rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
-        >
-          Bắt đầu ngay
-        </Link>
-        </> )}
+            <Link href="/register"
+              className="bg-primary text-on-primary font-label-md text-label-md px-4 py-1 rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
+            >
+              Bắt đầu ngay
+            </Link>
+          </>
+        )}
       </div>
-      
     </nav>
   );
 }

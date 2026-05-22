@@ -1,3 +1,34 @@
+'use client';
+
+interface ChannelPageProps {
+  params: Promise<{
+    channelId: string;
+  }>;
+}
+
+export default function ChannelPage(_props: ChannelPageProps) {
+  return (
+    <main className="flex min-h-screen flex-col bg-[#f8f9fb] p-6 text-[#191c1e]">
+      <section className="rounded-xl border border-[#c3c6d7] bg-white p-6 shadow-sm">
+        <div className="mb-4 flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#dbe1ff] text-[#004ac6]">
+            <span className="material-symbols-outlined">forum</span>
+          </div>
+          <div>
+            <h1 className="text-xl font-semibold">Channel Chat</h1>
+            <p className="text-sm text-[#516070]">
+              Trang chi tiết channel đang được giữ placeholder để không chặn
+              build. UI chat sẽ được hoàn thiện ở phase riêng.
+            </p>
+          </div>
+        </div>
+        <p className="text-sm text-[#516070]">
+          Quay lại Channel Directory để test Phase 6.
+        </p>
+      </section>
+    </main>
+  );
+}
 // <!DOCTYPE html><html class="light" lang="en"><head>
 // <meta charset="utf-8">
 // <meta content="width=device-width, initial-scale=1.0" name="viewport">
@@ -162,6 +193,7 @@
 // <span class="font-label-md text-label-md"># design-ops</span>
 // </div>
 // </div>
+('use client');
 
 // <div class="flex items-center gap-md px-md py-sm text-secondary hover:bg-surface-variant rounded-lg cursor-pointer transition-all">
 // <span class="material-symbols-outlined">history</span>

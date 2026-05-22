@@ -1,11 +1,12 @@
-import { Router } from 'express';
-import * as channelJoinRequestController from '../controllers/ChannelJoinRequest.controller';
-import { auth } from '../middlewares/auth.middleware';
-import { validate } from '../middlewares/validate.middleware';
+import { Router } from "express";
+import * as channelJoinRequestController from "../controllers/ChannelJoinRequest.controller";
+import { auth } from "../middlewares/auth.middleware";
+import { validate } from "../middlewares/validate.middleware";
+import { requireWorkspaceMemberByChannel } from "../middlewares/permission.middleware";
 import {
   CreateChannelJoinRequestDTO,
-  RejectChannelJoinRequestDTO
-} from '../dtos/Channel.dto';
+  RejectChannelJoinRequestDTO,
+} from "../dtos/Channel.dto";
 
 const router = Router();
 
@@ -14,10 +15,11 @@ const router = Router();
  * User requests to join a private channel
  */
 router.post(
-  '/:channelId/requests',
+  "/:channelId/requests",
   auth,
+  requireWorkspaceMemberByChannel,
   validate(CreateChannelJoinRequestDTO),
-  channelJoinRequestController.createRequest
+  channelJoinRequestController.createRequest,
 );
 
 /**
@@ -25,9 +27,10 @@ router.post(
  * Get pending requests for a channel (owner/admin only)
  */
 router.get(
-  '/:channelId/requests',
+  "/:channelId/requests",
   auth,
-  channelJoinRequestController.getPendingRequests
+  requireWorkspaceMemberByChannel,
+  channelJoinRequestController.getPendingRequests,
 );
 
 /**
@@ -35,9 +38,9 @@ router.get(
  * Approve a join request (owner/admin only)
  */
 router.patch(
-  '/:channelId/requests/:requestId/approve',
+  "/:channelId/requests/:requestId/approve",
   auth,
-  channelJoinRequestController.approveRequest
+  channelJoinRequestController.approveRequest,
 );
 
 /**
@@ -45,16 +48,26 @@ router.patch(
  * Reject a join request (owner/admin only)
  */
 router.patch(
-  '/:channelId/requests/:requestId/reject',
+  "/:channelId/requests/:requestId/reject",
   auth,
   validate(RejectChannelJoinRequestDTO),
-  channelJoinRequestController.rejectRequest
+  channelJoinRequestController.rejectRequest,
 );
 
 /**
  * GET /api/v1/channels/my-pending-requests
  * Get all pending requests in user's inbox
  */
-router.get('/my-pending-requests', auth, channelJoinRequestController.getMyPendingRequests);
+router.get(
+  "/my-pending-requests",
+  auth,
+  channelJoinRequestController.getMyPendingRequests,
+);
+
+/**
+ * GET /api/v1/channels/my-requests
+ * Get latest sent request status per channel for current user.
+ */
+router.get("/my-requests", auth, channelJoinRequestController.getMyRequests);
 
 export default router;

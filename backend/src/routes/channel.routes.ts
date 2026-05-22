@@ -8,7 +8,7 @@ import {
 } from "../middlewares/permission.middleware";
 import { CreateChannelDTO, UpdateChannelDTO } from "../dtos/Channel.dto";
 
-const router = Router();
+const router = Router({ mergeParams: true });
 
 router.get(
   "/",

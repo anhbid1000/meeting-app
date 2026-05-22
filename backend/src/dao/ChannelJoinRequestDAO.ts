@@ -1,11 +1,11 @@
-import { BaseDAO } from './BaseDAO';
+import { BaseDAO } from "./BaseDAO";
 import ChannelJoinRequest, {
-  IChannelJoinRequest
-} from '../models/ChannelJoinRequest.model';
-import { Types } from 'mongoose';
+  IChannelJoinRequest,
+} from "../models/ChannelJoinRequest.model";
+import { Types } from "mongoose";
 
 export interface RequestListOptions {
-  status?: 'pending' | 'accepted' | 'rejected';
+  status?: "pending" | "accepted" | "rejected";
   page?: number;
   limit?: number;
 }
@@ -29,9 +29,9 @@ export class ChannelJoinRequestDAO extends BaseDAO<IChannelJoinRequest> {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
-        .populate('senderId', 'name email')
+        .populate("senderId", "name email")
         .lean(),
-      this.model.countDocuments(filter)
+      this.model.countDocuments(filter),
     ]);
 
     return {
@@ -41,8 +41,8 @@ export class ChannelJoinRequestDAO extends BaseDAO<IChannelJoinRequest> {
         page,
         limit,
         total,
-        totalPages: Math.ceil(total / limit)
-      }
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 
@@ -50,24 +50,51 @@ export class ChannelJoinRequestDAO extends BaseDAO<IChannelJoinRequest> {
     return this.model
       .find({
         recipientId: new Types.ObjectId(userId),
-        status: 'pending'
+        status: "pending",
       })
-      .populate('senderId', 'name email')
-      .populate('channelId', 'name slug')
+      .populate("senderId", "name email")
+      .populate("channelId", "name slug")
       .sort({ createdAt: -1 })
       .lean();
+  }
+
+  async findLatestBySender(userId: string) {
+    const requests = await this.model
+      .find({
+        senderId: new Types.ObjectId(userId),
+        type: "request",
+      })
+      .populate("channelId", "name slug")
+      .sort({ updatedAt: -1 })
+      .lean();
+
+    const latestByChannel = new Map<string, (typeof requests)[number]>();
+    for (const request of requests) {
+      const channelId =
+        typeof request.channelId === "object" &&
+        request.channelId !== null &&
+        "_id" in request.channelId
+          ? String((request.channelId as any)._id)
+          : String(request.channelId);
+
+      if (!latestByChannel.has(channelId)) {
+        latestByChannel.set(channelId, request);
+      }
+    }
+
+    return Array.from(latestByChannel.values());
   }
 
   async findByChannelAndUser(channelId: string, userId: string) {
     return this.model.findOne({
       channelId: new Types.ObjectId(channelId),
-      senderId: new Types.ObjectId(userId)
+      senderId: new Types.ObjectId(userId),
     });
   }
 
   async updateStatus(
     requestId: string,
-    status: 'accepted' | 'rejected' | 'revoked'
+    status: "accepted" | "rejected" | "revoked",
   ) {
     return this.updateById(requestId, { $set: { status } });
   }

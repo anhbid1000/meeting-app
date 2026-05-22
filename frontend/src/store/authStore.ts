@@ -17,6 +17,7 @@ interface AuthState {
   login: (user: User, token: string) => void;
   logout: () => void;
   setUser: (user: User) => void;
+  setDevUser: (payload: { id: string; email: string; name?: string }) => void; // DEV ONLY
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -36,6 +37,19 @@ export const useAuthStore = create<AuthState>()(
 
       setUser: (user) => {
         set({ user });
+      },
+
+      // DEV ONLY: bypass login for testing
+      setDevUser: (payload) => {
+        set({ 
+          user: { 
+            id: payload.id, 
+            email: payload.email, 
+            name: payload.name || payload.email 
+          }, 
+          token: 'dev-token', 
+          isAuthenticated: true 
+        });
       },
     }),
     {
