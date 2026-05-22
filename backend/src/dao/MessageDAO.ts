@@ -93,9 +93,7 @@ export class MessageDAO extends BaseDAO<IMessage> {
   }
 
   async findByIdWithDetails(messageId: string) {
-    const message = await this.model
-      .findById(messageId)
-      .lean();
+    const message = await this.model.findById(messageId).lean();
 
     if (!message) return null;
 

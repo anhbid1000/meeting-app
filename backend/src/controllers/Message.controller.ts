@@ -1,12 +1,16 @@
-import { Request, Response, NextFunction } from 'express';
-import { MessageService } from '../services/Message.service';
+import { Request, Response, NextFunction } from "express";
+import { MessageService } from "../services/Message.service";
 
 /**
  * Helper to safely parse request params/query values (string | string[]).
  */
 const safe = (p: any) => (Array.isArray(p) ? p[0] : p);
 
-export const sendMessage = async (req: Request, res: Response, next: NextFunction) => {
+export const sendMessage = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const userId = (req as any).user.id;
     const channelId = safe(req.params.channelId);
@@ -18,7 +22,7 @@ export const sendMessage = async (req: Request, res: Response, next: NextFunctio
       content,
       attachments,
       mentions,
-      type
+      type,
     });
 
     return res.status(201).json({ success: true, data: result });
@@ -27,18 +31,28 @@ export const sendMessage = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-export const getMessages = async (req: Request, res: Response, next: NextFunction) => {
+export const getMessages = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const userId = (req as any).user.id;
     const channelId = safe(req.params.channelId);
-    const rawLimit = req.query.limit ? Number(safe(req.query.limit)) : undefined;
+    const rawLimit = req.query.limit
+      ? Number(safe(req.query.limit))
+      : undefined;
 
-    const beforeRaw = req.query.before ? String(safe(req.query.before)) : undefined;
-    const afterRaw = req.query.after ? String(safe(req.query.after)) : undefined;
+    const beforeRaw = req.query.before
+      ? String(safe(req.query.before))
+      : undefined;
+    const afterRaw = req.query.after
+      ? String(safe(req.query.after))
+      : undefined;
 
     if (beforeRaw && afterRaw) {
       return res.status(422).json({
-        message: 'Use either before or after cursor, not both'
+        message: "Use either before or after cursor, not both",
       });
     }
 
@@ -46,25 +60,31 @@ export const getMessages = async (req: Request, res: Response, next: NextFunctio
     const after = afterRaw ? new Date(afterRaw) : undefined;
 
     if (beforeRaw && isNaN(before!.getTime())) {
-      return res.status(422).json({ message: 'Invalid before timestamp' });
+      return res.status(422).json({ message: "Invalid before timestamp" });
     }
 
     if (afterRaw && isNaN(after!.getTime())) {
-      return res.status(422).json({ message: 'Invalid after timestamp' });
+      return res.status(422).json({ message: "Invalid after timestamp" });
     }
 
-    if (rawLimit !== undefined && (!Number.isFinite(rawLimit) || rawLimit < 1)) {
-      return res.status(422).json({ message: 'limit must be a positive number' });
+    if (
+      rawLimit !== undefined &&
+      (!Number.isFinite(rawLimit) || rawLimit < 1)
+    ) {
+      return res
+        .status(422)
+        .json({ message: "limit must be a positive number" });
     }
 
-    const limit = rawLimit === undefined ? undefined : Math.min(Math.floor(rawLimit), 100);
+    const limit =
+      rawLimit === undefined ? undefined : Math.min(Math.floor(rawLimit), 100);
 
     const result = await MessageService.getMessages({
       channelId,
       userId,
       limit,
       before,
-      after
+      after,
     });
 
     return res.status(200).json({ success: true, ...result });
@@ -73,7 +93,11 @@ export const getMessages = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-export const editMessage = async (req: Request, res: Response, next: NextFunction) => {
+export const editMessage = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const userId = (req as any).user.id;
     const messageId = safe(req.params.messageId);
@@ -82,7 +106,7 @@ export const editMessage = async (req: Request, res: Response, next: NextFunctio
     const result = await MessageService.editMessage({
       messageId,
       userId,
-      content
+      content,
     });
 
     return res.status(200).json({ success: true, data: result });
@@ -91,14 +115,18 @@ export const editMessage = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-export const deleteMessage = async (req: Request, res: Response, next: NextFunction) => {
+export const deleteMessage = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const userId = (req as any).user.id;
     const messageId = safe(req.params.messageId);
 
     const result = await MessageService.deleteMessage({
       messageId,
-      userId
+      userId,
     });
 
     return res.status(200).json({ success: true, data: result });
@@ -107,7 +135,11 @@ export const deleteMessage = async (req: Request, res: Response, next: NextFunct
   }
 };
 
-export const pinMessage = async (req: Request, res: Response, next: NextFunction) => {
+export const pinMessage = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const userId = (req as any).user.id;
     const messageId = safe(req.params.messageId);
@@ -118,7 +150,11 @@ export const pinMessage = async (req: Request, res: Response, next: NextFunction
   }
 };
 
-export const unpinMessage = async (req: Request, res: Response, next: NextFunction) => {
+export const unpinMessage = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const userId = (req as any).user.id;
     const messageId = safe(req.params.messageId);

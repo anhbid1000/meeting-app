@@ -5,7 +5,7 @@ interface ChannelFilters {
   search?: string;
   type?: 'public' | 'private';
   category?: string;
-  status?: 'all' | 'joined' | 'unread' | 'favorites';
+  status?: 'all' | 'joined' | 'unread' | 'favorites' | 'archived';
   page: number;
   limit: number;
   sort?: 'activity' | 'name' | 'memberCount';
@@ -42,7 +42,7 @@ interface ChannelStore {
 const defaultFilters: ChannelFilters = {
   page: 1,
   limit: 20,
-  sort: 'activity'
+  sort: 'activity',
 };
 
 export const useChannelStore = create<ChannelStore>((set) => ({
@@ -63,7 +63,7 @@ export const useChannelStore = create<ChannelStore>((set) => ({
   addChannel: (channel) =>
     set((state) => ({
       channels: [channel, ...state.channels],
-      total: state.total + 1
+      total: state.total + 1,
     })),
 
   updateChannel: (channelId, updates) =>
@@ -74,7 +74,7 @@ export const useChannelStore = create<ChannelStore>((set) => ({
       currentChannel:
         state.currentChannel?._id === channelId
           ? { ...state.currentChannel, ...updates }
-          : state.currentChannel
+          : state.currentChannel,
     })),
 
   removeChannel: (channelId) =>
@@ -82,12 +82,12 @@ export const useChannelStore = create<ChannelStore>((set) => ({
       channels: state.channels.filter((ch) => ch._id !== channelId),
       currentChannel:
         state.currentChannel?._id === channelId ? null : state.currentChannel,
-      total: Math.max(0, state.total - 1)
+      total: Math.max(0, state.total - 1),
     })),
 
   setFilters: (filters) =>
     set((state) => ({
-      filters: { ...state.filters, ...filters }
+      filters: { ...state.filters, ...filters },
     })),
 
   resetFilters: () => set({ filters: defaultFilters }),
@@ -96,12 +96,14 @@ export const useChannelStore = create<ChannelStore>((set) => ({
 
   addPendingRequest: (request) =>
     set((state) => ({
-      pendingRequests: [request, ...state.pendingRequests]
+      pendingRequests: [request, ...state.pendingRequests],
     })),
 
   removePendingRequest: (requestId) =>
     set((state) => ({
-      pendingRequests: state.pendingRequests.filter((req) => req._id !== requestId)
+      pendingRequests: state.pendingRequests.filter(
+        (req) => req._id !== requestId
+      ),
     })),
 
   setSelectedRequestId: (requestId) => set({ selectedRequestId: requestId }),
@@ -110,5 +112,5 @@ export const useChannelStore = create<ChannelStore>((set) => ({
 
   setError: (error) => set({ error }),
 
-  setMeta: (meta) => set({ totalPages: meta.totalPages, total: meta.total })
+  setMeta: (meta) => set({ totalPages: meta.totalPages, total: meta.total }),
 }));
