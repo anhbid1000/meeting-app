@@ -4,9 +4,9 @@ import { PermissionService } from "./Permission.service";
 import { messageReactionDAO } from "../dao/MessageReactionDAO";
 import Channel from "../models/Channel.model";
 import Message from "../models/Message.model";
-import Notification from "../models/Notification.model";
 import ChannelMember from "../models/ChannelMember.model";
 import { realtimeBus } from "../utils/realtime";
+import { NotificationService } from "./Notification.service";
 
 const messageDAO = new MessageDAO();
 
@@ -86,18 +86,18 @@ export class MessageService {
       const notifications = uniqueMentions
         .filter((id) => id !== userId && allowedMentionIds.has(id))
         .map((mentionedUserId) => ({
-          userId: new Types.ObjectId(mentionedUserId),
-          workspaceId: channel.workspaceId,
+          userId: mentionedUserId,
+          workspaceId: String(channel.workspaceId),
           type: "mention" as const,
-          relatedUserId: new Types.ObjectId(userId),
-          relatedChannelId: new Types.ObjectId(channelId),
-          relatedMessageId: message._id,
+          relatedUserId: userId,
+          relatedChannelId: channelId,
+          relatedMessageId: String(message._id),
           title: "You were mentioned in a message",
           description: normalizedContent.slice(0, 180),
         }));
 
       if (notifications.length) {
-        await Notification.insertMany(notifications);
+        await NotificationService.createManyNotifications(notifications);
       }
     }
 

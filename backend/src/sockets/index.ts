@@ -15,6 +15,7 @@ import {
   handleMeetingSocket,
   registerMeetingBusHandlers,
 } from "./meetingSocket";
+import { registerNotificationBusHandlers } from "./notificationSocket";
 
 export const setupSocketHandlers = (io: Server) => {
   io.use(socketAuthMiddleware as any);
@@ -23,6 +24,7 @@ export const setupSocketHandlers = (io: Server) => {
   registerChannelBusHandlers(io);
   registerRequestBusHandlers(io);
   registerMeetingBusHandlers(io);
+  registerNotificationBusHandlers(io);
 
   io.on("connection", (socket) => {
     const userId = socket.data.user?.id;

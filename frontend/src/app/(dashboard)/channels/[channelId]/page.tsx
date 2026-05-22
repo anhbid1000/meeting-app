@@ -2,7 +2,7 @@
 
 import { use, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueries, useQuery } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/authStore';
 import { useMyWorkspaces } from '@/hooks/useWorkspaces';
@@ -81,8 +81,10 @@ type MeetingContent = {
 export default function ChannelPage({ params }: ChannelPageProps) {
   const { channelId: channelKey } = use(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const isLegacyObjectId = /^[a-f\d]{24}$/i.test(channelKey);
   const isValidChannelSegment = /^[a-z\d-]{1,120}$/i.test(channelKey);
+  const threadQueryId = searchParams.get('thread');
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [dismissedMeetingKey, setDismissedMeetingKey] = useState<string | null>(
@@ -416,6 +418,12 @@ export default function ChannelPage({ params }: ChannelPageProps) {
     if (!messages.length) return;
     scheduleMarkRead();
   }, [messages.length, scheduleMarkRead]);
+
+  useEffect(() => {
+    if (!threadQueryId) return;
+    if (!messages.some((message) => message._id === threadQueryId)) return;
+    setCurrentThreadId(threadQueryId);
+  }, [threadQueryId, messages, setCurrentThreadId]);
 
   const typingNames = useMemo(() => {
     const ids = Object.keys(typingUsers).filter((id) => id !== currentUser?.id);
@@ -929,7 +937,13 @@ export default function ChannelPage({ params }: ChannelPageProps) {
         isOpen={Boolean(currentThreadId)}
         message={threadMessage as ChatMessage | null}
         currentUserId={currentUser?.id}
-        onClose={() => setCurrentThreadId(null)}
+        onClose={() => {
+          setCurrentThreadId(null);
+          if (threadQueryId) {
+            const nextUrl = `/channels/${resolvedChannelId || channelKey}`;
+            router.replace(nextUrl);
+          }
+        }}
       />
 
       <InviteMembersDialog

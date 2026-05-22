@@ -5,8 +5,39 @@ import { PermissionService } from "./Permission.service";
 import Channel from "../models/Channel.model";
 import ChannelJoinRequest from "../models/ChannelJoinRequest.model";
 import { realtimeBus } from "../utils/realtime";
+import { NotificationService } from "./Notification.service";
 
 const requestDAO = new ChannelJoinRequestDAO();
+
+const getWorkspaceNotificationRecipients = async (workspaceId: string) => {
+  const Workspace = (await import("../models/Workspace.model")).default;
+  const workspace = await Workspace.findById(workspaceId)
+    .select("ownerId members")
+    .lean();
+
+  if (!workspace) return [] as string[];
+
+  const userIds = new Set<string>();
+  if (workspace.ownerId) {
+    userIds.add(String(workspace.ownerId));
+  }
+
+  const members = Array.isArray(workspace.members) ? workspace.members : [];
+  if (members.length > 0) {
+    const users = await Workspace.db
+      .collection("users")
+      .find({ _id: { $in: members } }, { projection: { role: 1 } })
+      .toArray();
+
+    users.forEach((user: any) => {
+      if (user?.role === "owner" || user?.role === "admin") {
+        userIds.add(String(user._id));
+      }
+    });
+  }
+
+  return Array.from(userIds);
+};
 
 export class ChannelJoinRequestService {
   /**
@@ -103,8 +134,30 @@ export class ChannelJoinRequestService {
       message,
     });
 
-    // 7. TODO: Send notification to channel owner/admins
-    // (Will implement in Phase 5 when Notification system is wired)
+    const recipients = await getWorkspaceNotificationRecipients(
+      String(channel.workspaceId),
+    );
+    const senderUser = await Channel.db
+      .collection("users")
+      .findOne(
+        { _id: new Types.ObjectId(userId) },
+        { projection: { name: 1, email: 1 } },
+      );
+
+    await NotificationService.createManyNotifications(
+      recipients
+        .filter((recipientId) => recipientId !== userId)
+        .map((recipientId) => ({
+          userId: recipientId,
+          workspaceId: String(channel.workspaceId),
+          type: "join_request",
+          title: "New channel join request",
+          description: `${senderUser?.name || senderUser?.email || "A member"} requested to join a private channel`,
+          relatedUserId: userId,
+          relatedChannelId: channelId,
+          relatedRequestId: String(request._id),
+        })),
+    );
 
     return {
       success: true,
@@ -173,8 +226,16 @@ export class ChannelJoinRequestService {
       userId: request.senderId,
     });
 
-    // 6. TODO: Send notification to user
-    // (Will implement in Phase 5 when Notification system is wired)
+    await NotificationService.createNotification({
+      userId: String(request.senderId),
+      workspaceId: String(channel.workspaceId),
+      type: "request_approved",
+      title: "Your join request was approved",
+      description: "You can now enter the channel.",
+      relatedUserId: userId,
+      relatedChannelId: String(request.channelId),
+      relatedRequestId: requestId,
+    });
 
     return {
       success: true,
@@ -232,8 +293,16 @@ export class ChannelJoinRequestService {
       reason,
     });
 
-    // 5. TODO: Send notification to user
-    // (Will implement in Phase 5 when Notification system is wired)
+    await NotificationService.createNotification({
+      userId: String(request.senderId),
+      workspaceId: String(request.workspaceId),
+      type: "join_request",
+      title: "Your join request was rejected",
+      description: reason?.trim() || "Your request was rejected by an admin.",
+      relatedUserId: userId,
+      relatedChannelId: String(request.channelId),
+      relatedRequestId: requestId,
+    });
 
     return {
       success: true,

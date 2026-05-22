@@ -4,6 +4,7 @@ import ThreadReply from "../models/ThreadReply.model";
 import { ThreadReplyDAO } from "../dao/ThreadReplyDAO";
 import { PermissionService } from "./Permission.service";
 import { realtimeBus } from "../utils/realtime";
+import { NotificationService } from "./Notification.service";
 
 const threadReplyDAO = new ThreadReplyDAO();
 
@@ -55,7 +56,7 @@ export class ThreadReplyService {
     const { messageId, userId, content, attachments = [] } = params;
 
     const parentMessage = await Message.findById(messageId)
-      .select("workspaceId channelId")
+      .select("workspaceId channelId userId")
       .lean();
     if (!parentMessage) {
       throw Object.assign(new Error("Parent message not found"), {
@@ -103,6 +104,19 @@ export class ThreadReplyService {
     const detailed = await threadReplyDAO.findByIdWithAuthor(
       created._id.toString(),
     );
+
+    if (String(parentMessage.userId) !== String(userId)) {
+      await NotificationService.createNotification({
+        userId: String(parentMessage.userId),
+        workspaceId: String(parentMessage.workspaceId),
+        type: "thread_reply",
+        title: "New thread reply",
+        description: normalized.slice(0, 180),
+        relatedUserId: userId,
+        relatedChannelId: String(parentMessage.channelId),
+        relatedMessageId: messageId,
+      });
+    }
 
     realtimeBus.emitEvent("thread:reply:new", {
       reply: detailed || created.toObject(),

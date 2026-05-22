@@ -1,13 +1,130 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { usePathname } from 'next/navigation';
+import { Bell, CheckCheck, Trash2 } from 'lucide-react';
+import { useSocketStore } from '@/store/socketStore';
+import notificationApi from '@/services/notificationApi';
+import type { NotificationItem } from '@/types/notification';
+
+const getRelativeLabel = (isoDate?: string) => {
+  if (!isoDate) return '';
+  const time = new Date(isoDate).getTime();
+  if (Number.isNaN(time)) return '';
+
+  const diffMinutes = Math.floor((Date.now() - time) / 60000);
+  if (diffMinutes < 1) return 'Just now';
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  return `${Math.floor(diffHours / 24)}d ago`;
+};
 
 export default function Sidebar() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const pathname = usePathname();
+  const socket = useSocketStore((state) => state.socket);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const isItemActive = (href: string) => {
     return pathname === href || pathname.startsWith(`${href}/`);
+  };
+
+  const { data: notificationCountData, refetch: refetchUnreadCount } = useQuery(
+    {
+      queryKey: ['notifications', 'unread-count'],
+      queryFn: () => notificationApi.getUnreadCount(),
+      staleTime: 0,
+    }
+  );
+
+  const { data: notificationListData, refetch: refetchNotifications } =
+    useQuery({
+      queryKey: ['notifications', 'list'],
+      queryFn: () => notificationApi.getNotifications({ page: 1, limit: 8 }),
+      staleTime: 0,
+      enabled: isNotificationOpen,
+    });
+
+  const unreadCount = notificationCountData?.data?.unreadCount ?? 0;
+  const notifications: NotificationItem[] = notificationListData?.data ?? [];
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const refresh = () => {
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      void refetchUnreadCount();
+      if (isNotificationOpen) {
+        void refetchNotifications();
+      }
+    };
+
+    socket.on('notification:new', refresh);
+    socket.on('notification:update', refresh);
+    socket.on('notification:delete', refresh);
+
+    return () => {
+      socket.off('notification:new', refresh);
+      socket.off('notification:update', refresh);
+      socket.off('notification:delete', refresh);
+    };
+  }, [
+    socket,
+    queryClient,
+    refetchUnreadCount,
+    refetchNotifications,
+    isNotificationOpen,
+  ]);
+
+  useEffect(() => {
+    const onClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        event.target instanceof Node &&
+        !dropdownRef.current.contains(event.target)
+      ) {
+        setIsNotificationOpen(false);
+      }
+    };
+
+    window.addEventListener('click', onClickOutside);
+    return () => window.removeEventListener('click', onClickOutside);
+  }, []);
+
+  const handleOpenNotification = async (item: NotificationItem) => {
+    if (!item.isRead) {
+      await notificationApi.markAsRead(item._id);
+      void refetchUnreadCount();
+      void refetchNotifications();
+    }
+
+    if (item.type === 'thread_reply' && item.relatedChannelId) {
+      const threadParam = item.relatedMessageId
+        ? `?thread=${encodeURIComponent(item.relatedMessageId)}`
+        : '';
+      router.push(`/channels/${item.relatedChannelId}${threadParam}`);
+    } else if (item.relatedChannelId) {
+      router.push(`/channels/${item.relatedChannelId}`);
+    }
+    setIsNotificationOpen(false);
+  };
+
+  const handleMarkAllRead = async () => {
+    await notificationApi.markAllAsRead();
+    void refetchUnreadCount();
+    void refetchNotifications();
+  };
+
+  const handleDelete = async (id: string) => {
+    await notificationApi.deleteNotification(id);
+    void refetchUnreadCount();
+    void refetchNotifications();
   };
 
   const navItems = [
@@ -52,6 +169,94 @@ export default function Sidebar() {
         New Collaboration
       </button>
 
+      <div className="relative mb-md" ref={dropdownRef}>
+        <button
+          type="button"
+          onClick={() => setIsNotificationOpen((prev) => !prev)}
+          className="w-full cursor-pointer flex items-center justify-between rounded-lg border border-outline-variant bg-surface-container px-md py-sm text-left transition-colors hover:bg-surface-container-high"
+        >
+          <span className="flex items-center gap-sm text-on-surface-variant">
+            <Bell size={18} />
+            Notifications
+          </span>
+          {unreadCount > 0 ? (
+            <span className="min-w-6 rounded-full bg-error px-2 py-0.5 text-center text-[11px] font-semibold text-white">
+              {unreadCount}
+            </span>
+          ) : null}
+        </button>
+
+        {isNotificationOpen ? (
+          <div className="absolute left-full top-0 z-50 ml-3 w-96 rounded-2xl border border-outline-variant bg-surface-container-high shadow-xl">
+            <div className="flex items-center justify-between border-b border-outline-variant px-4 py-3">
+              <div>
+                <p className="text-sm font-semibold text-on-surface">
+                  Notifications
+                </p>
+                <p className="text-xs text-on-surface-variant">
+                  {unreadCount > 0 ? `${unreadCount} unread` : 'All caught up'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void handleMarkAllRead()}
+                className="inline-flex cursor-pointer items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10"
+              >
+                <CheckCheck size={14} />
+                Mark all read
+              </button>
+            </div>
+
+            <div className="max-h-[28rem] overflow-y-auto p-2">
+              {notifications.length === 0 ? (
+                <div className="px-3 py-6 text-sm text-on-surface-variant">
+                  No notifications yet.
+                </div>
+              ) : (
+                notifications.map((item) => (
+                  <div
+                    key={item._id}
+                    className={`group flex gap-3 rounded-xl p-3 transition-colors ${item.isRead ? 'bg-transparent hover:bg-surface-container' : 'bg-primary/5 hover:bg-primary/10'}`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => void handleOpenNotification(item)}
+                      className="flex-1 text-left"
+                    >
+                      <div className="flex items-start cursor-pointer justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-semibold text-on-surface">
+                            {item.title}
+                          </p>
+                          <p className="mt-1 text-xs text-on-surface-variant line-clamp-2">
+                            {item.description || 'Open to view details.'}
+                          </p>
+                        </div>
+                        {!item.isRead ? (
+                          <span className="mt-1 h-2.5 w-2.5 rounded-full bg-primary" />
+                        ) : null}
+                      </div>
+                      <p className="mt-2 text-[11px] uppercase tracking-wide text-on-surface-variant">
+                        {getRelativeLabel(item.createdAt)}
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => void handleDelete(item._id)}
+                      className="mt-1 rounded-lg cursor-pointer p-1.5 text-on-surface-variant opacity-0 transition group-hover:opacity-100 hover:bg-error/10 hover:text-error"
+                      aria-label="Delete notification"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        ) : null}
+      </div>
+
       {/* Main Navigation */}
       <div className="flex-1 overflow-y-auto flex flex-col gap-xs">
         {navItems.map((item) => {
@@ -66,15 +271,17 @@ export default function Sidebar() {
                   : 'text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high dark:hover:bg-surface-container'
               }`}
             >
-              <span
-                className="material-symbols-outlined"
-                style={
-                  isActive ? { fontVariationSettings: "'FILL' 1" } : undefined
-                }
-              >
-                {item.icon}
+              <span className="flex flex-1 items-center gap-md">
+                <span
+                  className="material-symbols-outlined"
+                  style={
+                    isActive ? { fontVariationSettings: "'FILL' 1" } : undefined
+                  }
+                >
+                  {item.icon}
+                </span>
+                {item.label}
               </span>
-              {item.label}
             </Link>
           );
         })}
