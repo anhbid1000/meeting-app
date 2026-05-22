@@ -4,6 +4,7 @@ import workspaceInviteRoutes from "./workspaceInvite.routes";
 import channelMemberRoutes from "./channelMember.routes";
 import channelJoinRequestRoutes from "./channelJoinRequest.routes";
 import messageRoutes from "./message.routes";
+import threadReplyRoutes from "./threadReply.routes";
 
 const router = Router();
 
@@ -18,6 +19,9 @@ router.use("/channels", channelMemberRoutes);
 
 // Messages endpoints
 router.use("/", messageRoutes);
+
+// Thread replies endpoints
+router.use("/", threadReplyRoutes);
 
 // Invite endpoints
 router.use("/", workspaceInviteRoutes);

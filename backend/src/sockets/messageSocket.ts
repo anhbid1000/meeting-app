@@ -52,6 +52,36 @@ export const registerMessageBusHandlers = (io: Server) => {
       io.to(`channel:${channelId}`).emit("message:unpin", message);
     }
   });
+
+  realtimeBus.on("thread:reply:new", (payload: any) => {
+    const channelId =
+      payload?.channelId?._id?.toString?.() ||
+      payload?.channelId?.toString?.() ||
+      payload?.channelId;
+    if (channelId) {
+      io.to(`channel:${channelId}`).emit("thread:reply:new", payload);
+    }
+  });
+
+  realtimeBus.on("thread:reply:update", (payload: any) => {
+    const channelId =
+      payload?.channelId?._id?.toString?.() ||
+      payload?.channelId?.toString?.() ||
+      payload?.channelId;
+    if (channelId) {
+      io.to(`channel:${channelId}`).emit("thread:reply:update", payload);
+    }
+  });
+
+  realtimeBus.on("thread:reply:delete", (payload: any) => {
+    const channelId =
+      payload?.channelId?._id?.toString?.() ||
+      payload?.channelId?.toString?.() ||
+      payload?.channelId;
+    if (channelId) {
+      io.to(`channel:${channelId}`).emit("thread:reply:delete", payload);
+    }
+  });
 };
 
 export const handleMessageSocket = (_io: Server, socket: Socket) => {

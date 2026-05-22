@@ -13,6 +13,7 @@ interface MessageItemProps {
   }) => void;
   onDelete: (messageId: string) => void;
   onPinToggle: (messageId: string, isPinned: boolean) => void;
+  onOpenThread: (messageId: string) => void;
 }
 
 export default function MessageItem({
@@ -23,8 +24,12 @@ export default function MessageItem({
   onStartEdit,
   onDelete,
   onPinToggle,
+  onOpenThread,
 }: MessageItemProps) {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+
+  const stripLeadingReplyMarkers = (value: string) =>
+    value.replace(/^(?:\[reply:[^\]]+\]\n?)+/, '');
 
   const sanitizeRoleText = (value: string) =>
     value
@@ -48,7 +53,7 @@ export default function MessageItem({
 
     return {
       replyToId: match[1],
-      body: message.content.slice(match[0].length),
+      body: stripLeadingReplyMarkers(message.content),
     };
   }, [message.content, message.isDeleted]);
 
@@ -70,7 +75,7 @@ export default function MessageItem({
       : 'Message');
   const repliedPreviewRaw = repliedMessage?.content || '';
   const repliedPreview = repliedPreviewRaw
-    ? repliedPreviewRaw.replace(/^\[reply:[^\]]+\]\n?/, '')
+    ? stripLeadingReplyMarkers(repliedPreviewRaw)
     : 'Original message';
   const repliedPreviewShort =
     repliedPreview.length > 60
@@ -163,6 +168,16 @@ export default function MessageItem({
             >
               <span className="material-symbols-outlined text-[16px]">
                 reply
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onOpenThread(message._id)}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#d8dce6] bg-white text-[#5f697d] shadow-sm hover:bg-[#f3f5fb] cursor-pointer"
+              title="Open thread"
+            >
+              <span className="material-symbols-outlined text-[16px]">
+                forum
               </span>
             </button>
             <div className="relative">
@@ -330,7 +345,13 @@ export default function MessageItem({
           >
             {message.isEdited ? <span>edited</span> : null}
             {message.threadCount > 0 ? (
-              <span>{message.threadCount} replies</span>
+              <button
+                type="button"
+                onClick={() => onOpenThread(message._id)}
+                className="cursor-pointer hover:underline"
+              >
+                {message.threadCount} replies
+              </button>
             ) : null}
             {message.isPinned ? (
               <span className={isOwn ? 'text-white' : 'text-[#004ac6]'}>

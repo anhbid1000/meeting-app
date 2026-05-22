@@ -98,6 +98,30 @@ export const useSocket = (token: string | null) => {
       }
     };
 
+    const onThreadReplyNew = (payload: {
+      parentMessageId?: string;
+      threadCount?: number;
+    }) => {
+      if (!payload?.parentMessageId) return;
+      if (typeof payload.threadCount === 'number') {
+        updateMessage(payload.parentMessageId, {
+          threadCount: payload.threadCount,
+        });
+      }
+    };
+
+    const onThreadReplyDelete = (payload: {
+      parentMessageId?: string;
+      threadCount?: number;
+    }) => {
+      if (!payload?.parentMessageId) return;
+      if (typeof payload.threadCount === 'number') {
+        updateMessage(payload.parentMessageId, {
+          threadCount: payload.threadCount,
+        });
+      }
+    };
+
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
     socket.on('message:new', onMessageNew);
@@ -109,6 +133,8 @@ export const useSocket = (token: string | null) => {
     socket.on('presence:update', onPresenceUpdate);
     socket.on('channel:member:added', onMemberAdded);
     socket.on('channel:member:removed', onMemberRemoved);
+    socket.on('thread:reply:new', onThreadReplyNew);
+    socket.on('thread:reply:delete', onThreadReplyDelete);
     socket.on('socket:error', onSocketError);
 
     window.addEventListener('mousemove', onActivity);
@@ -140,6 +166,8 @@ export const useSocket = (token: string | null) => {
       socket.off('presence:update', onPresenceUpdate);
       socket.off('channel:member:added', onMemberAdded);
       socket.off('channel:member:removed', onMemberRemoved);
+      socket.off('thread:reply:new', onThreadReplyNew);
+      socket.off('thread:reply:delete', onThreadReplyDelete);
       socket.off('socket:error', onSocketError);
       window.removeEventListener('mousemove', onActivity);
       window.removeEventListener('keydown', onActivity);

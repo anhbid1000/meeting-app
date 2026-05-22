@@ -14,6 +14,7 @@ interface MessageGroupProps {
   }) => void;
   onDelete: (messageId: string) => void;
   onPinToggle: (messageId: string, isPinned: boolean) => void;
+  onOpenThread: (messageId: string) => void;
 }
 
 const getDisplayName = (message: ChatMessage) => {
@@ -34,6 +35,7 @@ export default function MessageGroup({
   onStartEdit,
   onDelete,
   onPinToggle,
+  onOpenThread,
 }: MessageGroupProps) {
   const first = messages[0];
   if (!first) return null;
@@ -51,6 +53,7 @@ export default function MessageGroup({
             onStartEdit={onStartEdit}
             onDelete={onDelete}
             onPinToggle={onPinToggle}
+            onOpenThread={onOpenThread}
           />
         ))}
       </div>
@@ -120,6 +123,7 @@ export default function MessageGroup({
             onStartEdit={onStartEdit}
             onDelete={onDelete}
             onPinToggle={onPinToggle}
+            onOpenThread={onOpenThread}
           />
         ))}
       </div>

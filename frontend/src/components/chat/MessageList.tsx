@@ -17,6 +17,7 @@ interface MessageListProps {
   }) => void;
   onDelete: (messageId: string) => void;
   onPinToggle: (messageId: string, isPinned: boolean) => void;
+  onOpenThread: (messageId: string) => void;
 }
 
 const GROUP_WINDOW_MS = 5 * 60 * 1000;
@@ -32,6 +33,7 @@ export default function MessageList({
   onStartEdit,
   onDelete,
   onPinToggle,
+  onOpenThread,
 }: MessageListProps) {
   const listRef = useRef<HTMLDivElement | null>(null);
   const previousCountRef = useRef(0);
@@ -156,6 +158,7 @@ export default function MessageList({
             onStartEdit={onStartEdit}
             onDelete={onDelete}
             onPinToggle={onPinToggle}
+            onOpenThread={onOpenThread}
           />
         ))}
       </div>

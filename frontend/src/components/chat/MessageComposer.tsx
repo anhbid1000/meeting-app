@@ -63,6 +63,9 @@ const toMentionKey = (value: string) =>
     .replace(/\s+/g, '-')
     .replace(/[^a-z0-9._-]/g, '');
 
+const stripLeadingReplyMarkers = (value: string) =>
+  value.replace(/^(?:\[reply:[^\]]+\]\n?)+/, '');
+
 export default function MessageComposer({
   disabled,
   mentionUsers = [],
@@ -236,7 +239,7 @@ export default function MessageComposer({
                 Replying to {replyTo.authorName}
               </p>
               <p className="truncate text-xs text-[#5b6475]">
-                {replyTo.content}
+                {stripLeadingReplyMarkers(replyTo.content)}
               </p>
             </div>
             <button

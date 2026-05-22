@@ -34,6 +34,8 @@ interface ChannelPageProps {
 }
 
 const shortId = (value: string) => value.slice(0, 8);
+const stripLeadingReplyMarkers = (value: string) =>
+  value.replace(/^(?:\[reply:[^\]]+\]\n?)+/, '');
 
 type MemberProfile = {
   id: string;
@@ -744,7 +746,7 @@ export default function ChannelPage({ params }: ChannelPageProps) {
               setReplyTarget({
                 id: target._id,
                 authorName,
-                content: target.content,
+                content: stripLeadingReplyMarkers(target.content),
               });
             }}
             onStartEdit={(payload: {
@@ -761,6 +763,11 @@ export default function ChannelPage({ params }: ChannelPageProps) {
             }}
             onDelete={handleDeleteMessage}
             onPinToggle={handlePinToggle}
+            onOpenThread={(messageId: string) => {
+              setReplyTarget(null);
+              setEditTarget(null);
+              setCurrentThreadId(messageId);
+            }}
           />
 
           {isLoadingMessages ? (
@@ -816,6 +823,7 @@ export default function ChannelPage({ params }: ChannelPageProps) {
       <ThreadPanel
         isOpen={Boolean(currentThreadId)}
         message={threadMessage as ChatMessage | null}
+        currentUserId={currentUser?.id}
         onClose={() => setCurrentThreadId(null)}
       />
 

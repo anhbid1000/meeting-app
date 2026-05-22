@@ -56,3 +56,31 @@ export interface MessageListResponse {
   data: ChatMessage[];
   meta: MessagePageMeta;
 }
+
+export interface ThreadReply {
+  _id: string;
+  parentMessageId: string;
+  workspaceId: string;
+  channelId: string;
+  userId: string;
+  content: string;
+  attachments?: MessageAttachment[];
+  isEdited: boolean;
+  editedAt?: string;
+  isDeleted: boolean;
+  deletedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  author?: MessageAuthor;
+}
+
+export interface ThreadReplyListResponse {
+  success: boolean;
+  data: ThreadReply[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
