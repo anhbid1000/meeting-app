@@ -12,12 +12,7 @@ let app: Application;
 export const createTestApp = async () => {
   // In-memory MongoDB for isolated test runs
   const mongoUri = process.env.MONGO_URI_TEST_REPLACE || 'mongodb://localhost:27017/meeting-app-test';
-  await mongoose.connect(mongoUri, {
-    // @ts-ignore ignore deprecation warnings
-    useNewUrlParser: true,
-    // @ts-ignore ignore deprecation warnings
-    useUnifiedTopology: true,
-  });
+  await mongoose.connect(mongoUri);
 
   app = express();
   app.use(cors());

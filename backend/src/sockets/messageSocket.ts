@@ -45,12 +45,22 @@ export const handleMessageSocket = (_io: Server, socket: Socket) => {
       const userId = socket.data.user?.id;
       if (!userId) throw new Error('Unauthenticated');
 
+      const channelId = payload?.channelId;
+      const content = typeof payload?.content === 'string' ? payload.content : '';
+      const attachments = Array.isArray(payload?.attachments) ? payload.attachments : [];
+      if (!channelId) {
+        throw new Error('channelId is required');
+      }
+      if (!content.trim() && attachments.length === 0) {
+        throw new Error('Message content cannot be empty');
+      }
+
       const message = await MessageService.sendMessage({
-        channelId: payload.channelId,
+        channelId,
         userId,
-        content: payload.content,
-        attachments: payload.attachments || [],
-        mentions: payload.mentions || [],
+        content,
+        attachments,
+        mentions: payload?.mentions || [],
         type: payload.type || 'text'
       });
 
@@ -66,10 +76,19 @@ export const handleMessageSocket = (_io: Server, socket: Socket) => {
       const userId = socket.data.user?.id;
       if (!userId) throw new Error('Unauthenticated');
 
+      const messageId = payload?.messageId;
+      const content = typeof payload?.content === 'string' ? payload.content : '';
+      if (!messageId) {
+        throw new Error('messageId is required');
+      }
+      if (!content.trim()) {
+        throw new Error('content is required');
+      }
+
       const message = await MessageService.editMessage({
-        messageId: payload.messageId,
+        messageId,
         userId,
-        content: payload.content
+        content
       });
 
       ack?.({ success: true, data: message });
@@ -84,8 +103,13 @@ export const handleMessageSocket = (_io: Server, socket: Socket) => {
       const userId = socket.data.user?.id;
       if (!userId) throw new Error('Unauthenticated');
 
+      const messageId = payload?.messageId;
+      if (!messageId) {
+        throw new Error('messageId is required');
+      }
+
       const message = await MessageService.deleteMessage({
-        messageId: payload.messageId,
+        messageId,
         userId
       });
 

@@ -76,7 +76,6 @@ export class MessageDAO extends BaseDAO<IMessage> {
       .find(filter)
       .sort({ createdAt: -1 })
       .limit(limit)
-      .populate("userId", "name email")
       .lean();
 
     const data = await this.attachReactions(rows);
@@ -96,7 +95,6 @@ export class MessageDAO extends BaseDAO<IMessage> {
   async findByIdWithDetails(messageId: string) {
     const message = await this.model
       .findById(messageId)
-      .populate("userId", "name email")
       .lean();
 
     if (!message) return null;

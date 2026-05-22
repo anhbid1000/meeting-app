@@ -9,12 +9,7 @@ let app: any;
 export const initTestDB = async () => {
   // Use a short-lived in-memory MongoDB for testing
   const mongoUri = process.env.MONGO_URI_TEST_REPLACE || 'mongodb://localhost:27017/meeting-app-test';
-  await mongoose.connect(mongoUri, {
-    // @ts-ignore ignore deprecation warnings for test setup
-    useNewUrlParser: true,
-    // @ts-ignore ignore deprecation warnings for test setup
-    useUnifiedTopology: true,
-  });
+  await mongoose.connect(mongoUri);
 };
 
 /**
