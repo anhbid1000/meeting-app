@@ -67,7 +67,8 @@ export const fileApi = {
       },
     });
 
-    const secureUrl = uploadResponse.data?.secure_url || uploadResponse.data?.url;
+    const secureUrl =
+      uploadResponse.data?.secure_url || uploadResponse.data?.url;
     if (!secureUrl) {
       throw new Error('Upload failed: missing file URL from Cloudinary');
     }
@@ -89,7 +90,9 @@ export const fileApi = {
     if (query?.limit) params.append('limit', String(query.limit));
 
     const suffix = params.toString() ? `?${params.toString()}` : '';
-    const response = await api.get(`/api/v1/channels/${channelId}/files${suffix}`);
+    const response = await api.get(
+      `/api/v1/channels/${channelId}/files${suffix}`
+    );
     return response.data;
   },
 
@@ -102,7 +105,9 @@ export const fileApi = {
     if (query?.limit) params.append('limit', String(query.limit));
 
     const suffix = params.toString() ? `?${params.toString()}` : '';
-    const response = await api.get(`/api/v1/channels/${channelId}/media${suffix}`);
+    const response = await api.get(
+      `/api/v1/channels/${channelId}/media${suffix}`
+    );
     return response.data;
   },
 
@@ -115,7 +120,9 @@ export const fileApi = {
     if (query?.limit) params.append('limit', String(query.limit));
 
     const suffix = params.toString() ? `?${params.toString()}` : '';
-    const response = await api.get(`/api/v1/channels/${channelId}/links${suffix}`);
+    const response = await api.get(
+      `/api/v1/channels/${channelId}/links${suffix}`
+    );
     return response.data;
   },
 };

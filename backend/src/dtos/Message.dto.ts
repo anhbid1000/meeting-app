@@ -7,26 +7,25 @@ const MessageAttachmentDTO = z.object({
   size: z.number(),
 });
 
-export const CreateMessageDTO = z.object({
-  content: z
-    .string()
-    .max(2000, "Message is too long")
-    .default(""),
-  attachments: z.array(MessageAttachmentDTO).default([]),
-  mentions: z.array(z.string()).optional(),
-  type: z.enum(["text", "file", "system", "meeting"]).default("text"),
-}).superRefine((data, ctx) => {
-  const hasContent = (data.content || "").trim().length > 0;
-  const hasAttachments = (data.attachments || []).length > 0;
+export const CreateMessageDTO = z
+  .object({
+    content: z.string().max(2000, "Message is too long").default(""),
+    attachments: z.array(MessageAttachmentDTO).default([]),
+    mentions: z.array(z.string()).optional(),
+    type: z.enum(["text", "file", "system", "meeting"]).default("text"),
+  })
+  .superRefine((data, ctx) => {
+    const hasContent = (data.content || "").trim().length > 0;
+    const hasAttachments = (data.attachments || []).length > 0;
 
-  if (!hasContent && !hasAttachments) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["content"],
-      message: "Message content cannot be empty",
-    });
-  }
-});
+    if (!hasContent && !hasAttachments) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["content"],
+        message: "Message content cannot be empty",
+      });
+    }
+  });
 
 export const UpdateMessageDTO = z.object({
   content: z

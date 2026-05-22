@@ -26,7 +26,8 @@ interface MessageItemProps {
 
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '🎉', '🔥', '😮'];
 const FILE_ONLY_SENTINEL_CONTENT = '[attachment]';
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
 
 const IMAGE_MIME_PREFIX = 'image/';
 const VIDEO_MIME_PREFIX = 'video/';
@@ -526,7 +527,10 @@ export default function MessageItem({
                   >
                     {getFileCategory(file.mimeType) === 'image' ? (
                       <img
-                        src={normalizeCloudinaryFileUrl(file.url, file.mimeType)}
+                        src={normalizeCloudinaryFileUrl(
+                          file.url,
+                          file.mimeType
+                        )}
                         alt={file.name}
                         className="h-full w-full object-cover"
                       />
@@ -581,14 +585,19 @@ export default function MessageItem({
                                 : 'text-[#5f6b7e]'
                             }`}
                           >
-                            {formatFileSize(file.size)} • {getFileTypeLabel(file.mimeType)}
+                            {formatFileSize(file.size)} •{' '}
+                            {getFileTypeLabel(file.mimeType)}
                           </p>
                         </div>
                       </div>
                     </a>
 
                     <a
-                      href={buildDownloadUrl(file.url, file.name, file.mimeType)}
+                      href={buildDownloadUrl(
+                        file.url,
+                        file.name,
+                        file.mimeType
+                      )}
                       target="_blank"
                       rel="noreferrer"
                       className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border ${

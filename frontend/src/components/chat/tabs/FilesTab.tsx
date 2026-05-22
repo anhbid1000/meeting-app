@@ -8,7 +8,8 @@ interface FilesTabProps {
 }
 
 type FilesFilter = 'all' | 'images' | 'documents' | 'links';
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
 
 const IMAGE_MIME_PREFIX = 'image/';
 const VIDEO_MIME_PREFIX = 'video/';
@@ -145,14 +146,17 @@ export default function FilesTab({ channelId }: FilesTabProps) {
 
   const isLoading =
     filesQuery.isLoading || mediaQuery.isLoading || linksQuery.isLoading;
-  const isError = filesQuery.isError || mediaQuery.isError || linksQuery.isError;
+  const isError =
+    filesQuery.isError || mediaQuery.isError || linksQuery.isError;
 
   if (isLoading) {
     return <p className="text-sm text-[#8a90a0]">Loading shared files...</p>;
   }
 
   if (isError) {
-    return <p className="text-sm text-[#8a90a0]">Unable to load shared files.</p>;
+    return (
+      <p className="text-sm text-[#8a90a0]">Unable to load shared files.</p>
+    );
   }
 
   const activeItems =
@@ -185,7 +189,9 @@ export default function FilesTab({ channelId }: FilesTabProps) {
             )
           )}
         </div>
-        <p className="text-sm text-[#8a90a0]">No shared items for this filter.</p>
+        <p className="text-sm text-[#8a90a0]">
+          No shared items for this filter.
+        </p>
       </div>
     );
   }
@@ -281,7 +287,8 @@ export default function FilesTab({ channelId }: FilesTabProps) {
                         {file.fileName}
                       </p>
                       <p className="text-sm text-[#5f6b7e]">
-                        {formatSize(file.size)} • {getFileTypeLabel(file.mimeType)}
+                        {formatSize(file.size)} •{' '}
+                        {getFileTypeLabel(file.mimeType)}
                       </p>
                     </div>
                   </div>
@@ -298,7 +305,9 @@ export default function FilesTab({ channelId }: FilesTabProps) {
                   className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#d6ddea] text-[#44628f] hover:bg-[#eef3fb]"
                   title="Tải file"
                 >
-                  <span className="material-symbols-outlined text-[20px]">download</span>
+                  <span className="material-symbols-outlined text-[20px]">
+                    download
+                  </span>
                 </a>
               </div>
             </li>

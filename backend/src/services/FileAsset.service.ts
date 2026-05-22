@@ -63,7 +63,9 @@ const extractCloudinaryPublicId = (url: string): string | null => {
   }
 };
 
-const extractCloudinaryAssetInfo = (url: string): CloudinaryAssetInfo | null => {
+const extractCloudinaryAssetInfo = (
+  url: string,
+): CloudinaryAssetInfo | null => {
   try {
     const parsed = new URL(url);
     const segments = parsed.pathname.split("/").filter(Boolean);
@@ -79,9 +81,11 @@ const extractCloudinaryAssetInfo = (url: string): CloudinaryAssetInfo | null => 
     }
 
     const lastSlash = assetPath.lastIndexOf("/");
-    const fileName = lastSlash >= 0 ? assetPath.slice(lastSlash + 1) : assetPath;
+    const fileName =
+      lastSlash >= 0 ? assetPath.slice(lastSlash + 1) : assetPath;
     const dotIdx = fileName.lastIndexOf(".");
-    const extension = dotIdx > 0 ? fileName.slice(dotIdx + 1).toLowerCase() : undefined;
+    const extension =
+      dotIdx > 0 ? fileName.slice(dotIdx + 1).toLowerCase() : undefined;
 
     if (resourceType === "raw") {
       return {
@@ -103,7 +107,7 @@ const extractCloudinaryAssetInfo = (url: string): CloudinaryAssetInfo | null => 
     return {
       resourceType,
       deliveryType,
-      publicId: assetPath.slice(0, -(`.${extension}`.length)),
+      publicId: assetPath.slice(0, -`.${extension}`.length),
       format: extension,
     };
   } catch {
@@ -115,7 +119,11 @@ const fallbackPublicId = (seed: string) =>
   `legacy/${createHash("sha1").update(seed).digest("hex").slice(0, 24)}`;
 
 const extractFileExtension = (fileName: string, url?: string): string => {
-  const fromName = String(fileName || "").split(".").pop()?.trim().toLowerCase();
+  const fromName = String(fileName || "")
+    .split(".")
+    .pop()
+    ?.trim()
+    .toLowerCase();
   if (fromName) return fromName;
 
   try {
@@ -218,7 +226,8 @@ export class FileAssetService {
       return params.url;
     }
 
-    const format = assetInfo.format || extractFileExtension(params.fileName, params.url);
+    const format =
+      assetInfo.format || extractFileExtension(params.fileName, params.url);
     ensureCloudinaryConfigured();
     return cloudinary.utils.private_download_url(assetInfo.publicId, format, {
       resource_type: assetInfo.resourceType,
