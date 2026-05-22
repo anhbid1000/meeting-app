@@ -917,6 +917,7 @@ export default function ChannelPage({ params }: ChannelPageProps) {
 
         <RightSidebar
           isOpen={isSidebarOpen}
+          channelId={resolvedChannelId || undefined}
           members={members.map((member) => ({
             id: member.id,
             name: member.name,

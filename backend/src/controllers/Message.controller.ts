@@ -93,6 +93,68 @@ export const getMessages = async (
   }
 };
 
+export const getPinnedMessages = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = (req as any).user.id;
+    const channelId = safe(req.params.channelId);
+    const rawLimit = req.query.limit
+      ? Number(safe(req.query.limit))
+      : undefined;
+
+    const beforeRaw = req.query.before
+      ? String(safe(req.query.before))
+      : undefined;
+    const afterRaw = req.query.after
+      ? String(safe(req.query.after))
+      : undefined;
+
+    if (beforeRaw && afterRaw) {
+      return res.status(422).json({
+        message: "Use either before or after cursor, not both",
+      });
+    }
+
+    const before = beforeRaw ? new Date(beforeRaw) : undefined;
+    const after = afterRaw ? new Date(afterRaw) : undefined;
+
+    if (beforeRaw && isNaN(before!.getTime())) {
+      return res.status(422).json({ message: "Invalid before timestamp" });
+    }
+
+    if (afterRaw && isNaN(after!.getTime())) {
+      return res.status(422).json({ message: "Invalid after timestamp" });
+    }
+
+    if (
+      rawLimit !== undefined &&
+      (!Number.isFinite(rawLimit) || rawLimit < 1)
+    ) {
+      return res
+        .status(422)
+        .json({ message: "limit must be a positive number" });
+    }
+
+    const limit =
+      rawLimit === undefined ? undefined : Math.min(Math.floor(rawLimit), 100);
+
+    const result = await MessageService.getPinnedMessages({
+      channelId,
+      userId,
+      limit,
+      before,
+      after,
+    });
+
+    return res.status(200).json({ success: true, ...result });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const editMessage = async (
   req: Request,
   res: Response,

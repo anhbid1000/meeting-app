@@ -9,6 +9,12 @@ export interface MessageListOptions {
   after?: Date; // cursor: fetch newer than this timestamp
 }
 
+export interface PinnedMessageListOptions {
+  limit?: number;
+  before?: Date;
+  after?: Date;
+}
+
 export interface MessageWithDetails extends IMessage {
   [key: string]: any;
   reactions?: Array<{
@@ -107,6 +113,43 @@ export class MessageDAO extends BaseDAO<IMessage> {
   async findByChannel(channelId: string, options: MessageListOptions = {}) {
     const { limit = 50, before, after } = options;
     const filter: any = { channelId: new Types.ObjectId(channelId) };
+
+    if (before || after) {
+      filter.createdAt = {};
+      if (before) filter.createdAt.$lt = before;
+      if (after) filter.createdAt.$gt = after;
+    }
+
+    const rows = await this.model
+      .find(filter)
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
+
+    const withAuthors = await this.attachAuthors(rows);
+    const data = await this.attachReactions(withAuthors);
+
+    return {
+      data,
+      meta: {
+        limit,
+        count: data.length,
+        hasMore: data.length === limit,
+        nextBefore: data.length ? data[data.length - 1].createdAt : null,
+        nextAfter: data.length ? data[0].createdAt : null,
+      },
+    };
+  }
+
+  async findPinnedByChannel(
+    channelId: string,
+    options: PinnedMessageListOptions = {},
+  ) {
+    const { limit = 50, before, after } = options;
+    const filter: any = {
+      channelId: new Types.ObjectId(channelId),
+      isPinned: true,
+    };
 
     if (before || after) {
       filter.createdAt = {};

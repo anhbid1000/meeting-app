@@ -128,6 +128,26 @@ export class MessageService {
     return messageDAO.findByChannel(channelId, { limit, before, after });
   }
 
+  static async getPinnedMessages(params: {
+    channelId: string;
+    userId: string;
+    limit?: number;
+    before?: Date;
+    after?: Date;
+  }) {
+    const { channelId, userId, limit, before, after } = params;
+
+    const canRead = await PermissionService.canSendMessage(userId, channelId);
+    if (!canRead) {
+      throw Object.assign(
+        new Error("Forbidden: you must be a member to view messages"),
+        { status: 403 },
+      );
+    }
+
+    return messageDAO.findPinnedByChannel(channelId, { limit, before, after });
+  }
+
   static async editMessage(params: {
     messageId: string;
     userId: string;

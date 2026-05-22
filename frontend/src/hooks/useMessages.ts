@@ -97,6 +97,9 @@ export const usePinMessage = (channelId: string) => {
     mutationFn: (messageId: string) => messageApi.pinMessage(messageId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['messages', channelId] });
+      queryClient.invalidateQueries({
+        queryKey: ['pinned-messages', channelId],
+      });
     },
   });
 };
@@ -108,6 +111,9 @@ export const useUnpinMessage = (channelId: string) => {
     mutationFn: (messageId: string) => messageApi.unpinMessage(messageId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['messages', channelId] });
+      queryClient.invalidateQueries({
+        queryKey: ['pinned-messages', channelId],
+      });
     },
   });
 };

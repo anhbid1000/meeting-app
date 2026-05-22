@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import type { Socket } from 'socket.io-client';
+import { useQueryClient } from '@tanstack/react-query';
 import { getSocket } from '@/services/socket';
 import { useSocketStore } from '@/store/socketStore';
 import { useMessageStore } from '@/store/messageStore';
@@ -8,6 +9,7 @@ import type { ChatMessage } from '@/types/message';
 export const useSocket = (token: string | null) => {
   const setSocket = useSocketStore((state) => state.setSocket);
   const setConnected = useSocketStore((state) => state.setConnected);
+  const queryClient = useQueryClient();
   const addMessage = useMessageStore((state) => state.addMessage);
   const updateMessage = useMessageStore((state) => state.updateMessage);
   const removeMessage = useMessageStore((state) => state.removeMessage);
@@ -30,6 +32,29 @@ export const useSocket = (token: string | null) => {
     const onMessageNew = (message: ChatMessage) => addMessage(message);
     const onMessageUpdate = (message: ChatMessage) => {
       updateMessage(message._id, message);
+    };
+    const normalizeMessage = (message: ChatMessage): ChatMessage => ({
+      ...message,
+      _id: String(message._id),
+      channelId: String(message.channelId),
+      workspaceId: String(message.workspaceId),
+      userId: String(message.userId),
+    });
+    const invalidatePinnedMessages = (message?: ChatMessage) => {
+      if (!message?.channelId) return;
+      queryClient.invalidateQueries({
+        queryKey: ['pinned-messages', String(message.channelId)],
+      });
+    };
+    const onMessagePin = (message: ChatMessage) => {
+      const normalized = normalizeMessage(message);
+      updateMessage(normalized._id, normalized);
+      invalidatePinnedMessages(normalized);
+    };
+    const onMessageUnpin = (message: ChatMessage) => {
+      const normalized = normalizeMessage(message);
+      updateMessage(normalized._id, normalized);
+      invalidatePinnedMessages(normalized);
     };
     const onMessageDelete = (payload: { messageId?: string; _id?: string }) => {
       const id = payload?.messageId || payload?._id;
@@ -136,6 +161,8 @@ export const useSocket = (token: string | null) => {
     socket.on('disconnect', onDisconnect);
     socket.on('message:new', onMessageNew);
     socket.on('message:update', onMessageUpdate);
+    socket.on('message:pin', onMessagePin);
+    socket.on('message:unpin', onMessageUnpin);
     socket.on('message:delete', onMessageDelete);
     socket.on('typing:start', onTypingStart);
     socket.on('typing:stop', onTypingStop);
@@ -171,6 +198,8 @@ export const useSocket = (token: string | null) => {
       socket.off('disconnect', onDisconnect);
       socket.off('message:new', onMessageNew);
       socket.off('message:update', onMessageUpdate);
+      socket.off('message:pin', onMessagePin);
+      socket.off('message:unpin', onMessageUnpin);
       socket.off('message:delete', onMessageDelete);
       socket.off('typing:start', onTypingStart);
       socket.off('typing:stop', onTypingStop);
@@ -197,6 +226,7 @@ export const useSocket = (token: string | null) => {
     addMessage,
     updateMessage,
     removeMessage,
+    queryClient,
     setTypingUser,
     setOnlineUser,
   ]);

@@ -17,6 +17,13 @@ router.get(
   messageController.getMessages,
 );
 
+// GET pinned messages for a channel
+router.get(
+  "/channels/:channelId/pinned",
+  auth,
+  messageController.getPinnedMessages,
+);
+
 // POST a new message to a channel
 router.post(
   "/channels/:channelId/messages",

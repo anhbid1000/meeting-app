@@ -64,11 +64,8 @@ export const messageApi = {
   },
 
   async getPinnedMessages(channelId: string) {
-    const response = await this.getMessages(channelId, { limit: 200 });
-    return {
-      ...response,
-      data: (response.data || []).filter((m) => m.isPinned),
-    };
+    const response = await api.get(`/api/v1/channels/${channelId}/pinned`);
+    return response.data;
   },
 
   async addReaction(messageId: string, emoji: string) {
