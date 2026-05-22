@@ -164,3 +164,47 @@ export const unpinMessage = async (
     next(error);
   }
 };
+
+export const addReaction = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = (req as any).user.id;
+    const messageId = safe(req.params.messageId);
+    const { emoji } = req.body;
+
+    const result = await MessageService.addReaction({
+      messageId,
+      userId,
+      emoji,
+    });
+
+    return res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const removeReaction = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = (req as any).user.id;
+    const messageId = safe(req.params.messageId);
+    const emoji = safe(req.params.emoji);
+
+    const result = await MessageService.removeReaction({
+      messageId,
+      userId,
+      emoji,
+    });
+
+    return res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+};

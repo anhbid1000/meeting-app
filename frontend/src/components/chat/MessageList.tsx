@@ -18,6 +18,13 @@ interface MessageListProps {
   onDelete: (messageId: string) => void;
   onPinToggle: (messageId: string, isPinned: boolean) => void;
   onOpenThread: (messageId: string) => void;
+  onToggleReaction: (
+    messageId: string,
+    emoji: string,
+    hasReacted: boolean
+  ) => void;
+  onOpenReactionDetails: (messageId: string) => void;
+  resolveUserName?: (userId: string) => string;
 }
 
 const GROUP_WINDOW_MS = 5 * 60 * 1000;
@@ -34,6 +41,9 @@ export default function MessageList({
   onDelete,
   onPinToggle,
   onOpenThread,
+  onToggleReaction,
+  onOpenReactionDetails,
+  resolveUserName,
 }: MessageListProps) {
   const listRef = useRef<HTMLDivElement | null>(null);
   const previousCountRef = useRef(0);
@@ -159,6 +169,9 @@ export default function MessageList({
             onDelete={onDelete}
             onPinToggle={onPinToggle}
             onOpenThread={onOpenThread}
+            onToggleReaction={onToggleReaction}
+            onOpenReactionDetails={onOpenReactionDetails}
+            resolveUserName={resolveUserName}
           />
         ))}
       </div>

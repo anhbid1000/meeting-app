@@ -15,6 +15,13 @@ interface MessageGroupProps {
   onDelete: (messageId: string) => void;
   onPinToggle: (messageId: string, isPinned: boolean) => void;
   onOpenThread: (messageId: string) => void;
+  onToggleReaction: (
+    messageId: string,
+    emoji: string,
+    hasReacted: boolean
+  ) => void;
+  onOpenReactionDetails: (messageId: string) => void;
+  resolveUserName?: (userId: string) => string;
 }
 
 const getDisplayName = (message: ChatMessage) => {
@@ -36,6 +43,9 @@ export default function MessageGroup({
   onDelete,
   onPinToggle,
   onOpenThread,
+  onToggleReaction,
+  onOpenReactionDetails,
+  resolveUserName,
 }: MessageGroupProps) {
   const first = messages[0];
   if (!first) return null;
@@ -48,12 +58,16 @@ export default function MessageGroup({
             key={message._id}
             message={message}
             isOwn={false}
+            currentUserId={currentUserId}
             resolveMessageById={resolveMessageById}
             onReply={onReply}
             onStartEdit={onStartEdit}
             onDelete={onDelete}
             onPinToggle={onPinToggle}
             onOpenThread={onOpenThread}
+            onToggleReaction={onToggleReaction}
+            onOpenReactionDetails={onOpenReactionDetails}
+            resolveUserName={resolveUserName}
           />
         ))}
       </div>
@@ -118,12 +132,16 @@ export default function MessageGroup({
             key={message._id}
             message={message}
             isOwn={message.userId === currentUserId}
+            currentUserId={currentUserId}
             resolveMessageById={resolveMessageById}
             onReply={onReply}
             onStartEdit={onStartEdit}
             onDelete={onDelete}
             onPinToggle={onPinToggle}
             onOpenThread={onOpenThread}
+            onToggleReaction={onToggleReaction}
+            onOpenReactionDetails={onOpenReactionDetails}
+            resolveUserName={resolveUserName}
           />
         ))}
       </div>

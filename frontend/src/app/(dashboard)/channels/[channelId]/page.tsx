@@ -14,11 +14,14 @@ import TypingIndicator from '@/components/chat/TypingIndicator';
 import RightSidebar from '@/components/chat/RightSidebar';
 import ThreadPanel from '@/components/chat/ThreadPanel';
 import InviteMembersDialog from '@/components/chat/InviteMembersDialog';
+import ReactionDetailsDialog from '@/components/chat/ReactionDetailsDialog';
 import {
+  useAddReaction,
   useMessages,
   useDeleteMessage,
   useEditMessage,
   usePinMessage,
+  useRemoveReaction,
   useUnpinMessage,
 } from '@/hooks/useMessages';
 import { useMessageStore } from '@/store/messageStore';
@@ -98,6 +101,9 @@ export default function ChannelPage({ params }: ChannelPageProps) {
     replyToId?: string;
   } | null>(null);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const [reactionDetailsMessageId, setReactionDetailsMessageId] = useState<
+    string | null
+  >(null);
 
   const currentUser = useAuthStore((state) => state.user);
 
@@ -268,6 +274,8 @@ export default function ChannelPage({ params }: ChannelPageProps) {
   const deleteMessage = useDeleteMessage(resolvedChannelId || '');
   const pinMessage = usePinMessage(resolvedChannelId || '');
   const unpinMessage = useUnpinMessage(resolvedChannelId || '');
+  const addReaction = useAddReaction(resolvedChannelId || '');
+  const removeReaction = useRemoveReaction(resolvedChannelId || '');
 
   const members = useMemo<MemberProfile[]>(() => {
     const roleByUserId = new Map<string, 'owner' | 'admin' | 'member'>();
@@ -522,6 +530,13 @@ export default function ChannelPage({ params }: ChannelPageProps) {
     [messages, currentThreadId]
   );
 
+  const reactionDetailsMessage = useMemo(
+    () =>
+      messages.find((message) => message._id === reactionDetailsMessageId) ||
+      null,
+    [messages, reactionDetailsMessageId]
+  );
+
   const currentMemberRole = currentUser
     ? members.find((m) => m.id === currentUser.id)?.role || null
     : null;
@@ -580,6 +595,22 @@ export default function ChannelPage({ params }: ChannelPageProps) {
 
   const handleInviteMembers = () => {
     setIsInviteDialogOpen(true);
+  };
+
+  const handleToggleReaction = async (
+    messageId: string,
+    emoji: string,
+    hasReacted: boolean
+  ) => {
+    try {
+      if (hasReacted) {
+        await removeReaction.mutateAsync({ messageId, emoji });
+      } else {
+        await addReaction.mutateAsync({ messageId, emoji });
+      }
+    } catch {
+      toast.error('Cannot update reaction');
+    }
   };
 
   const isResolvingChannelAccess =
@@ -730,6 +761,14 @@ export default function ChannelPage({ params }: ChannelPageProps) {
           <MessageList
             messages={messages}
             currentUserId={currentUser?.id}
+            resolveUserName={(userId: string) => {
+              const profile = memberLookup.get(String(userId));
+              return (
+                profile?.name ||
+                profile?.email ||
+                `User ${String(userId).slice(0, 8)}`
+              );
+            }}
             forceScrollToken={forceScrollToken}
             hasMore={Boolean(hasNextPage)}
             isFetchingMore={isFetchingNextPage}
@@ -767,6 +806,10 @@ export default function ChannelPage({ params }: ChannelPageProps) {
               setReplyTarget(null);
               setEditTarget(null);
               setCurrentThreadId(messageId);
+            }}
+            onToggleReaction={handleToggleReaction}
+            onOpenReactionDetails={(messageId: string) => {
+              setReactionDetailsMessageId(messageId);
             }}
           />
 
@@ -831,6 +874,26 @@ export default function ChannelPage({ params }: ChannelPageProps) {
         isOpen={isInviteDialogOpen}
         channelId={resolvedChannelId}
         onClose={() => setIsInviteDialogOpen(false)}
+      />
+
+      <ReactionDetailsDialog
+        isOpen={Boolean(reactionDetailsMessageId)}
+        message={reactionDetailsMessage as ChatMessage | null}
+        currentUserId={currentUser?.id}
+        resolveUserName={(userId: string) => {
+          const profile = memberLookup.get(String(userId));
+          return (
+            profile?.name ||
+            profile?.email ||
+            `User ${String(userId).slice(0, 8)}`
+          );
+        }}
+        resolveUserAvatar={(userId: string) => {
+          const profile = memberLookup.get(String(userId));
+          return profile?.avatar;
+        }}
+        onClose={() => setReactionDetailsMessageId(null)}
+        onToggleReaction={handleToggleReaction}
       />
     </main>
   );

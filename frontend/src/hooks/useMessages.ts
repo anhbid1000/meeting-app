@@ -111,3 +111,27 @@ export const useUnpinMessage = (channelId: string) => {
     },
   });
 };
+
+export const useAddReaction = (channelId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ messageId, emoji }: { messageId: string; emoji: string }) =>
+      messageApi.addReaction(messageId, emoji),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['messages', channelId] });
+    },
+  });
+};
+
+export const useRemoveReaction = (channelId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ messageId, emoji }: { messageId: string; emoji: string }) =>
+      messageApi.removeReaction(messageId, emoji),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['messages', channelId] });
+    },
+  });
+};

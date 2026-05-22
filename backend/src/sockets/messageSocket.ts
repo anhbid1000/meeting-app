@@ -82,6 +82,26 @@ export const registerMessageBusHandlers = (io: Server) => {
       io.to(`channel:${channelId}`).emit("thread:reply:delete", payload);
     }
   });
+
+  realtimeBus.on("reaction:add", (payload: any) => {
+    const channelId =
+      payload?.channelId?._id?.toString?.() ||
+      payload?.channelId?.toString?.() ||
+      payload?.channelId;
+    if (channelId) {
+      io.to(`channel:${channelId}`).emit("reaction:add", payload);
+    }
+  });
+
+  realtimeBus.on("reaction:remove", (payload: any) => {
+    const channelId =
+      payload?.channelId?._id?.toString?.() ||
+      payload?.channelId?.toString?.() ||
+      payload?.channelId;
+    if (channelId) {
+      io.to(`channel:${channelId}`).emit("reaction:remove", payload);
+    }
+  });
 };
 
 export const handleMessageSocket = (_io: Server, socket: Socket) => {

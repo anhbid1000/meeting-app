@@ -122,6 +122,16 @@ export const useSocket = (token: string | null) => {
       }
     };
 
+    const onReactionChanged = (payload: {
+      messageId?: string;
+      reactions?: ChatMessage['reactions'];
+    }) => {
+      if (!payload?.messageId) return;
+      updateMessage(payload.messageId, {
+        reactions: payload.reactions || [],
+      });
+    };
+
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
     socket.on('message:new', onMessageNew);
@@ -135,6 +145,8 @@ export const useSocket = (token: string | null) => {
     socket.on('channel:member:removed', onMemberRemoved);
     socket.on('thread:reply:new', onThreadReplyNew);
     socket.on('thread:reply:delete', onThreadReplyDelete);
+    socket.on('reaction:add', onReactionChanged);
+    socket.on('reaction:remove', onReactionChanged);
     socket.on('socket:error', onSocketError);
 
     window.addEventListener('mousemove', onActivity);
@@ -168,6 +180,8 @@ export const useSocket = (token: string | null) => {
       socket.off('channel:member:removed', onMemberRemoved);
       socket.off('thread:reply:new', onThreadReplyNew);
       socket.off('thread:reply:delete', onThreadReplyDelete);
+      socket.off('reaction:add', onReactionChanged);
+      socket.off('reaction:remove', onReactionChanged);
       socket.off('socket:error', onSocketError);
       window.removeEventListener('mousemove', onActivity);
       window.removeEventListener('keydown', onActivity);

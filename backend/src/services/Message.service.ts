@@ -1,6 +1,7 @@
 import { Types } from "mongoose";
 import { MessageDAO } from "../dao/MessageDAO";
 import { PermissionService } from "./Permission.service";
+import { messageReactionDAO } from "../dao/MessageReactionDAO";
 import Channel from "../models/Channel.model";
 import Message from "../models/Message.model";
 import Notification from "../models/Notification.model";
@@ -336,5 +337,115 @@ export class MessageService {
     realtimeBus.emitEvent("message:new", detailedNotice || notice);
 
     return updated;
+  }
+
+  static async addReaction(params: {
+    messageId: string;
+    userId: string;
+    emoji: string;
+  }) {
+    const { messageId, userId } = params;
+    const emoji = (params.emoji || "").trim();
+
+    if (!emoji) {
+      throw Object.assign(new Error("Emoji is required"), { status: 422 });
+    }
+
+    const message = await Message.findById(messageId)
+      .select("channelId workspaceId")
+      .lean();
+    if (!message) {
+      throw Object.assign(new Error("Message not found"), { status: 404 });
+    }
+
+    const canReact = await PermissionService.canSendMessage(
+      userId,
+      message.channelId.toString(),
+    );
+    if (!canReact) {
+      throw Object.assign(
+        new Error("Forbidden: you must be a channel member to react"),
+        { status: 403 },
+      );
+    }
+
+    await messageReactionDAO.addReaction({
+      messageId,
+      channelId: message.channelId.toString(),
+      workspaceId: message.workspaceId.toString(),
+      userId,
+      emoji,
+    });
+
+    const detailedMessage = await messageDAO.findByIdWithDetails(messageId);
+    const reactions = detailedMessage?.reactions || [];
+
+    const payload = {
+      messageId,
+      channelId: message.channelId.toString(),
+      userId,
+      emoji,
+      reactions,
+    };
+
+    realtimeBus.emitEvent("reaction:add", payload);
+    if (detailedMessage) {
+      realtimeBus.emitEvent("message:update", detailedMessage);
+    }
+    return payload;
+  }
+
+  static async removeReaction(params: {
+    messageId: string;
+    userId: string;
+    emoji: string;
+  }) {
+    const { messageId, userId } = params;
+    const emoji = (params.emoji || "").trim();
+
+    if (!emoji) {
+      throw Object.assign(new Error("Emoji is required"), { status: 422 });
+    }
+
+    const message = await Message.findById(messageId)
+      .select("channelId workspaceId")
+      .lean();
+    if (!message) {
+      throw Object.assign(new Error("Message not found"), { status: 404 });
+    }
+
+    const canReact = await PermissionService.canSendMessage(
+      userId,
+      message.channelId.toString(),
+    );
+    if (!canReact) {
+      throw Object.assign(
+        new Error("Forbidden: you must be a channel member to react"),
+        { status: 403 },
+      );
+    }
+
+    await messageReactionDAO.removeReaction({
+      messageId,
+      userId,
+      emoji,
+    });
+
+    const detailedMessage = await messageDAO.findByIdWithDetails(messageId);
+    const reactions = detailedMessage?.reactions || [];
+
+    const payload = {
+      messageId,
+      channelId: message.channelId.toString(),
+      userId,
+      emoji,
+      reactions,
+    };
+
+    realtimeBus.emitEvent("reaction:remove", payload);
+    if (detailedMessage) {
+      realtimeBus.emitEvent("message:update", detailedMessage);
+    }
+    return payload;
   }
 }

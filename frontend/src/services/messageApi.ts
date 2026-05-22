@@ -70,6 +70,21 @@ export const messageApi = {
       data: (response.data || []).filter((m) => m.isPinned),
     };
   },
+
+  async addReaction(messageId: string, emoji: string) {
+    const response = await api.post(`/api/v1/messages/${messageId}/reactions`, {
+      emoji,
+    });
+    return response.data;
+  },
+
+  async removeReaction(messageId: string, emoji: string) {
+    const encodedEmoji = encodeURIComponent(emoji);
+    const response = await api.delete(
+      `/api/v1/messages/${messageId}/reactions/${encodedEmoji}`
+    );
+    return response.data;
+  },
 };
 
 export default messageApi;

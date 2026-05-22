@@ -4,6 +4,7 @@ import type { ChatMessage } from '@/types/message';
 interface MessageItemProps {
   message: ChatMessage;
   isOwn: boolean;
+  currentUserId?: string;
   resolveMessageById?: (messageId: string) => ChatMessage | undefined;
   onReply: (messageId: string) => void;
   onStartEdit: (payload: {
@@ -14,19 +15,33 @@ interface MessageItemProps {
   onDelete: (messageId: string) => void;
   onPinToggle: (messageId: string, isPinned: boolean) => void;
   onOpenThread: (messageId: string) => void;
+  onToggleReaction: (
+    messageId: string,
+    emoji: string,
+    hasReacted: boolean
+  ) => void;
+  onOpenReactionDetails: (messageId: string) => void;
+  resolveUserName?: (userId: string) => string;
 }
+
+const REACTION_EMOJIS = ['👍', '❤️', '😂', '🎉', '🔥', '😮'];
 
 export default function MessageItem({
   message,
   isOwn,
+  currentUserId,
   resolveMessageById,
   onReply,
   onStartEdit,
   onDelete,
   onPinToggle,
   onOpenThread,
+  onToggleReaction,
+  onOpenReactionDetails,
+  resolveUserName,
 }: MessageItemProps) {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [showReactionPicker, setShowReactionPicker] = useState(false);
 
   const stripLeadingReplyMarkers = (value: string) =>
     value.replace(/^(?:\[reply:[^\]]+\]\n?)+/, '');
@@ -183,7 +198,61 @@ export default function MessageItem({
             <div className="relative">
               <button
                 type="button"
-                onClick={() => setShowMoreMenu((prev) => !prev)}
+                onClick={() => {
+                  setShowReactionPicker((prev) => !prev);
+                  setShowMoreMenu(false);
+                }}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#d8dce6] bg-white text-[#5f697d] shadow-sm hover:bg-[#f3f5fb] cursor-pointer"
+                title="Add reaction"
+              >
+                <span className="material-symbols-outlined text-[16px]">
+                  add_reaction
+                </span>
+              </button>
+
+              {showReactionPicker ? (
+                <div
+                  className={`absolute z-20 mt-1 flex items-center gap-1 rounded-xl border border-[#d8dce6] bg-white p-1.5 shadow-[0_10px_24px_rgba(15,23,42,0.16)] ${
+                    isOwn ? 'left-0' : 'right-0'
+                  }`}
+                >
+                  {REACTION_EMOJIS.map((emoji) => {
+                    const existing = (message.reactions || []).find(
+                      (reaction) => reaction.emoji === emoji
+                    );
+                    const hasReacted = Boolean(
+                      existing?.users?.some(
+                        (userId) =>
+                          String(userId) === String(currentUserId || '')
+                      )
+                    );
+
+                    return (
+                      <button
+                        key={`${message._id}-${emoji}`}
+                        type="button"
+                        onClick={() => {
+                          onToggleReaction(message._id, emoji, hasReacted);
+                          setShowReactionPicker(false);
+                        }}
+                        className={`cursor-pointer rounded-lg px-1.5 py-1 text-sm transition-colors ${
+                          hasReacted ? 'bg-[#e8efff]' : 'hover:bg-[#f3f5fb]'
+                        }`}
+                      >
+                        {emoji}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowMoreMenu((prev) => !prev);
+                  setShowReactionPicker(false);
+                }}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#d8dce6] bg-white text-[#5f697d] shadow-sm hover:bg-[#f3f5fb] cursor-pointer"
                 title="More actions"
               >
@@ -337,6 +406,56 @@ export default function MessageItem({
                   </span>
                 </a>
               ))}
+            </div>
+          ) : null}
+
+          {message.reactions && message.reactions.length > 0 ? (
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              {message.reactions
+                .slice()
+                .sort((a, b) => b.count - a.count)
+                .map((reaction) => {
+                  const hasReacted = Boolean(
+                    (reaction.users || []).some(
+                      (userId) => String(userId) === String(currentUserId || '')
+                    )
+                  );
+                  const reactedNames = (reaction.users || []).map((userId) => {
+                    const normalizedId = String(userId);
+                    if (normalizedId === String(currentUserId || '')) {
+                      return 'You';
+                    }
+                    if (resolveUserName) {
+                      return resolveUserName(normalizedId);
+                    }
+                    return `User ${normalizedId.slice(0, 8)}`;
+                  });
+                  const tooltip =
+                    reactedNames.length > 0
+                      ? `Reacted by: ${reactedNames.join(', ')}`
+                      : 'No reactions';
+
+                  return (
+                    <button
+                      key={`${message._id}-${reaction.emoji}`}
+                      type="button"
+                      onClick={() => onOpenReactionDetails(message._id)}
+                      className={`cursor-pointer inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors ${
+                        hasReacted
+                          ? isOwn
+                            ? 'border-white/70 bg-white/25 text-white'
+                            : 'border-[#a8bdf1] bg-[#edf3ff] text-[#244a97]'
+                          : isOwn
+                            ? 'border-white/40 bg-white/10 text-white/90 hover:bg-white/20'
+                            : 'border-[#d3d8e5] bg-white text-[#586173] hover:bg-[#f5f7fc]'
+                      }`}
+                      title={tooltip}
+                    >
+                      <span>{reaction.emoji}</span>
+                      <span className="font-medium">{reaction.count}</span>
+                    </button>
+                  );
+                })}
             </div>
           ) : null}
 
