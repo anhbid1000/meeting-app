@@ -205,7 +205,7 @@ export default function RegisterPage() {
 
         <p className="mt-[24px] text-center text-[16px] text-[#6b7280]">
           Already have an account?{" "}
-          <Link className="font-semibold text-[#004ac6]" href="/login">
+          <Link className="cursor-pointer font-semibold text-[#004ac6]" href="/login">
             Sign in
           </Link>
         </p>

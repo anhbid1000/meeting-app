@@ -43,6 +43,8 @@ export default function GoogleAuthButton({ text = "continue_with" }: GoogleAuthB
 
     window.google.accounts.id.initialize({
       client_id: clientId,
+      use_fedcm_for_prompt: false,
+      auto_select: false,
       callback: async (response) => {
         try {
           const result = await rawApi.post("/auth/google", {

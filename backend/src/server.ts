@@ -1,12 +1,10 @@
+import "dotenv/config"; // Nạp biến môi trường ngay lập tức trước bất kỳ import nào khác
 import express, { Request, Response } from "express";
 import http from "http";
 import { Server } from "socket.io";
 import cors from "cors";
-import dotenv from "dotenv";
 import mongoose from "mongoose";
-import routes from "./routes"; // Import tat ca routes tu thu muc routes
-
-dotenv.config(); // Nap bien moi truong
+import routes from "./routes"; // Import tất cả routes từ thư mục routes
 
 const app = express();
 const server = http.createServer(app);

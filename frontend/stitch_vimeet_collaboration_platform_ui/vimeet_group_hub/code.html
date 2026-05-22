@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ViMeet - Group Detail</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#f3f4f6",
+                        "on-tertiary-container": "#f0f0f0",
+                        "background": "#f8f9fb",
+                        "outline": "#737686",
+                        "secondary-fixed": "#d5e4f8",
+                        "primary-fixed": "#dbe1ff",
+                        "on-tertiary-fixed": "#1a1c1c",
+                        "tertiary-fixed-dim": "#c6c6c7",
+                        "primary-container": "#2563eb",
+                        "on-surface": "#191c1e",
+                        "on-primary": "#ffffff",
+                        "on-secondary-container": "#576676",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-tertiary-fixed-variant": "#454747",
+                        "on-primary-container": "#eeefff",
+                        "surface-container": "#edeef0",
+                        "secondary-fixed-dim": "#b9c8db",
+                        "on-surface-variant": "#434655",
+                        "surface-variant": "#e1e2e4",
+                        "surface-dim": "#d9dadc",
+                        "surface-tint": "#0053db",
+                        "surface-container-high": "#e7e8ea",
+                        "on-secondary-fixed": "#0e1d2b",
+                        "inverse-surface": "#2e3132",
+                        "on-error-container": "#93000a",
+                        "on-secondary": "#ffffff",
+                        "secondary": "#516070",
+                        "on-background": "#191c1e",
+                        "on-primary-fixed": "#00174b",
+                        "on-error": "#ffffff",
+                        "surface": "#f8f9fb",
+                        "inverse-on-surface": "#f0f1f3",
+                        "on-secondary-fixed-variant": "#3a4858",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "tertiary-fixed": "#e2e2e2",
+                        "tertiary": "#535555",
+                        "surface-bright": "#f8f9fb",
+                        "error-container": "#ffdad6",
+                        "tertiary-container": "#6c6d6d",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-highest": "#e1e2e4",
+                        "outline-variant": "#c3c6d7",
+                        "error": "#ba1a1a",
+                        "secondary-container": "#d5e4f8",
+                        "primary": "#004ac6",
+                        "inverse-primary": "#b4c5ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "md": "16px",
+                        "lg": "24px",
+                        "sidebar_width": "280px",
+                        "xl": "32px",
+                        "gutter": "24px",
+                        "base": "4px",
+                        "sm": "8px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "display": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "label-md": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "600" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background h-screen flex flex-col overflow-hidden font-body-md text-body-md">
+<!-- TopNavBar (Shared Component) -->
+<nav class="bg-surface text-primary font-headline-sm text-headline-sm font-label-md text-label-md border-b border-outline-variant shadow-sm w-full top-0 flex justify-between items-center px-lg h-16 sticky z-50">
+<!-- Brand -->
+<div class="flex items-center gap-md">
+<span class="font-headline-md text-headline-md font-bold text-primary">ViMeet</span>
+</div>
+<!-- Search Bar -->
+<div class="flex-1 max-w-md mx-lg hidden md:block">
+<div class="relative flex items-center w-full h-10 rounded-full bg-surface-container-low border border-outline-variant focus-within:border-primary focus-within:ring-1 focus-within:ring-primary overflow-hidden">
+<span class="material-symbols-outlined ml-sm text-on-surface-variant absolute">search</span>
+<input class="w-full h-full bg-transparent border-none focus:ring-0 pl-[40px] pr-sm font-body-md text-body-md text-on-surface outline-none" placeholder="Search..." type="text"/>
+</div>
+</div>
+<!-- Navigation Links -->
+<div class="hidden md:flex items-center gap-lg">
+<a class="text-secondary hover:text-primary transition-colors cursor-pointer active:opacity-80" href="#">Meetings</a>
+<a class="text-secondary hover:text-primary transition-colors cursor-pointer active:opacity-80" href="#">Recordings</a>
+<a class="text-secondary hover:text-primary transition-colors cursor-pointer active:opacity-80" href="#">Schedule</a>
+<!-- Contacts active state inferred logically for a Group detail context -->
+<a class="text-primary border-b-2 border-primary pb-1 hover:text-primary transition-colors cursor-pointer active:opacity-80" href="#">Contacts</a>
+</div>
+<!-- Trailing Actions -->
+<div class="flex items-center gap-md">
+<div class="hidden lg:flex items-center gap-sm">
+<button class="p-xs text-secondary hover:text-primary transition-colors cursor-pointer active:opacity-80 rounded-full hover:bg-surface-container-high"><span class="material-symbols-outlined text-[24px]">notifications</span></button>
+<button class="p-xs text-secondary hover:text-primary transition-colors cursor-pointer active:opacity-80 rounded-full hover:bg-surface-container-high"><span class="material-symbols-outlined text-[24px]">settings</span></button>
+<button class="p-xs text-secondary hover:text-primary transition-colors cursor-pointer active:opacity-80 rounded-full hover:bg-surface-container-high"><span class="material-symbols-outlined text-[24px]">help</span></button>
+</div>
+<button class="bg-primary text-on-primary font-label-md text-label-md px-md py-sm rounded-lg hover:bg-on-primary-fixed-variant transition-colors shadow-sm hidden md:block">
+                Start Meeting
+            </button>
+<div class="w-8 h-8 rounded-full bg-secondary-container overflow-hidden border border-outline-variant shrink-0 ml-sm">
+<img alt="User profile avatar" class="w-full h-full object-cover" data-alt="A professional headshot of a person looking forward, brightly lit with a clean white background, maintaining a corporate and approachable aesthetic suitable for a modern business application profile picture." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAkccFa-t2j9mqpQ-ZNwwKfiNZjCgbgD2TApH7i9B_kB2PZM19voLB-fPprAUf3oPhvJaPyzi3fo-15u9363wdB4Eqc5_VoWcmUWRWkxtMM4J0jA-1FvKeRViZ59BGO77CgIkf3QhQvmcJHn-CFLyuf_i48tly0Mitzgi1BdInPm6mBuKal62AwH-aiCDw6CkXfwpRF8gC7Iy1Po6IzBS5wSkS95isCI43_PlPNoaGgNc5Re5MI6F6qXqOKS6nEdeV4QdpayafuQYIH"/>
+</div>
+</div>
+</nav>
+<!-- Main Workspace Area -->
+<div class="flex flex-1 overflow-hidden">
+<!-- Channels Sidebar -->
+<aside class="w-sidebar_width bg-surface-container-lowest border-r border-outline-variant flex flex-col py-lg shrink-0">
+<!-- Workspace Context -->
+<div class="px-lg mb-lg flex items-center justify-between">
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold">ViMeet Hub</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Product Organization</p>
+</div>
+</div>
+<!-- Channels List -->
+<div class="flex-1 overflow-y-auto px-md flex flex-col gap-xs">
+<div class="flex items-center justify-between px-sm py-xs mt-sm group">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-bold tracking-wider">CHANNELS</span>
+<button class="text-on-surface-variant hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"><span class="material-symbols-outlined text-[16px]">add</span></button>
+</div>
+<a class="flex items-center gap-sm px-sm py-sm rounded-md bg-secondary-container text-on-secondary-container font-label-md text-label-md transition-colors border-l-4 border-primary" href="#">
+<span class="material-symbols-outlined text-[20px]">tag</span>
+                    General
+                </a>
+<a class="flex items-center gap-sm px-sm py-sm rounded-md text-on-surface-variant hover:bg-surface-variant/50 transition-colors border-l-4 border-transparent" href="#">
+<span class="material-symbols-outlined text-[20px]">tag</span>
+                    Design System
+                </a>
+<a class="flex items-center gap-sm px-sm py-sm rounded-md text-on-surface-variant hover:bg-surface-variant/50 transition-colors border-l-4 border-transparent" href="#">
+<span class="material-symbols-outlined text-[20px]">tag</span>
+                    User Research
+                </a>
+<a class="flex items-center justify-between px-sm py-sm rounded-md text-on-surface-variant hover:bg-surface-variant/50 transition-colors border-l-4 border-transparent" href="#">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-[20px]">lock</span>
+                        Leadership Sync
+                    </div>
+</a>
+</div>
+<!-- Bottom Action -->
+<div class="p-md mt-auto border-t border-outline-variant">
+<button class="w-full flex items-center justify-center gap-sm bg-surface-container-high hover:bg-surface-variant text-on-surface font-label-md text-label-md py-sm rounded-lg transition-colors border border-outline-variant">
+<span class="material-symbols-outlined text-[20px]">add_circle</span>
+                    Create Channel
+                </button>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 bg-background flex flex-col overflow-hidden relative">
+<!-- Group Header -->
+<header class="bg-surface px-xl pt-xl pb-0 border-b border-outline-variant shrink-0 z-10">
+<div class="flex justify-between items-start mb-lg">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface font-bold tracking-tight mb-xs">Product Design Team</h1>
+<div class="flex items-center gap-md text-on-surface-variant font-body-sm text-body-sm">
+<span class="flex items-center gap-xs"><span class="material-symbols-outlined text-[16px]">group</span> 12 Members</span>
+<span>•</span>
+<span class="flex items-center gap-xs"><span class="material-symbols-outlined text-[16px]">lock</span> Private Group</span>
+<span>•</span>
+<span>Created Jan 2024</span>
+</div>
+</div>
+<div class="flex gap-sm">
+<button class="flex items-center gap-xs px-md py-sm rounded-lg bg-primary-fixed text-on-primary-fixed font-label-md text-label-md hover:bg-primary-fixed-dim transition-colors">
+<span class="material-symbols-outlined text-[20px]">person_add</span>
+                            Invite
+                        </button>
+<button class="p-sm rounded-lg border border-outline-variant text-on-surface hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Tabs -->
+<div class="flex gap-lg border-b border-transparent">
+<button class="pb-sm border-b-2 border-primary text-primary font-label-md text-label-md cursor-pointer transition-colors">General</button>
+<button class="pb-sm border-b-2 border-transparent hover:border-outline-variant text-on-surface-variant hover:text-on-surface font-label-md text-label-md cursor-pointer transition-colors">Members</button>
+<button class="pb-sm border-b-2 border-transparent hover:border-outline-variant text-on-surface-variant hover:text-on-surface font-label-md text-label-md cursor-pointer transition-colors">Files</button>
+<button class="pb-sm border-b-2 border-transparent hover:border-outline-variant text-on-surface-variant hover:text-on-surface font-label-md text-label-md cursor-pointer transition-colors">Meetings</button>
+</div>
+</header>
+<!-- Scrollable Canvas (Bento Grid Layout) -->
+<div class="flex-1 overflow-y-auto p-xl">
+<div class="grid grid-cols-12 gap-gutter max-w-7xl mx-auto">
+<!-- Welcome / Activity Panel (Span 8) -->
+<div class="col-span-12 lg:col-span-8 bg-surface rounded-xl shadow-sm border border-outline-variant/50 p-lg flex flex-col">
+<div class="flex items-center justify-between mb-md">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Recent Activity</h3>
+<button class="text-primary font-label-sm text-label-sm hover:underline">View All</button>
+</div>
+<div class="flex-1 flex flex-col gap-md">
+<!-- Activity Item -->
+<div class="flex gap-md items-start">
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[20px]">videocam</span>
+</div>
+<div class="flex-1 bg-surface-container-lowest border border-outline-variant rounded-lg p-md">
+<div class="flex justify-between items-start mb-xs">
+<span class="font-label-md text-label-md text-on-surface">Design Sync Recorded</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">2 hours ago</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-sm">Sarah Jenkins uploaded the recording for the weekly design sync. AI summary is generating.</p>
+<button class="text-primary font-label-sm text-label-sm flex items-center gap-xs hover:underline">
+<span class="material-symbols-outlined text-[16px]">play_circle</span> Play Recording
+                                    </button>
+</div>
+</div>
+<!-- Activity Item -->
+<div class="flex gap-md items-start">
+<div class="w-10 h-10 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[20px]">description</span>
+</div>
+<div class="flex-1 bg-surface-container-lowest border border-outline-variant rounded-lg p-md">
+<div class="flex justify-between items-start mb-xs">
+<span class="font-label-md text-label-md text-on-surface">New File Shared</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Yesterday</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Mark uploaded "Q3_Design_System_Updates.fig" to the General channel.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Upcoming Meeting Card (Span 4) -->
+<div class="col-span-12 md:col-span-6 lg:col-span-4 bg-primary text-on-primary rounded-xl shadow-sm p-lg relative overflow-hidden flex flex-col justify-between">
+<!-- Decorative background pattern suggestion -->
+<div class="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-white to-transparent pointer-events-none"></div>
+<div class="relative z-10">
+<div class="flex items-center gap-sm mb-lg">
+<span class="material-symbols-outlined text-[24px] text-primary-fixed">calendar_today</span>
+<span class="font-label-md text-label-md text-primary-fixed tracking-wide uppercase">Up Next</span>
+</div>
+<h3 class="font-headline-md text-headline-md mb-xs">Weekly Design Critique</h3>
+<p class="font-body-md text-body-md text-primary-fixed-dim mb-lg">Today, 2:00 PM - 3:00 PM</p>
+</div>
+<div class="relative z-10 mt-auto">
+<div class="flex -space-x-2 mb-md">
+<img alt="Attendee" class="w-8 h-8 rounded-full border-2 border-primary" data-alt="Small circular profile picture of a professional woman smiling softly, brightly lit against a neutral gray background, conveying a friendly corporate tone." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxcLyDdTlC5iPtSeie4vHzbugP5QgDcIHgxZwJv8vS0G0iiqrO0WWFA_i_D5XIdSA7dgiPTNiWn8JkHENoFv8A7AbtylTNal8L8uSn3HLDOrkGmscIvmvKHE1Ane6qHMJ8vhdPLy-armmlAVCsHY2cKI2Ix9MLgHmxhXQzl081Bcuou7OzSHRO9ekQuz8Kj0YtWbPPZRnaPYB6cou8LouC2fZllrZNSequJ_EeHhd8F53kqutfaH_YKwXgB87EiQDZJ6iCYb-KPJMW"/>
+<img alt="Attendee" class="w-8 h-8 rounded-full border-2 border-primary" data-alt="Small circular profile picture of a professional man with glasses looking directly at the camera, clean white background, modern business aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCK9qyBzgoQeXDcjpCRS5BWCmMaXr7W0yAHgbmcF98d3faxR48KdI_A4fTSSB-udNDghroS-9F1aPRV9-FZHigyaftR03YeeYk9eSighZ_-xXWwaCmyo2I4_zw6MWUaroK4KjdGb-yupbjcS4T4E53C7kkwI9eYAMQoFa88K-zquV_tqk5ZLGbtwvlyCCOiHM-UkCnHdix7YqiYeha-fqwB1otmGYlExAMjs6H4OrARP0xKD0JLB6wjS6C6verg6ma9SC2dTjkwRjLG"/>
+<div class="w-8 h-8 rounded-full border-2 border-primary bg-primary-fixed text-primary font-label-sm text-label-sm flex items-center justify-center">+4</div>
+</div>
+<button class="w-full bg-surface text-primary font-label-md text-label-md py-sm rounded-lg hover:bg-surface-container-high transition-colors">
+                                Join Meeting
+                            </button>
+</div>
+</div>
+<!-- Pinned Resources (Span 6) -->
+<div class="col-span-12 md:col-span-6 bg-surface rounded-xl shadow-sm border border-outline-variant/50 p-lg">
+<div class="flex items-center gap-sm mb-md text-on-surface">
+<span class="material-symbols-outlined text-[20px] text-secondary">push_pin</span>
+<h3 class="font-headline-sm text-headline-sm">Pinned Resources</h3>
+</div>
+<div class="grid grid-cols-2 gap-sm">
+<a class="flex flex-col p-md rounded-lg border border-outline-variant hover:bg-surface-container-low transition-colors group" href="#">
+<span class="material-symbols-outlined text-[24px] text-primary mb-sm">palette</span>
+<span class="font-label-md text-label-md text-on-surface mb-xs">Brand Guidelines</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1">PDF • 2.4 MB</span>
+</a>
+<a class="flex flex-col p-md rounded-lg border border-outline-variant hover:bg-surface-container-low transition-colors group" href="#">
+<span class="material-symbols-outlined text-[24px] text-primary mb-sm">link</span>
+<span class="font-label-md text-label-md text-on-surface mb-xs">Figma Workspace</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1">External Link</span>
+</a>
+</div>
+</div>
+<!-- Team Members Preview (Span 6) -->
+<div class="col-span-12 md:col-span-6 bg-surface rounded-xl shadow-sm border border-outline-variant/50 p-lg">
+<div class="flex items-center justify-between mb-md">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Key Members</h3>
+<button class="text-primary font-label-sm text-label-sm hover:underline">Manage</button>
+</div>
+<div class="flex flex-col gap-sm">
+<div class="flex items-center justify-between p-sm rounded-lg hover:bg-surface-container-low transition-colors">
+<div class="flex items-center gap-md">
+<img alt="Member" class="w-10 h-10 rounded-full" data-alt="Professional headshot of a confident team leader in a modern office environment, soft natural lighting highlighting a clear, corporate light-mode aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5V74OmtpYcDLN2laYyJjdp-wE1cr3YrMDwdPTvrFZiT2KXH0h2k2vpINv-YCOysyyDGPKd1UxYKXTGoks-kY-_eY4QK0e5flbXJXSekGcfvo8Ds1FxVmtOXcF0vTfWLSb3T8ECSp_PH4Oti_ZOMGPSff0ZBU9yHhPGKbs6Bx2_-hoBFerJbkJiUNRBmNDP9lfC_qUQPVEoox-Webog3XGdvUiEjvAcmlVrXdPyA26ca5I9OupwbY0d9wG4MwQX1i-HC3lTXly0BqD"/>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Elena Rodriguez</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Design Lead</p>
+</div>
+</div>
+<span class="bg-secondary-container text-on-secondary-container px-xs py-[2px] rounded text-[10px] font-bold tracking-wide uppercase">Admin</span>
+</div>
+<div class="flex items-center justify-between p-sm rounded-lg hover:bg-surface-container-low transition-colors">
+<div class="flex items-center gap-md">
+<img alt="Member" class="w-10 h-10 rounded-full" data-alt="Headshot of a focused designer looking forward, clean background, bright and even lighting reflecting a professional tech-industry standard." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwhZ3GM1sstsZY4cdF_tZ3UDVp0O-LrYoFYWvo-nXILAvYJVPAZ1okqtsIyb7aGn6k4LfIFfo2LQR8aJsi1WIeqIGrYrfP9xh7AktoFkhr-BIMGg19z3B7P6_y5GgwWcZWJcamq11TBh8s95I1UQENJa4M6FK3u9R_-3_4sTgUE_ZGzCe4MQwjvoB-2PpeVoQ3DpRIGS7tuoHVeYjnkwEl7GnlgN0eex0wOEAlO7hU3MqW-MzO9nG_m8VqAVJpPRSVtSxXBG6PiAdK"/>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Marcus Chen</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Senior Product Designer</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

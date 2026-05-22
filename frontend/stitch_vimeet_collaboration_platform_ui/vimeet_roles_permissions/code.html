@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ViMeet - Roles &amp; Permissions</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#f3f4f6",
+                        "on-tertiary-container": "#f0f0f0",
+                        "background": "#f8f9fb",
+                        "outline": "#737686",
+                        "secondary-fixed": "#d5e4f8",
+                        "primary-fixed": "#dbe1ff",
+                        "on-tertiary-fixed": "#1a1c1c",
+                        "tertiary-fixed-dim": "#c6c6c7",
+                        "primary-container": "#2563eb",
+                        "on-surface": "#191c1e",
+                        "on-primary": "#ffffff",
+                        "on-secondary-container": "#576676",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-tertiary-fixed-variant": "#454747",
+                        "on-primary-container": "#eeefff",
+                        "surface-container": "#edeef0",
+                        "secondary-fixed-dim": "#b9c8db",
+                        "on-surface-variant": "#434655",
+                        "surface-variant": "#e1e2e4",
+                        "surface-dim": "#d9dadc",
+                        "surface-tint": "#0053db",
+                        "surface-container-high": "#e7e8ea",
+                        "on-secondary-fixed": "#0e1d2b",
+                        "inverse-surface": "#2e3132",
+                        "on-error-container": "#93000a",
+                        "on-secondary": "#ffffff",
+                        "secondary": "#516070",
+                        "on-background": "#191c1e",
+                        "on-primary-fixed": "#00174b",
+                        "on-error": "#ffffff",
+                        "surface": "#f8f9fb",
+                        "inverse-on-surface": "#f0f1f3",
+                        "on-secondary-fixed-variant": "#3a4858",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "tertiary-fixed": "#e2e2e2",
+                        "tertiary": "#535555",
+                        "surface-bright": "#f8f9fb",
+                        "error-container": "#ffdad6",
+                        "tertiary-container": "#6c6d6d",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-highest": "#e1e2e4",
+                        "outline-variant": "#c3c6d7",
+                        "error": "#ba1a1a",
+                        "secondary-container": "#d5e4f8",
+                        "primary": "#004ac6",
+                        "inverse-primary": "#b4c5ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "md": "16px",
+                        "lg": "24px",
+                        "sidebar_width": "280px",
+                        "xl": "32px",
+                        "gutter": "24px",
+                        "base": "4px",
+                        "sm": "8px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "display": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "label-md": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "600" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-fill {
+            font-variation-settings: 'FILL' 1;
+        }
+        /* Custom Toggle Switch Styles for semantic rendering without JS */
+        .toggle-track-on {
+            background-color: #004ac6; /* primary */
+        }
+        .toggle-thumb-on {
+            transform: translateX(100%);
+            background-color: #ffffff;
+        }
+        .toggle-track-off {
+            background-color: #c3c6d7; /* outline-variant */
+        }
+        .toggle-thumb-off {
+            transform: translateX(0);
+            background-color: #ffffff;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface min-h-screen flex font-body-md">
+<!-- SideNavBar (Shared Component) -->
+<!-- Applying structural rules: w-sidebar_width h-screen fixed left-0 top-0 flex flex-col py-lg px-md gap-sm bg-surface-container-low border-r border-outline-variant -->
+<nav class="w-sidebar_width h-screen fixed left-0 top-0 flex flex-col py-lg px-md gap-sm bg-surface-container-low border-r border-outline-variant z-40 hidden md:flex">
+<!-- Header -->
+<div class="flex items-center gap-md px-md mb-lg">
+<div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-on-primary font-headline-sm text-headline-sm font-bold">
+                V
+            </div>
+<div>
+<h2 class="font-headline-sm text-headline-sm font-black text-primary">Workspace</h2>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Premium Plan</p>
+</div>
+</div>
+<!-- CTA -->
+<button class="w-full py-sm px-md rounded-lg bg-primary text-on-primary font-label-md text-label-md flex items-center justify-center gap-sm mb-md hover:bg-on-primary-fixed-variant transition-colors">
+<span class="material-symbols-outlined text-[18px]">add</span>
+            New Collaboration
+        </button>
+<!-- Main Navigation Links -->
+<div class="flex-col flex gap-xs flex-1">
+<!-- Inactive Item -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-variant/50 transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+                Dashboard
+            </a>
+<!-- Inactive Item -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-variant/50 transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined">calendar_today</span>
+                Calendar
+            </a>
+<!-- Inactive Item -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-variant/50 transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined">folder_open</span>
+                Files
+            </a>
+<!-- Inactive Item -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-variant/50 transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined">summarize</span>
+                AI Summaries
+            </a>
+<!-- Inactive Item -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-variant/50 transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined">monitoring</span>
+                Analytics
+            </a>
+</div>
+<!-- Footer Navigation Links -->
+<div class="flex-col flex gap-xs mt-auto pt-md border-t border-outline-variant">
+<!-- Inactive Item -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-variant/50 transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined">contact_support</span>
+                Support
+            </a>
+<!-- Active Item (Settings maps logically to Roles & Permissions) -->
+<!-- Active rules: bg-secondary-container text-on-secondary-container border-l-4 border-primary -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg bg-secondary-container text-on-secondary-container border-l-4 border-primary transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined icon-fill">settings</span>
+                Settings
+            </a>
+</div>
+</nav>
+<!-- Main Content Wrapper (Offset by Sidebar Width) -->
+<div class="flex-1 md:ml-sidebar_width flex flex-col min-h-screen">
+<!-- TopNavBar (Shared Component) -->
+<!-- Applying structural rules: flex justify-between items-center w-full px-lg h-16 sticky top-0 z-50 bg-surface -->
+<header class="flex justify-between items-center w-full px-lg h-16 sticky top-0 z-50 bg-surface shadow-sm no-underline">
+<div class="flex items-center gap-xl h-full">
+<!-- Mobile Menu Icon (Visible only on mobile) -->
+<button class="md:hidden text-on-surface-variant">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<!-- Brand (Hidden on desktop since Sidebar has it, but JSON mandates it, so we render it contextually) -->
+<span class="md:hidden font-headline-md text-headline-md font-bold text-primary">ViMeet</span>
+<!-- Navigation Links (None active as this is a sub-page of Settings) -->
+<nav class="hidden md:flex items-center gap-lg h-full">
+<!-- Inactive style: text-secondary -->
+<a class="text-secondary hover:text-primary transition-colors cursor-pointer active:opacity-80 font-label-md text-label-md h-full flex items-center border-b-2 border-transparent" href="#">Meetings</a>
+<a class="text-secondary hover:text-primary transition-colors cursor-pointer active:opacity-80 font-label-md text-label-md h-full flex items-center border-b-2 border-transparent" href="#">Recordings</a>
+<a class="text-secondary hover:text-primary transition-colors cursor-pointer active:opacity-80 font-label-md text-label-md h-full flex items-center border-b-2 border-transparent" href="#">Schedule</a>
+<a class="text-secondary hover:text-primary transition-colors cursor-pointer active:opacity-80 font-label-md text-label-md h-full flex items-center border-b-2 border-transparent" href="#">Contacts</a>
+</nav>
+</div>
+<div class="flex items-center gap-md h-full">
+<!-- Trailing Primary Action -->
+<button class="hidden lg:flex px-md py-sm bg-primary text-on-primary rounded-lg font-label-md text-label-md hover:bg-on-primary-fixed-variant transition-colors cursor-pointer active:opacity-80">
+                    Start Meeting
+                </button>
+<!-- Trailing Icon Actions -->
+<div class="flex items-center gap-sm text-secondary">
+<button class="p-sm hover:bg-surface-variant rounded-full transition-colors cursor-pointer active:opacity-80 flex items-center justify-center">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-sm hover:bg-surface-variant rounded-full transition-colors cursor-pointer active:opacity-80 flex items-center justify-center">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="p-sm hover:bg-surface-variant rounded-full transition-colors cursor-pointer active:opacity-80 flex items-center justify-center">
+<span class="material-symbols-outlined">help</span>
+</button>
+</div>
+<!-- User Profile Avatar -->
+<div class="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center overflow-hidden ml-sm cursor-pointer border border-outline-variant">
+<img alt="User profile avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCBwsRL9JEl6HDVGOE5iJrsWD7Wcxrdf9SNV5Ugi1Xrk6OfG5yrOhwDxg5HAftrCEWMPLtxlJxEIwCuu38b6Or6wVlrQ5O-CTVCvVrZv7HpGUfc5x_eFPUHLLstfc1blPqJZ612hVxaEfTyr2014PCOtA33QVnoSxoooiEnmIqUx7ilgjlkpbsXF3k18cWT0D7iKXJKg79sKzBLZy1K8C46lTVnZ4tWkvmZX6USUyIf-6BrdgV94PGG9564rAJz9UezhnZe6uAqppr5"/>
+</div>
+</div>
+</header>
+<!-- Main Canvas Content -->
+<main class="flex-1 p-lg md:p-xl flex flex-col gap-lg bg-background max-w-7xl mx-auto w-full">
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-md mb-sm">
+<div>
+<h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-xs">Roles &amp; Permissions</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Manage access levels and capabilities for workspace members.</p>
+</div>
+<div class="flex items-center gap-md">
+<button class="px-md py-sm rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface font-label-md text-label-md hover:bg-surface-container-low transition-colors shadow-sm">
+                        Restore Defaults
+                    </button>
+<button class="px-md py-sm rounded-lg bg-primary text-on-primary font-label-md text-label-md hover:bg-on-primary-fixed-variant transition-colors shadow-sm">
+                        Save Changes
+                    </button>
+</div>
+</div>
+<!-- Bento-style Container for the Matrix -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden flex flex-col">
+<!-- Table Header Row -->
+<div class="grid grid-cols-4 bg-surface-container-low border-b border-outline-variant p-md items-center">
+<div class="col-span-1 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">
+                        Capability
+                    </div>
+<div class="col-span-1 flex flex-col items-center justify-center text-center border-l border-outline-variant/50">
+<span class="material-symbols-outlined text-primary mb-xs">shield_person</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Admin</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Full Access</span>
+</div>
+<div class="col-span-1 flex flex-col items-center justify-center text-center border-l border-outline-variant/50">
+<span class="material-symbols-outlined text-secondary mb-xs">group</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Member</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Standard</span>
+</div>
+<div class="col-span-1 flex flex-col items-center justify-center text-center border-l border-outline-variant/50">
+<span class="material-symbols-outlined text-tertiary mb-xs">person_outline</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Guest</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Restricted</span>
+</div>
+</div>
+<!-- Table Body Matrix -->
+<div class="flex flex-col">
+<!-- Row 1: Create Channels -->
+<div class="grid grid-cols-4 p-md items-center border-b border-surface-variant hover:bg-surface-bright transition-colors group">
+<div class="col-span-1 flex flex-col justify-center">
+<span class="font-label-md text-label-md text-on-surface">Create Channels</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Ability to create public or private meeting channels.</span>
+</div>
+<div class="col-span-1 flex justify-center border-l border-outline-variant/20">
+<!-- Disabled ON Switch (Admin always has this) -->
+<div class="w-11 h-6 rounded-full toggle-track-on flex items-center px-[2px] opacity-70 cursor-not-allowed">
+<div class="w-5 h-5 rounded-full toggle-thumb-on shadow-sm transition-transform duration-200"></div>
+</div>
+</div>
+<div class="col-span-1 flex justify-center border-l border-outline-variant/20">
+<!-- Active ON Switch -->
+<div class="w-11 h-6 rounded-full toggle-track-on flex items-center px-[2px] cursor-pointer">
+<div class="w-5 h-5 rounded-full toggle-thumb-on shadow-sm transition-transform duration-200"></div>
+</div>
+</div>
+<div class="col-span-1 flex justify-center border-l border-outline-variant/20">
+<!-- Active OFF Switch -->
+<div class="w-11 h-6 rounded-full toggle-track-off flex items-center px-[2px] cursor-pointer">
+<div class="w-5 h-5 rounded-full toggle-thumb-off shadow-sm transition-transform duration-200"></div>
+</div>
+</div>
+</div>
+<!-- Row 2: Record Meetings -->
+<div class="grid grid-cols-4 p-md items-center border-b border-surface-variant hover:bg-surface-bright transition-colors group">
+<div class="col-span-1 flex flex-col justify-center">
+<span class="font-label-md text-label-md text-on-surface">Record Meetings</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Initiate cloud recording during active calls.</span>
+</div>
+<div class="col-span-1 flex justify-center border-l border-outline-variant/20">
+<div class="w-11 h-6 rounded-full toggle-track-on flex items-center px-[2px] opacity-70 cursor-not-allowed">
+<div class="w-5 h-5 rounded-full toggle-thumb-on shadow-sm transition-transform duration-200"></div>
+</div>
+</div>
+<div class="col-span-1 flex justify-center border-l border-outline-variant/20">
+<div class="w-11 h-6 rounded-full toggle-track-on flex items-center px-[2px] cursor-pointer">
+<div class="w-5 h-5 rounded-full toggle-thumb-on shadow-sm transition-transform duration-200"></div>
+</div>
+</div>
+<div class="col-span-1 flex justify-center border-l border-outline-variant/20">
+<div class="w-11 h-6 rounded-full toggle-track-off flex items-center px-[2px] cursor-pointer">
+<div class="w-5 h-5 rounded-full toggle-thumb-off shadow-sm transition-transform duration-200"></div>
+</div>
+</div>
+</div>
+<!-- Row 3: Invite External Guests -->
+<div class="grid grid-cols-4 p-md items-center border-b border-surface-variant hover:bg-surface-bright transition-colors group">
+<div class="col-span-1 flex flex-col justify-center">
+<span class="font-label-md text-label-md text-on-surface">Invite External Guests</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Send meeting links to users outside the workspace.</span>
+</div>
+<div class="col-span-1 flex justify-center border-l border-outline-variant/20">
+<div class="w-11 h-6 rounded-full toggle-track-on flex items-center px-[2px] opacity-70 cursor-not-allowed">
+<div class="w-5 h-5 rounded-full toggle-thumb-on shadow-sm transition-transform duration-200"></div>
+</div>
+</div>
+<div class="col-span-1 flex justify-center border-l border-outline-variant/20">
+<div class="w-11 h-6 rounded-full toggle-track-off flex items-center px-[2px] cursor-pointer">
+<div class="w-5 h-5 rounded-full toggle-thumb-off shadow-sm transition-transform duration-200"></div>
+</div>
+</div>
+<div class="col-span-1 flex justify-center border-l border-outline-variant/20">
+<div class="w-11 h-6 rounded-full toggle-track-off flex items-center px-[2px] opacity-70 cursor-not-allowed">
+<div class="w-5 h-5 rounded-full toggle-thumb-off shadow-sm transition-transform duration-200"></div>
+</div>
+</div>
+</div>
+<!-- Row 4: Manage Billing -->
+<div class="grid grid-cols-4 p-md items-center border-b border-surface-variant hover:bg-surface-bright transition-colors group">
+<div class="col-span-1 flex flex-col justify-center">
+<span class="font-label-md text-label-md text-on-surface">Manage Billing &amp; Plans</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Access invoices and modify subscription tiers.</span>
+</div>
+<div class="col-span-1 flex justify-center border-l border-outline-variant/20">
+<div class="w-11 h-6 rounded-full toggle-track-on flex items-center px-[2px] cursor-pointer">
+<div class="w-5 h-5 rounded-full toggle-thumb-on shadow-sm transition-transform duration-200"></div>
+</div>
+</div>
+<div class="col-span-1 flex justify-center border-l border-outline-variant/20">
+<div class="w-11 h-6 rounded-full toggle-track-off flex items-center px-[2px] opacity-70 cursor-not-allowed">
+<div class="w-5 h-5 rounded-full toggle-thumb-off shadow-sm transition-transform duration-200"></div>
+</div>
+</div>
+<div class="col-span-1 flex justify-center border-l border-outline-variant/20">
+<div class="w-11 h-6 rounded-full toggle-track-off flex items-center px-[2px] opacity-70 cursor-not-allowed">
+<div class="w-5 h-5 rounded-full toggle-thumb-off shadow-sm transition-transform duration-200"></div>
+</div>
+</div>
+</div>
+<!-- Row 5: View Analytics -->
+<div class="grid grid-cols-4 p-md items-center hover:bg-surface-bright transition-colors group">
+<div class="col-span-1 flex flex-col justify-center">
+<span class="font-label-md text-label-md text-on-surface">View Workspace Analytics</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Access global meeting metrics and usage reports.</span>
+</div>
+<div class="col-span-1 flex justify-center border-l border-outline-variant/20">
+<div class="w-11 h-6 rounded-full toggle-track-on flex items-center px-[2px] cursor-pointer">
+<div class="w-5 h-5 rounded-full toggle-thumb-on shadow-sm transition-transform duration-200"></div>
+</div>
+</div>
+<div class="col-span-1 flex justify-center border-l border-outline-variant/20">
+<div class="w-11 h-6 rounded-full toggle-track-off flex items-center px-[2px] cursor-pointer">
+<div class="w-5 h-5 rounded-full toggle-thumb-off shadow-sm transition-transform duration-200"></div>
+</div>
+</div>
+<div class="col-span-1 flex justify-center border-l border-outline-variant/20">
+<div class="w-11 h-6 rounded-full toggle-track-off flex items-center px-[2px] opacity-70 cursor-not-allowed">
+<div class="w-5 h-5 rounded-full toggle-thumb-off shadow-sm transition-transform duration-200"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Contextual Info Card (Bento Style) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md mt-md">
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-md flex items-start gap-md">
+<div class="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-on-primary-fixed shrink-0">
+<span class="material-symbols-outlined">info</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-xs">Role Inheritance</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Changes made here apply globally to all existing channels unless overridden at the specific channel level.</p>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

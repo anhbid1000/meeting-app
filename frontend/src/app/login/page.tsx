@@ -4,10 +4,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { AxiosError } from "axios";
 import { LockKeyhole, Mail, Video } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { z } from "zod";
+import { Suspense } from "react";
 import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
 import { rawApi } from "@/services/api";
 import { useAuthStore } from "@/store/authStore";
@@ -56,8 +57,10 @@ const getLoginErrorMessage = (error: AxiosError<{ code?: string; message?: strin
   return "Sign-in failed. Please check your details and try again";
 };
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl");
   const setAuth = useAuthStore((state) => state.setAuth);
   const {
     register,
@@ -74,7 +77,7 @@ export default function LoginPage() {
       const { user, accessToken } = response.data.data;
       setAuth(user, accessToken);
       toast.success("Signed in successfully");
-      router.replace("/dashboard");
+      router.replace(callbackUrl || "/dashboard");
     } catch (error) {
       const axiosError = error as AxiosError<{ code?: string; message?: string }>;
       toast.error(getLoginErrorMessage(axiosError));
@@ -174,5 +177,13 @@ export default function LoginPage() {
         <p className="mt-[16px]">Secure login provided by ViMeet Enterprise Core.</p>
       </footer>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

@@ -1,13 +1,17 @@
+import User, { IUser } from '../models/User.model';
+import { BaseDAO } from './BaseDAO';
 
-// FakeDAO để giả lập việc lấy thông tin user từ database
-export class UserDAO {
-  async findById(id: string) {
-    // Mock data: giả lập user tồn tại
-    return {
-      _id: id,
-      name: 'Duy Binh',
-      email: 'duybinh@uit.edu.vn',
-      plan: 'pro' // hoặc 'standard'
-    };
+export class UserDAO extends BaseDAO<IUser> {
+  constructor() {
+    super(User);
+  }
+
+  async findByKeyword(keyword: string) {
+    return this.model.find({
+      $or: [
+        { name: { $regex: keyword, $options: "i" } },
+        { email: { $regex: keyword, $options: "i" } },
+      ],
+    }).select("name email avatar role").lean();
   }
 }

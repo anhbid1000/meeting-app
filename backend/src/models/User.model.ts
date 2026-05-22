@@ -13,6 +13,8 @@ export interface IUser extends Document {
   emailVerificationTokenHash?: string;
   emailVerificationExpires?: Date;
   role: AppRole;
+  plan?: 'free' | 'pro';
+  subscriptionPlan?: 'free' | 'pro';
   workspaces: {
     workspaceId: Types.ObjectId;
     role: WorkspaceRole;
@@ -37,8 +39,8 @@ const workspaceMembershipSchema = new Schema(
     },
     role: {
       type: String,
-      enum: ["admin", "owner", "member"],
-      default: "member",
+      enum: ["admin", "owner", "member", "pending"],
+      default: "pending",
       required: true,
     },
   },
@@ -120,6 +122,16 @@ const userSchema = new Schema<IUser>(
     emailVerificationExpires: {
       type: Date,
       select: false,
+    },
+    plan: {
+      type: String,
+      enum: ["free", "pro"],
+      default: "free",
+    },
+    subscriptionPlan: {
+      type: String,
+      enum: ["free", "pro"],
+      default: "free",
     },
     workspaces: {
       type: [workspaceMembershipSchema],

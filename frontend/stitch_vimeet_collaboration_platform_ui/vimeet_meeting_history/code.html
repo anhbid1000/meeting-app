@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ViMeet - Meeting History</title>
+<!-- Google Fonts: Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container-low": "#f3f4f6",
+                    "on-tertiary-container": "#f0f0f0",
+                    "background": "#f8f9fb",
+                    "outline": "#737686",
+                    "secondary-fixed": "#d5e4f8",
+                    "primary-fixed": "#dbe1ff",
+                    "on-tertiary-fixed": "#1a1c1c",
+                    "tertiary-fixed-dim": "#c6c6c7",
+                    "primary-container": "#2563eb",
+                    "on-surface": "#191c1e",
+                    "on-primary": "#ffffff",
+                    "on-secondary-container": "#576676",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-tertiary-fixed-variant": "#454747",
+                    "on-primary-container": "#eeefff",
+                    "surface-container": "#edeef0",
+                    "secondary-fixed-dim": "#b9c8db",
+                    "on-surface-variant": "#434655",
+                    "surface-variant": "#e1e2e4",
+                    "surface-dim": "#d9dadc",
+                    "surface-tint": "#0053db",
+                    "surface-container-high": "#e7e8ea",
+                    "on-secondary-fixed": "#0e1d2b",
+                    "inverse-surface": "#2e3132",
+                    "on-error-container": "#93000a",
+                    "on-secondary": "#ffffff",
+                    "secondary": "#516070",
+                    "on-background": "#191c1e",
+                    "on-primary-fixed": "#00174b",
+                    "on-error": "#ffffff",
+                    "surface": "#f8f9fb",
+                    "inverse-on-surface": "#f0f1f3",
+                    "on-secondary-fixed-variant": "#3a4858",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "tertiary-fixed": "#e2e2e2",
+                    "tertiary": "#535555",
+                    "surface-bright": "#f8f9fb",
+                    "error-container": "#ffdad6",
+                    "tertiary-container": "#6c6d6d",
+                    "on-tertiary": "#ffffff",
+                    "surface-container-highest": "#e1e2e4",
+                    "outline-variant": "#c3c6d7",
+                    "error": "#ba1a1a",
+                    "secondary-container": "#d5e4f8",
+                    "primary": "#004ac6",
+                    "inverse-primary": "#b4c5ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "md": "16px",
+                    "lg": "24px",
+                    "sidebar_width": "280px",
+                    "xl": "32px",
+                    "gutter": "24px",
+                    "base": "4px",
+                    "sm": "8px",
+                    "xs": "4px"
+            },
+            "fontFamily": {
+                    "body-md": ["Inter"],
+                    "headline-lg-mobile": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "display": ["Inter"],
+                    "headline-sm": ["Inter"],
+                    "label-sm": ["Inter"],
+                    "label-md": ["Inter"],
+                    "body-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "display": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "600"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        /* Utility class to force material symbols styling */
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-surface-container-low min-h-screen text-on-surface font-body-md text-body-md flex antialiased">
+<!-- SideNavBar (from JSON) -->
+<nav class="hidden md:flex w-sidebar_width h-screen fixed left-0 top-0 bg-surface-container-low border-r border-outline-variant flex-col py-lg px-md gap-sm z-40">
+<!-- Header -->
+<div class="flex items-center gap-md px-md mb-lg">
+<div class="w-10 h-10 rounded-lg bg-primary-container text-on-primary-container flex items-center justify-center font-headline-sm text-headline-sm font-bold">
+                V
+            </div>
+<div>
+<h1 class="font-headline-sm text-headline-sm font-black text-primary">Workspace</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Premium Plan</p>
+</div>
+</div>
+<!-- CTA -->
+<button class="w-full bg-primary text-on-primary font-label-md text-label-md py-3 rounded-xl mb-md hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-sm">
+<span class="material-symbols-outlined">add</span>
+            New Collaboration
+        </button>
+<!-- Main Navigation -->
+<div class="flex flex-col gap-xs flex-1">
+<!-- Active Tab: Dashboard -->
+<a class="flex items-center gap-md px-md py-3 rounded-r-xl bg-secondary-container text-on-secondary-container border-l-4 border-primary duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-md px-md py-3 rounded-xl text-on-surface-variant hover:bg-surface-variant/50 hover:bg-surface-container-high transition-all duration-200 ease-in-out border-l-4 border-transparent" href="#">
+<span class="material-symbols-outlined">calendar_today</span>
+<span class="font-label-md text-label-md">Calendar</span>
+</a>
+<a class="flex items-center gap-md px-md py-3 rounded-xl text-on-surface-variant hover:bg-surface-variant/50 hover:bg-surface-container-high transition-all duration-200 ease-in-out border-l-4 border-transparent" href="#">
+<span class="material-symbols-outlined">folder_open</span>
+<span class="font-label-md text-label-md">Files</span>
+</a>
+<a class="flex items-center gap-md px-md py-3 rounded-xl text-on-surface-variant hover:bg-surface-variant/50 hover:bg-surface-container-high transition-all duration-200 ease-in-out border-l-4 border-transparent" href="#">
+<span class="material-symbols-outlined">summarize</span>
+<span class="font-label-md text-label-md">AI Summaries</span>
+</a>
+<a class="flex items-center gap-md px-md py-3 rounded-xl text-on-surface-variant hover:bg-surface-variant/50 hover:bg-surface-container-high transition-all duration-200 ease-in-out border-l-4 border-transparent" href="#">
+<span class="material-symbols-outlined">monitoring</span>
+<span class="font-label-md text-label-md">Analytics</span>
+</a>
+</div>
+<!-- Footer Navigation -->
+<div class="flex flex-col gap-xs mt-auto pt-md border-t border-outline-variant">
+<a class="flex items-center gap-md px-md py-3 rounded-xl text-on-surface-variant hover:bg-surface-variant/50 hover:bg-surface-container-high transition-all duration-200 ease-in-out border-l-4 border-transparent" href="#">
+<span class="material-symbols-outlined">contact_support</span>
+<span class="font-label-md text-label-md">Support</span>
+</a>
+<a class="flex items-center gap-md px-md py-3 rounded-xl text-on-surface-variant hover:bg-surface-variant/50 hover:bg-surface-container-high transition-all duration-200 ease-in-out border-l-4 border-transparent" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 md:ml-sidebar_width min-h-screen flex flex-col">
+<!-- Top Header for Main Content -->
+<header class="px-lg py-xl flex flex-col md:flex-row md:items-center justify-between gap-md">
+<div>
+<h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">Meeting History</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Review your past meetings, access recordings, and view AI-generated summaries.</p>
+</div>
+<!-- Search Bar -->
+<div class="relative w-full md:w-80">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-on-surface-variant">
+<span class="material-symbols-outlined">search</span>
+</div>
+<input class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface font-body-sm text-body-sm rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary-fixed transition-all shadow-sm" placeholder="Search by keyword, participant..." type="text"/>
+</div>
+</header>
+<!-- Meeting List Container (Premium List View) -->
+<div class="px-lg pb-xl flex-1">
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden">
+<!-- List Header -->
+<div class="hidden lg:grid grid-cols-12 gap-sm px-lg py-3 bg-surface border-b border-outline-variant font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
+<div class="col-span-4">Meeting Title</div>
+<div class="col-span-2">Date &amp; Time</div>
+<div class="col-span-1">Duration</div>
+<div class="col-span-2">Participants</div>
+<div class="col-span-3 text-right">Actions</div>
+</div>
+<!-- List Body -->
+<div class="flex flex-col">
+<!-- Item 1 (With AI Summary) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-y-4 lg:gap-sm px-lg py-md border-b border-outline-variant last:border-0 hover:bg-surface transition-colors items-center">
+<div class="col-span-4 flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface truncate">Q3 Product Roadmap Review</span>
+<span class="bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm border border-secondary-fixed-dim">
+<span class="material-symbols-outlined fill" style="font-size: 14px;">auto_awesome</span>
+                                    AI Summary
+                                </span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant lg:hidden">Oct 24, 2023 • 1h 30m</span>
+</div>
+<div class="col-span-2 hidden lg:flex font-body-sm text-body-sm text-on-surface-variant">
+                            Oct 24, 2023<br/>10:00 AM PST
+                        </div>
+<div class="col-span-1 hidden lg:flex font-body-sm text-body-sm text-on-surface-variant">
+                            1h 30m
+                        </div>
+<div class="col-span-2 flex items-center">
+<div class="flex -space-x-2">
+<div class="w-8 h-8 rounded-full bg-surface-variant border-2 border-surface-container-lowest flex items-center justify-center font-label-sm text-label-sm text-on-surface-variant">S</div>
+<div class="w-8 h-8 rounded-full bg-surface-variant border-2 border-surface-container-lowest flex items-center justify-center font-label-sm text-label-sm text-on-surface-variant">J</div>
+<div class="w-8 h-8 rounded-full bg-surface-variant border-2 border-surface-container-lowest flex items-center justify-center font-label-sm text-label-sm text-on-surface-variant">M</div>
+<div class="w-8 h-8 rounded-full bg-surface-container-high border-2 border-surface-container-lowest flex items-center justify-center font-label-sm text-label-sm text-on-surface-variant">+3</div>
+</div>
+</div>
+<div class="col-span-3 flex items-center justify-start lg:justify-end gap-2">
+<button class="bg-surface-variant/50 hover:bg-surface-container-high text-on-surface-variant rounded-lg p-2 transition-colors tooltip flex items-center justify-center" title="View Summary">
+<span class="material-symbols-outlined">summarize</span>
+</button>
+<button class="bg-surface-variant/50 hover:bg-surface-container-high text-on-surface-variant rounded-lg p-2 transition-colors tooltip flex items-center justify-center" title="Chat Log">
+<span class="material-symbols-outlined">chat</span>
+</button>
+<button class="bg-surface-variant/50 hover:bg-surface-container-high text-on-surface-variant rounded-lg p-2 transition-colors tooltip flex items-center justify-center" title="Files &amp; Recordings">
+<span class="material-symbols-outlined">folder_open</span>
+</button>
+<button class="bg-primary text-on-primary hover:opacity-90 font-label-sm text-label-sm px-4 py-2 rounded-lg transition-opacity ml-2">
+                                Details
+                            </button>
+</div>
+</div>
+<!-- Item 2 (No AI Summary) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-y-4 lg:gap-sm px-lg py-md border-b border-outline-variant last:border-0 hover:bg-surface transition-colors items-center">
+<div class="col-span-4 flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface truncate">Weekly Design Sync</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant lg:hidden">Oct 23, 2023 • 45m</span>
+</div>
+<div class="col-span-2 hidden lg:flex font-body-sm text-body-sm text-on-surface-variant">
+                            Oct 23, 2023<br/>2:00 PM PST
+                        </div>
+<div class="col-span-1 hidden lg:flex font-body-sm text-body-sm text-on-surface-variant">
+                            45m
+                        </div>
+<div class="col-span-2 flex items-center">
+<div class="flex -space-x-2">
+<div class="w-8 h-8 rounded-full bg-surface-variant border-2 border-surface-container-lowest flex items-center justify-center font-label-sm text-label-sm text-on-surface-variant">A</div>
+<div class="w-8 h-8 rounded-full bg-surface-variant border-2 border-surface-container-lowest flex items-center justify-center font-label-sm text-label-sm text-on-surface-variant">E</div>
+</div>
+</div>
+<div class="col-span-3 flex items-center justify-start lg:justify-end gap-2">
+<button class="bg-surface-variant/50 text-surface-dim rounded-lg p-2 cursor-not-allowed tooltip flex items-center justify-center" title="Summary Unavailable">
+<span class="material-symbols-outlined">summarize</span>
+</button>
+<button class="bg-surface-variant/50 hover:bg-surface-container-high text-on-surface-variant rounded-lg p-2 transition-colors tooltip flex items-center justify-center" title="Chat Log">
+<span class="material-symbols-outlined">chat</span>
+</button>
+<button class="bg-surface-variant/50 hover:bg-surface-container-high text-on-surface-variant rounded-lg p-2 transition-colors tooltip flex items-center justify-center" title="Files &amp; Recordings">
+<span class="material-symbols-outlined">folder_open</span>
+</button>
+<button class="bg-surface-container text-on-surface hover:bg-surface-container-high font-label-sm text-label-sm px-4 py-2 rounded-lg transition-colors ml-2 border border-outline-variant">
+                                Details
+                            </button>
+</div>
+</div>
+<!-- Item 3 (With AI Summary) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-y-4 lg:gap-sm px-lg py-md border-b border-outline-variant last:border-0 hover:bg-surface transition-colors items-center">
+<div class="col-span-4 flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface truncate">Client Presentation: Acme Corp</span>
+<span class="bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm border border-secondary-fixed-dim">
+<span class="material-symbols-outlined fill" style="font-size: 14px;">auto_awesome</span>
+                                    AI Summary
+                                </span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant lg:hidden">Oct 20, 2023 • 1h 00m</span>
+</div>
+<div class="col-span-2 hidden lg:flex font-body-sm text-body-sm text-on-surface-variant">
+                            Oct 20, 2023<br/>9:00 AM PST
+                        </div>
+<div class="col-span-1 hidden lg:flex font-body-sm text-body-sm text-on-surface-variant">
+                            1h 00m
+                        </div>
+<div class="col-span-2 flex items-center">
+<div class="flex -space-x-2">
+<div class="w-8 h-8 rounded-full bg-surface-variant border-2 border-surface-container-lowest flex items-center justify-center font-label-sm text-label-sm text-on-surface-variant">C</div>
+<div class="w-8 h-8 rounded-full bg-surface-variant border-2 border-surface-container-lowest flex items-center justify-center font-label-sm text-label-sm text-on-surface-variant">T</div>
+<div class="w-8 h-8 rounded-full bg-surface-variant border-2 border-surface-container-lowest flex items-center justify-center font-label-sm text-label-sm text-on-surface-variant">L</div>
+</div>
+</div>
+<div class="col-span-3 flex items-center justify-start lg:justify-end gap-2">
+<button class="bg-surface-variant/50 hover:bg-surface-container-high text-on-surface-variant rounded-lg p-2 transition-colors tooltip flex items-center justify-center" title="View Summary">
+<span class="material-symbols-outlined">summarize</span>
+</button>
+<button class="bg-surface-variant/50 hover:bg-surface-container-high text-on-surface-variant rounded-lg p-2 transition-colors tooltip flex items-center justify-center" title="Chat Log">
+<span class="material-symbols-outlined">chat</span>
+</button>
+<button class="bg-surface-variant/50 hover:bg-surface-container-high text-on-surface-variant rounded-lg p-2 transition-colors tooltip flex items-center justify-center" title="Files &amp; Recordings">
+<span class="material-symbols-outlined">folder_open</span>
+</button>
+<button class="bg-surface-container text-on-surface hover:bg-surface-container-high font-label-sm text-label-sm px-4 py-2 rounded-lg transition-colors ml-2 border border-outline-variant">
+                                Details
+                            </button>
+</div>
+</div>
+</div>
+<!-- Pagination / Footer -->
+<div class="px-lg py-md border-t border-outline-variant bg-surface flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Showing 1-3 of 42 meetings</span>
+<div class="flex gap-2">
+<button class="bg-surface-container-lowest border border-outline-variant text-on-surface-variant rounded-lg px-3 py-1 font-label-sm text-label-sm hover:bg-surface-container-high transition-colors disabled:opacity-50" disabled="">Previous</button>
+<button class="bg-surface-container-lowest border border-outline-variant text-on-surface text-on-surface rounded-lg px-3 py-1 font-label-sm text-label-sm hover:bg-surface-container-high transition-colors">Next</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

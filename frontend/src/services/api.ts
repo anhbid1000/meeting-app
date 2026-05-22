@@ -48,6 +48,10 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as RetriableRequest | undefined;
 
+    if (!originalRequest) {
+      return Promise.reject(error);
+    }
+
     if (shouldAttemptRefresh(error, originalRequest)) {
       originalRequest._retry = true;
 

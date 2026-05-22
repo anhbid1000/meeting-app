@@ -18,5 +18,9 @@ export class BaseDAO<T extends Document> {
   async updateById(id: string, update: UpdateQuery<T>) {
     return this.model.findByIdAndUpdate(id, update, { new: true }).lean();
   }
+
+  async deleteById(id: string) {
+    return this.model.findByIdAndDelete(id).lean();
+  }
 }
 

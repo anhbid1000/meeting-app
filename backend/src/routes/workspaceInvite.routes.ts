@@ -14,26 +14,11 @@ router.post(
   workspaceInviteController.createInvite
 );
 
-// GET /api/v1/workspaces/:workspaceId/invites/pending
-router.get(
-  '/workspaces/:workspaceId/invites/pending',
-  auth,
-  workspaceInviteController.listPendingInvites
-);
-
 // GET /api/v1/workspace-invites/:code
 router.get(
   '/workspace-invites/:code',
   auth,
   workspaceInviteController.getInviteByCode
-);
-
-// PATCH /api/v1/workspace-invites/:inviteId/review
-router.patch(
-  '/workspace-invites/:inviteId/review',
-  auth,
-  validate(ReviewWorkspaceInviteDTO),
-  workspaceInviteController.reviewInvite
 );
 
 // POST /api/v1/workspace-invites/:code/accept

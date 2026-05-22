@@ -1,20 +1,17 @@
 import { NextFunction, Request, Response } from "express";
 import User from "../models/User.model";
 import { AppError } from "../utils/AppError";
+import * as userService from "../services/user.service";
 
 export const updateProfile = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (!req.user) {
-      throw new AppError("Can dang nhap de thuc hien thao tac nay", 401, "AUTH_REQUIRED");
-    }
-
     const { name, avatar } = req.body as { name?: string; avatar?: string };
     const updates: { name?: string; avatar?: string } = {};
 
     if (name !== undefined) updates.name = name;
     if (avatar !== undefined) updates.avatar = avatar;
 
-    const user = await User.findByIdAndUpdate(req.user.id, updates, {
+    const user = await User.findByIdAndUpdate(req.user!.id, updates, {
       new: true,
       runValidators: true,
     });
@@ -38,6 +35,29 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
             role: item.role,
           })),
         },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const findUsersByKeyword = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { keyword } = req.query as { keyword?: string };
+    if (!keyword) {
+      throw new AppError("Can cung cap tu khoa", 400, "KEYWORD_REQUIRED");
+    }
+
+
+
+    const users = await userService.findUsersByKeyword(keyword);
+
+    res.status(200).json({
+      success: true,
+      message: "Tim kiem thanh cong",
+      data: {
+        users,
       },
     });
   } catch (error) {

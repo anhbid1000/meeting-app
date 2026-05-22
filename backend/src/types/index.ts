@@ -1,7 +1,9 @@
 import { Types } from "mongoose";
 
+import { IWorkspace } from "../models/Workspace.model";
+
 export type AppRole = "admin" | "member";
-export type WorkspaceRole = "admin" | "owner" | "member";
+export type WorkspaceRole = "admin" | "owner" | "member" | "pending";
 
 export interface AuthUser {
   id: string;
@@ -18,6 +20,7 @@ declare global {
   namespace Express {
     interface Request {
       user?: AuthUser;
+      workspace?: IWorkspace;
     }
   }
 }

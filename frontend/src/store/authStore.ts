@@ -9,6 +9,8 @@ export interface AuthUser {
   email: string;
   avatar?: string;
   role: AppRole;
+  plan?: 'free' | 'pro';
+  subscriptionPlan?: 'free' | 'pro';
   emailVerified?: boolean;
   workspaces: {
     workspaceId: string;

@@ -2,6 +2,8 @@
 import { Types } from 'mongoose';
 import { WorkspaceDAO } from '../dao/WorkspaceDAO';
 import { WorkspaceInviteDAO } from '../dao/WorkspaceInviteDAO';
+import User from '../models/User.model';
+import { sendWorkspaceJoinRequestEmail } from './mail.service';
 import { generateInviteCode } from '../utils/generateInviteCode';
 
 const workspaceDAO = new WorkspaceDAO();
@@ -22,13 +24,9 @@ const hasWorkspaceRole = (workspace: any, userId: string, roles: string[]) => {
 export const createWorkspaceInvite = async ({
   workspaceId,
   createdBy,
-  maxUses,
-  expiresInHours
 }: {
   workspaceId: string;
   createdBy: string;
-  maxUses?: number;
-  expiresInHours?: number;
 }) => {
   const workspace = await workspaceDAO.findById(workspaceId);
 
@@ -47,48 +45,39 @@ export const createWorkspaceInvite = async ({
     );
   }
 
-  const isAdmin = hasWorkspaceRole(workspace, createdBy, ['owner', 'admin']);
+  // Tìm invite đang active và chưa hết hạn của workspace này
+  let invite = await workspaceInviteDAO.findActiveByWorkspace(workspaceId);
 
-  let code = generateInviteCode();
-  let existing = await workspaceInviteDAO.findByCode(code);
+  if (!invite) {
+    let code = generateInviteCode();
+    let existing = await workspaceInviteDAO.findByCode(code);
 
-  while (existing) {
-    code = generateInviteCode();
-    existing = await workspaceInviteDAO.findByCode(code);
+    while (existing) {
+      code = generateInviteCode();
+      existing = await workspaceInviteDAO.findByCode(code);
+    }
+
+    // Thời hạn 7 ngày
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    invite = await workspaceInviteDAO.create({
+      workspaceId: new Types.ObjectId(workspaceId),
+      code,
+      createdBy: new Types.ObjectId(createdBy),
+      status: 'active',
+      maxUses: null,
+      usedCount: 0,
+      expiresAt,
+    });
   }
 
-  const expiresAt = expiresInHours
-    ? new Date(Date.now() + expiresInHours * 60 * 60 * 1000)
-    : null;
-
-  const invite = await workspaceInviteDAO.create({
-    workspaceId: new Types.ObjectId(workspaceId),
-    code,
-    createdBy: new Types.ObjectId(createdBy),
-
-    // Admin tạo thì active ngay, member tạo thì pending
-    status: isAdmin ? 'active' : 'pending',
-
-    maxUses: maxUses ?? null,
-    usedCount: 0,
-    expiresAt,
-
-    reviewedBy: isAdmin ? new Types.ObjectId(createdBy) : null,
-    reviewedAt: isAdmin ? new Date() : null
-  });
-
-  const inviteUrl = `${FRONTEND_URL}/join/workspace/${code}`;
+  const inviteUrl = `${FRONTEND_URL}/join/workspace/${invite.code}`;
 
   return {
     invite,
     inviteUrl,
-    requiresApproval: !isAdmin,
-    message: isAdmin
-      ? 'Invite URL đã được kích hoạt'
-      : 'Invite URL đã được tạo và đang chờ admin duyệt'
+    message: 'Lấy link mời thành công'
   };
-
-  
 };
 
 export const acceptWorkspaceInvite = async ({
@@ -102,13 +91,6 @@ export const acceptWorkspaceInvite = async ({
 
   if (!invite) {
     throw Object.assign(new Error('Invite không tồn tại'), { status: 404 });
-  }
-
-  if (invite.status === 'pending') {
-    throw Object.assign(
-      new Error('Invite này đang chờ admin duyệt'),
-      { status: 403 }
-    );
   }
 
   if (invite.status !== 'active') {
@@ -135,11 +117,27 @@ export const acceptWorkspaceInvite = async ({
     throw Object.assign(new Error('Workspace không tồn tại'), { status: 404 });
   }
 
-  const alreadyMember = workspace.members.some(
+  // Get member limit from plan
+  const planKey = String(workspace.plan || 'free').toLowerCase();
+  const memberLimit = planKey === 'pro' ? 500 : 50;
+  if (workspace.members.length >= memberLimit) {
+    throw Object.assign(
+      new Error(`Workspace đã đạt giới hạn thành viên (${memberLimit})`),
+      { status: 400 }
+    );
+  }
+
+  const memberRecord = workspace.members.find(
     (member: any) => getMemberUserId(member)?.toString() === userId
   );
 
-  if (alreadyMember) {
+  if (memberRecord) {
+    if (memberRecord.role === 'pending') {
+      return {
+        message: 'Yêu cầu tham gia của bạn đang chờ duyệt',
+        workspace
+      };
+    }
     return {
       message: 'Bạn đã là thành viên workspace này',
       workspace
@@ -152,7 +150,7 @@ export const acceptWorkspaceInvite = async ({
       $addToSet: {
         members: {
           userId: new Types.ObjectId(userId),
-          role: 'member',
+          role: 'pending',
           joinedAt: new Date()
         }
       }
@@ -164,7 +162,7 @@ export const acceptWorkspaceInvite = async ({
       $addToSet: {
         workspaces: {
           workspaceId: invite.workspaceId,
-          role: 'member'
+          role: 'pending'
         }
       }
     })
@@ -172,79 +170,34 @@ export const acceptWorkspaceInvite = async ({
 
   await workspaceInviteDAO.incrementUsedCount(invite._id.toString());
 
+  const requester = await User.findById(userId).select('name email').lean();
+  const reviewerIds = workspace.members
+    .filter((member: any) => member.role === 'owner' || member.role === 'admin')
+    .map((member: any) => getMemberUserId(member)?.toString())
+    .filter(Boolean);
+
+  if (requester && reviewerIds.length > 0) {
+    const reviewers = await User.find({ _id: { $in: reviewerIds } }).select('name email').lean();
+    const workspaceUrl = `${FRONTEND_URL}/groups/${workspace._id}`;
+
+    await Promise.allSettled(
+      reviewers.map((reviewer: any) =>
+        sendWorkspaceJoinRequestEmail({
+          to: reviewer.email,
+          adminName: reviewer.name,
+          requesterName: requester.name,
+          requesterEmail: requester.email,
+          workspaceName: workspace.name,
+          workspaceUrl,
+        })
+      )
+    );
+  }
+
   return {
-    message: 'Tham gia workspace thành công',
+    message: 'Yêu cầu tham gia đã được gửi và đang chờ duyệt',
     workspace: updatedWorkspace
   };
-};
-
-export const reviewWorkspaceInvite = async ({
-  inviteId,
-  reviewerId,
-  status,
-  rejectReason
-}: {
-  inviteId: string;
-  reviewerId: string;
-  status: 'active' | 'rejected';
-  rejectReason?: string;
-}) => {
-  const invite = await workspaceInviteDAO.findById(inviteId);
-
-  if (!invite) {
-    throw Object.assign(new Error('Invite không tồn tại'), { status: 404 });
-  }
-
-  const workspace = await workspaceDAO.findById(invite.workspaceId.toString());
-
-  if (!workspace) {
-    throw Object.assign(new Error('Workspace không tồn tại'), { status: 404 });
-  }
-
-  const isAdmin = hasWorkspaceRole(workspace, reviewerId, ['owner', 'admin']);
-
-  if (!isAdmin) {
-    throw Object.assign(
-      new Error('Bạn không có quyền duyệt invite'),
-      { status: 403 }
-    );
-  }
-
-  if (invite.status !== 'pending') {
-    throw Object.assign(
-      new Error('Chỉ có thể duyệt invite đang pending'),
-      { status: 400 }
-    );
-  }
-
-  return workspaceInviteDAO.updateById(inviteId, {
-    status,
-    reviewedBy: new Types.ObjectId(reviewerId),
-    reviewedAt: new Date(),
-    rejectReason: status === 'rejected' ? rejectReason || '' : ''
-  });
-};
-
-
-export const listPendingWorkspaceInvites = async ({
-  workspaceId,
-  reviewerId
-}: {
-  workspaceId: string;
-  reviewerId: string;
-}) => {
-  const workspace = await workspaceDAO.findById(workspaceId);
-
-  if (!workspace) {
-    throw Object.assign(new Error('Workspace không tồn tại'), { status: 404 });
-  }
-
-  const isAdmin = hasWorkspaceRole(workspace, reviewerId, ['owner', 'admin']);
-  if (!isAdmin) {
-    throw Object.assign(new Error('Bạn không có quyền xem pending invites'), { status: 403 });
-  }
-
-  return workspaceInviteDAO.listPendingByWorkspace(workspaceId);
 };
 
 export const getWorkspaceInviteByCode = async (code: string) => {

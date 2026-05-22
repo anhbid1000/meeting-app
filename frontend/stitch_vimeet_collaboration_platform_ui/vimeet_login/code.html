@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ViMeet - Login</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-icon-filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<!-- Google Fonts: Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-low": "#f3f4f6",
+                    "on-secondary-fixed": "#0e1d2b",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "inverse-on-surface": "#f0f1f3",
+                    "tertiary": "#535555",
+                    "outline": "#737686",
+                    "tertiary-fixed": "#e2e2e2",
+                    "on-secondary-fixed-variant": "#3a4858",
+                    "on-tertiary-container": "#f0f0f0",
+                    "surface-tint": "#0053db",
+                    "surface": "#f8f9fb",
+                    "on-primary-fixed": "#00174b",
+                    "on-primary-container": "#eeefff",
+                    "primary": "#004ac6",
+                    "on-surface-variant": "#434655",
+                    "surface-container-high": "#e7e8ea",
+                    "inverse-primary": "#b4c5ff",
+                    "surface-container-lowest": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "on-primary": "#ffffff",
+                    "background": "#f8f9fb",
+                    "on-secondary": "#ffffff",
+                    "tertiary-container": "#6c6d6d",
+                    "secondary": "#516070",
+                    "surface-bright": "#f8f9fb",
+                    "on-error": "#ffffff",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "primary-fixed": "#dbe1ff",
+                    "tertiary-fixed-dim": "#c6c6c7",
+                    "secondary-fixed-dim": "#b9c8db",
+                    "on-tertiary-fixed": "#1a1c1c",
+                    "error": "#ba1a1a",
+                    "primary-container": "#2563eb",
+                    "on-surface": "#191c1e",
+                    "surface-container-highest": "#e1e2e4",
+                    "secondary-fixed": "#d5e4f8",
+                    "on-background": "#191c1e",
+                    "surface-variant": "#e1e2e4",
+                    "on-error-container": "#93000a",
+                    "surface-container": "#edeef0",
+                    "on-tertiary": "#ffffff",
+                    "secondary-container": "#d5e4f8",
+                    "outline-variant": "#c3c6d7",
+                    "surface-dim": "#d9dadc",
+                    "on-tertiary-fixed-variant": "#454747",
+                    "on-secondary-container": "#576676",
+                    "inverse-surface": "#2e3132"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xs": "4px",
+                    "md": "16px",
+                    "xl": "32px",
+                    "sidebar_width": "280px",
+                    "gutter": "24px",
+                    "sm": "8px",
+                    "lg": "24px",
+                    "base": "4px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "headline-lg-mobile": ["Inter"],
+                    "label-sm": ["Inter"],
+                    "display": ["Inter"],
+                    "body-md": ["Inter"],
+                    "headline-sm": ["Inter"],
+                    "label-md": ["Inter"]
+            },
+            "fontSize": {
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "600"}],
+                    "display": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}]
+            }
+          }
+        }
+      }
+    </script>
+</head>
+<body class="bg-surface-container-low min-h-screen flex flex-col font-body-md text-on-surface antialiased">
+<!-- Main Centered Content -->
+<main class="flex-grow flex items-center justify-center p-md sm:p-lg">
+<!-- Login Card -->
+<div class="w-full max-w-[420px] bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-[0_8px_30px_rgba(0,0,0,0.04)] p-xl flex flex-col relative overflow-hidden">
+<!-- Subtle Top Accent Gradient -->
+<div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary to-primary-fixed-dim"></div>
+<!-- Brand Header -->
+<div class="flex flex-col items-center mb-xl text-center">
+<div class="w-12 h-12 bg-primary-container/10 rounded-xl flex items-center justify-center mb-md border border-primary/10">
+<span class="material-symbols-outlined text-primary material-icon-filled" data-icon="videocam" style="font-size: 28px;">videocam</span>
+</div>
+<h1 class="font-headline-sm text-headline-sm text-primary mb-xs">ViMeet</h1>
+<h2 class="font-headline-md text-headline-md text-on-surface mb-xs">Welcome Back</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Sign in to securely access your workspace and upcoming meetings.</p>
+</div>
+<!-- Google SSO Button -->
+<button class="w-full flex items-center justify-center gap-md bg-surface-container-lowest border border-outline-variant rounded-lg p-md hover:bg-surface-container-low hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all duration-200 group active:scale-[0.98]">
+<img alt="Google Logo" class="w-6 h-6 object-contain" data-alt="A perfectly isolated, flat graphic design of the classic multi-colored 'G' logo representing a major technology company. The logo features crisp, vibrant segments of bright red, deep blue, emerald green, and golden yellow in a minimalist vector style. It is positioned against a pure white background with soft, diffused, high-key lighting to match a clean, modern light-mode enterprise user interface. The visual aesthetic is highly professional, corporate, and seamlessly integrated into a digital button layout." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC64Jqn49y4Auyer3Uf2u-iHC5rZ6WAMpAzuPlOyn0S4aqgEao7ubxLFENJJhTBL-gilwvRecs0H-MttKkMvRVL9vZguf9yHqh1s6d9fsrVR8sOS2ugpJSlvX_3cM-9VTLmY0NN_Aa_ZlwNgUKDcjBfBkefJX3LXT9DjB97uD8Q4_gCYxNhmeHMElIfeol6x1FaL8ryTTMmky6tQxnW8BkKliYSF8amWYtZ7xT3rPxl8k_CQxNuJqKN4H-IfWe_H3vz5bBWblZmMxsN"/>
+<span class="font-label-md text-label-md text-on-surface group-hover:text-primary transition-colors">Continue with Google</span>
+</button>
+<!-- Divider -->
+<div class="flex items-center my-lg">
+<div class="flex-grow h-px bg-surface-variant"></div>
+<span class="px-md font-body-sm text-body-sm text-on-surface-variant">or continue with email</span>
+<div class="flex-grow h-px bg-surface-variant"></div>
+</div>
+<!-- Email Form (Minimalist) -->
+<form class="flex flex-col gap-md">
+<div class="flex flex-col gap-xs">
+<label class="font-label-sm text-label-sm text-on-surface" for="email">Work Email</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-md text-outline" data-icon="mail" style="font-size: 20px;">mail</span>
+<input class="w-full bg-surface border border-outline-variant rounded-lg py-[10px] pl-[44px] pr-md font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all duration-200" id="email" placeholder="name@company.com" type="email"/>
+</div>
+</div>
+<div class="flex flex-col gap-xs">
+<div class="flex justify-between items-center">
+<label class="font-label-sm text-label-sm text-on-surface" for="password">Password</label>
+<a class="font-label-sm text-label-sm text-primary hover:text-on-primary-fixed-variant transition-colors" href="#">Forgot password?</a>
+</div>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-md text-outline" data-icon="lock" style="font-size: 20px;">lock</span>
+<input class="w-full bg-surface border border-outline-variant rounded-lg py-[10px] pl-[44px] pr-md font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all duration-200" id="password" placeholder="••••••••" type="password"/>
+</div>
+</div>
+<button class="w-full bg-primary text-on-primary rounded-lg p-md mt-sm font-label-md text-label-md hover:bg-on-primary-fixed-variant hover:shadow-[0_4px_12px_rgba(0,74,198,0.2)] transition-all duration-200 active:scale-[0.98]" type="button">
+                    Sign In
+                </button>
+</form>
+</div>
+</main>
+<!-- Minimalist Footer -->
+<footer class="w-full py-lg flex flex-col items-center justify-center gap-sm text-center">
+<div class="flex items-center gap-md font-body-sm text-body-sm text-on-surface-variant">
+<a class="hover:text-primary transition-colors" href="#">Terms of Service</a>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<a class="hover:text-primary transition-colors" href="#">Privacy Policy</a>
+</div>
+<p class="font-body-sm text-body-sm text-outline">
+            Secure login provided by ViMeet Enterprise Core.
+        </p>
+</footer>
+</body></html>

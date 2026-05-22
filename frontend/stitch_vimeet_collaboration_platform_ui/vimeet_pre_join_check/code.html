@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Pre-Join Check - ViMeet</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+    </style>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-low": "#f3f4f6",
+                    "on-secondary-fixed": "#0e1d2b",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "inverse-on-surface": "#f0f1f3",
+                    "tertiary": "#535555",
+                    "outline": "#737686",
+                    "tertiary-fixed": "#e2e2e2",
+                    "on-secondary-fixed-variant": "#3a4858",
+                    "on-tertiary-container": "#f0f0f0",
+                    "surface-tint": "#0053db",
+                    "surface": "#f8f9fb",
+                    "on-primary-fixed": "#00174b",
+                    "on-primary-container": "#eeefff",
+                    "primary": "#004ac6",
+                    "on-surface-variant": "#434655",
+                    "surface-container-high": "#e7e8ea",
+                    "inverse-primary": "#b4c5ff",
+                    "surface-container-lowest": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "on-primary": "#ffffff",
+                    "background": "#f8f9fb",
+                    "on-secondary": "#ffffff",
+                    "tertiary-container": "#6c6d6d",
+                    "secondary": "#516070",
+                    "surface-bright": "#f8f9fb",
+                    "on-error": "#ffffff",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "primary-fixed": "#dbe1ff",
+                    "tertiary-fixed-dim": "#c6c6c7",
+                    "secondary-fixed-dim": "#b9c8db",
+                    "on-tertiary-fixed": "#1a1c1c",
+                    "error": "#ba1a1a",
+                    "primary-container": "#2563eb",
+                    "on-surface": "#191c1e",
+                    "surface-container-highest": "#e1e2e4",
+                    "secondary-fixed": "#d5e4f8",
+                    "on-background": "#191c1e",
+                    "surface-variant": "#e1e2e4",
+                    "on-error-container": "#93000a",
+                    "surface-container": "#edeef0",
+                    "on-tertiary": "#ffffff",
+                    "secondary-container": "#d5e4f8",
+                    "outline-variant": "#c3c6d7",
+                    "surface-dim": "#d9dadc",
+                    "on-tertiary-fixed-variant": "#454747",
+                    "on-secondary-container": "#576676",
+                    "inverse-surface": "#2e3132"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xs": "4px",
+                    "md": "16px",
+                    "xl": "32px",
+                    "sidebar_width": "280px",
+                    "gutter": "24px",
+                    "sm": "8px",
+                    "lg": "24px",
+                    "base": "4px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Inter", "sans-serif"],
+                    "headline-lg": ["Inter", "sans-serif"],
+                    "headline-md": ["Inter", "sans-serif"],
+                    "body-sm": ["Inter", "sans-serif"],
+                    "headline-lg-mobile": ["Inter", "sans-serif"],
+                    "label-sm": ["Inter", "sans-serif"],
+                    "display": ["Inter", "sans-serif"],
+                    "body-md": ["Inter", "sans-serif"],
+                    "headline-sm": ["Inter", "sans-serif"],
+                    "label-md": ["Inter", "sans-serif"]
+            },
+            "fontSize": {
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "600"}],
+                    "display": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}]
+            }
+          }
+        }
+      }
+    </script>
+</head>
+<body class="bg-surface-container-low min-h-screen text-on-surface font-body-md antialiased selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- TopNavBar (Shared Component) -->
+<header class="bg-surface dark:bg-inverse-surface border-b border-outline-variant dark:border-outline shadow-sm flex justify-between items-center w-full px-lg h-16 fixed top-0 z-50">
+<div class="flex items-center gap-md">
+<span class="text-headline-sm font-headline-sm font-bold text-primary dark:text-inverse-primary cursor-pointer active:scale-95 transition-transform">ViMeet</span>
+</div>
+<div class="flex items-center gap-md text-on-surface-variant dark:text-surface-variant">
+<button class="p-sm rounded-full hover:bg-surface-container-high dark:hover:bg-surface-container-low transition-colors duration-200 flex items-center justify-center cursor-pointer active:scale-95 transition-transform">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-sm rounded-full hover:bg-surface-container-high dark:hover:bg-surface-container-low transition-colors duration-200 flex items-center justify-center cursor-pointer active:scale-95 transition-transform">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<button class="p-sm rounded-full hover:bg-surface-container-high dark:hover:bg-surface-container-low transition-colors duration-200 flex items-center justify-center cursor-pointer active:scale-95 transition-transform">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center text-on-primary-fixed font-label-sm text-label-sm ml-sm overflow-hidden ring-2 ring-transparent hover:ring-primary-fixed-dim cursor-pointer transition-all">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="A professional headshot of a smiling user in a modern office environment. Soft natural lighting highlights their features against a slightly blurred background. The image serves as a standard user profile avatar in a light-themed UI context." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJEBNXxXL164yv5NBBa7QvNfaiwTC-2XXIsxTqAFXKL-b0TKnPR5VZ_vl0CpF0kZy2dgeftZdYOOYrCtDC15b-jnCz4Nm-idqvWVW6GEDWU7TQ-NIJ9zfeYSlmA4BZIAZzoSL_xzvhJEkMPpTTTHzZgG0PFSXHbljTdsXsJqdqNQXEGShzCWrwpm_4ftDI0eGO_nmP-P5DuQzxhxqpU_90joWTRYn_m_50uZRFV-nD6TCG0I2yGCHz796TDM8bEboYh24PttmroWLN"/>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<!-- Note: SideNavBar is suppressed due to the transactional nature of a pre-join screen (Semantic Shell Mandate) -->
+<main class="pt-[88px] pb-lg px-md lg:px-lg max-w-[1440px] mx-auto w-full flex flex-col min-h-screen">
+<div class="mb-lg">
+<h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">Ready to join?</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-xs">Check your audio and video before entering the meeting.</p>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-start">
+<!-- Left: Video Preview -->
+<div class="lg:col-span-8 w-full bg-inverse-surface rounded-xl overflow-hidden relative shadow-sm aspect-video flex items-center justify-center">
+<!-- Video Feed Placeholder -->
+<img alt="Camera preview" class="w-full h-full object-cover" data-alt="A professional high-quality webcam view of a person in a well-lit, modern home office. The person is looking directly at the camera, conveying a ready and attentive demeanor. The background features neat shelves, a hint of a green plant, and soft natural lighting filtering in. The overall image has a clean, high-resolution aesthetic, fitting for a premium video conferencing application." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCJq3KpzCML7kbGljB1wBPBijodcIrMePviYMC2mLIM8OZS_2lkU9N0DCaq3JoZZzzyUO5P9wlApddxhDBifThMSpbVTRpX-vvjbmoOZBooVUpo4Dq76fUXo73lKkvCkguY9eFydWJP_kw6qEOoKsnIL3CyLv9Xuh0KMPPBxpNMd9Fv6rWBVx7lMH7cd9S5UbjfrG-DkGXGgowSeIAOvYgNrEsGP-E3-eVvxLzDChC4lLCpmfdLowD5VXcy_HIKNzF97xsHT-UfWxbX"/>
+<!-- Bottom Left Overlay: Name & Status -->
+<div class="absolute bottom-md left-md flex items-center gap-sm bg-inverse-surface/80 backdrop-blur-sm px-sm py-xs rounded-lg border border-outline/20">
+<div class="bg-error-container text-on-error-container p-[2px] rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px]" data-icon="mic_off" style="font-variation-settings: 'FILL' 1;">mic_off</span>
+</div>
+<span class="font-label-md text-label-md text-surface-container-lowest">You</span>
+</div>
+<!-- Network Quality Indicator Overlay -->
+<div class="absolute top-md right-md flex items-center gap-xs bg-inverse-surface/80 backdrop-blur-sm px-sm py-xs rounded-lg border border-outline/20 text-surface-container-lowest">
+<span class="material-symbols-outlined text-[18px] text-green-400" data-icon="signal_cellular_alt" style="font-variation-settings: 'FILL' 1;">signal_cellular_alt</span>
+<span class="font-label-sm text-label-sm hidden sm:inline">Network Good</span>
+</div>
+</div>
+<!-- Right: Controls Panel -->
+<div class="lg:col-span-4 w-full bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-lg flex flex-col gap-lg">
+<!-- Meeting Info -->
+<div class="flex flex-col border-b border-outline-variant pb-md">
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Weekly Product Sync</h2>
+<div class="flex items-center gap-sm text-on-surface-variant mt-xs">
+<span class="material-symbols-outlined text-[18px]" data-icon="schedule">schedule</span>
+<span class="font-body-sm text-body-sm">Starts in 5 minutes</span>
+</div>
+<div class="flex items-center gap-sm text-on-surface-variant mt-xs">
+<span class="material-symbols-outlined text-[18px]" data-icon="group">group</span>
+<span class="font-body-sm text-body-sm">4 participants waiting</span>
+</div>
+</div>
+<!-- Quick Toggles -->
+<div class="flex gap-md w-full">
+<!-- Mic Muted State -->
+<button class="flex-1 flex flex-col items-center justify-center py-md rounded-lg border border-error bg-error-container text-on-error-container hover:bg-error-container/80 transition-colors shadow-sm relative group cursor-pointer active:scale-95 transition-transform duration-150">
+<div class="w-12 h-12 rounded-full bg-surface-container-lowest/20 flex items-center justify-center mb-sm">
+<span class="material-symbols-outlined text-[28px]" data-icon="mic_off" style="font-variation-settings: 'FILL' 1;">mic_off</span>
+</div>
+<span class="font-label-md text-label-md">Unmute</span>
+<!-- Status indicator dot -->
+<span class="absolute top-sm right-sm w-2 h-2 rounded-full bg-error"></span>
+</button>
+<!-- Camera Active State -->
+<button class="flex-1 flex flex-col items-center justify-center py-md rounded-lg border border-outline-variant bg-surface hover:bg-surface-container transition-colors shadow-sm text-on-surface cursor-pointer active:scale-95 transition-transform duration-150">
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center mb-sm text-primary">
+<span class="material-symbols-outlined text-[28px]" data-icon="videocam" style="font-variation-settings: 'FILL' 1;">videocam</span>
+</div>
+<span class="font-label-md text-label-md">Turn Off</span>
+</button>
+</div>
+<!-- Device Selection Settings -->
+<div class="flex flex-col gap-md">
+<div class="flex flex-col gap-xs">
+<label class="font-label-sm text-label-sm text-on-surface-variant" for="audio-input">Audio Input</label>
+<div class="relative">
+<select class="w-full appearance-none bg-surface border border-outline-variant rounded-lg py-sm pl-md pr-xl font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all cursor-pointer" id="audio-input">
+<option>Default - MacBook Pro Microphone</option>
+<option>External USB Mic</option>
+<option>Bluetooth Headset</option>
+</select>
+<span class="material-symbols-outlined absolute right-sm top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">arrow_drop_down</span>
+</div>
+</div>
+<div class="flex flex-col gap-xs">
+<label class="font-label-sm text-label-sm text-on-surface-variant" for="video-source">Video Source</label>
+<div class="relative">
+<select class="w-full appearance-none bg-surface border border-outline-variant rounded-lg py-sm pl-md pr-xl font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all cursor-pointer" id="video-source">
+<option>FaceTime HD Camera</option>
+<option>Logitech C920</option>
+<option>OBS Virtual Camera</option>
+</select>
+<span class="material-symbols-outlined absolute right-sm top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">arrow_drop_down</span>
+</div>
+</div>
+<div class="flex flex-col gap-xs">
+<label class="font-label-sm text-label-sm text-on-surface-variant" for="audio-output">Audio Output</label>
+<div class="relative flex items-center gap-sm">
+<select class="w-full appearance-none bg-surface border border-outline-variant rounded-lg py-sm pl-md pr-xl font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all cursor-pointer" id="audio-output">
+<option>Default - MacBook Pro Speakers</option>
+<option>External Monitor Speakers</option>
+<option>Bluetooth Headset</option>
+</select>
+<span class="material-symbols-outlined absolute right-[52px] top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">arrow_drop_down</span>
+<button class="flex-shrink-0 px-sm py-sm rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors cursor-pointer" title="Test Audio">
+<span class="material-symbols-outlined text-[20px]" data-icon="volume_up">volume_up</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Spacer -->
+<div class="flex-grow"></div>
+<!-- Primary Action -->
+<div class="flex flex-col gap-sm pt-md border-t border-outline-variant mt-md lg:mt-0">
+<button class="w-full bg-primary text-on-primary font-label-md text-label-md py-md rounded-lg hover:bg-primary-container hover:text-on-primary-container shadow-sm transition-all duration-200 flex items-center justify-center gap-sm cursor-pointer active:scale-[0.98]">
+                        Join Meeting
+                    </button>
+<button class="w-full bg-transparent text-secondary font-label-md text-label-md py-sm rounded-lg hover:bg-surface-container transition-colors duration-200 cursor-pointer">
+                        Cancel
+                    </button>
+</div>
+</div>
+</div>
+</main>
+</body></html>

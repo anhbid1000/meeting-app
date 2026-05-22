@@ -1,4 +1,4 @@
-export {};
+export { };
 
 declare global {
   interface Window {
@@ -7,6 +7,9 @@ declare global {
         id: {
           initialize: (options: {
             client_id: string;
+            use_fedcm_for_prompt?: boolean;
+            auto_select?: boolean;
+            ux_mode?: "popup" | "redirect";
             callback: (response: { credential: string }) => void;
           }) => void;
           renderButton: (

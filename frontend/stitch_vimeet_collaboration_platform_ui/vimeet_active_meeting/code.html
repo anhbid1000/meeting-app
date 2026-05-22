@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ViMeet - Strategic Planning</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Theme Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-fixed": "#dbe1ff",
+                    "outline": "#737686",
+                    "tertiary": "#535555",
+                    "secondary-fixed": "#d5e4f8",
+                    "on-secondary-fixed-variant": "#3a4858",
+                    "on-surface-variant": "#434655",
+                    "tertiary-fixed-dim": "#c6c6c7",
+                    "outline-variant": "#c3c6d7",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "on-secondary-fixed": "#0e1d2b",
+                    "surface-variant": "#e1e2e4",
+                    "background": "#f8f9fb",
+                    "on-tertiary-fixed": "#1a1c1c",
+                    "secondary-container": "#d5e4f8",
+                    "surface-tint": "#0053db",
+                    "error": "#ba1a1a",
+                    "inverse-on-surface": "#f0f1f3",
+                    "surface-dim": "#d9dadc",
+                    "surface-container-high": "#e7e8ea",
+                    "on-primary-container": "#eeefff",
+                    "on-error-container": "#93000a",
+                    "surface-bright": "#f8f9fb",
+                    "surface-container-low": "#f3f4f6",
+                    "on-secondary-container": "#576676",
+                    "inverse-primary": "#b4c5ff",
+                    "on-primary": "#ffffff",
+                    "surface-container-highest": "#e1e2e4",
+                    "tertiary-container": "#6c6d6d",
+                    "primary-container": "#2563eb",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "surface": "#f8f9fb",
+                    "on-tertiary-fixed-variant": "#454747",
+                    "primary": "#004ac6",
+                    "secondary": "#516070",
+                    "secondary-fixed-dim": "#b9c8db",
+                    "inverse-surface": "#2e3132",
+                    "on-error": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "on-background": "#191c1e",
+                    "on-secondary": "#ffffff",
+                    "on-surface": "#191c1e",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container": "#edeef0",
+                    "on-tertiary": "#ffffff",
+                    "tertiary-fixed": "#e2e2e2",
+                    "on-tertiary-container": "#f0f0f0",
+                    "on-primary-fixed": "#00174b"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xs": "4px",
+                    "sidebar_width": "280px",
+                    "gutter": "24px",
+                    "sm": "8px",
+                    "base": "4px",
+                    "xl": "32px",
+                    "md": "16px",
+                    "lg": "24px"
+            },
+            "fontFamily": {
+                    "headline-sm": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "display": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "headline-lg-mobile": ["Inter"],
+                    "body-md": ["Inter"],
+                    "label-sm": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "label-md": ["Inter"],
+                    "body-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "display": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}]
+            }
+          }
+        }
+      }
+    </script>
+<style type="text/tailwindcss">
+        @layer utilities {
+            .custom-scrollbar::-webkit-scrollbar {
+                width: 6px;
+                height: 6px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-track {
+                background: transparent;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb {
+                background-color: rgba(255, 255, 255, 0.1);
+                border-radius: 10px;
+            }
+            .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+                background-color: rgba(255, 255, 255, 0.2);
+            }
+        }
+    </style>
+</head>
+<body class="bg-on-secondary-fixed text-on-primary font-body-md h-screen w-screen overflow-hidden flex flex-col antialiased">
+<!-- Top Bar -->
+<header class="h-16 px-lg flex items-center justify-between shrink-0 bg-inverse-surface/50 backdrop-blur-md border-b border-outline/10 z-10">
+<div class="flex items-center gap-md">
+<h1 class="font-headline-sm text-headline-sm">Strategic Planning</h1>
+<div class="px-sm py-xs bg-surface-variant/20 rounded-md font-label-sm text-label-sm text-primary-fixed-dim">
+                vmt-xkqo-pzx
+            </div>
+</div>
+<div class="flex items-center gap-lg">
+<div class="flex items-center gap-xs font-label-md text-label-md">
+<span class="material-symbols-outlined text-error text-[18px]" style="font-variation-settings: 'FILL' 1;">radio_button_checked</span>
+<span class="text-error">Recording</span>
+</div>
+<div class="font-label-md text-label-md text-outline-variant">
+                01:24:15
+            </div>
+</div>
+<div class="flex items-center gap-sm">
+<button class="h-10 w-10 rounded-full hover:bg-surface-variant/20 flex items-center justify-center transition-colors text-outline-variant hover:text-on-primary">
+<span class="material-symbols-outlined">grid_view</span>
+</button>
+<button class="h-10 w-10 rounded-full hover:bg-surface-variant/20 flex items-center justify-center transition-colors text-outline-variant hover:text-on-primary">
+<span class="material-symbols-outlined">info</span>
+</button>
+</div>
+</header>
+<!-- Main Content Area -->
+<div class="flex-1 flex overflow-hidden relative">
+<!-- Video Grid -->
+<main class="flex-1 p-lg overflow-y-auto custom-scrollbar">
+<div class="grid grid-cols-4 grid-rows-3 gap-md h-full min-h-[600px] max-w-7xl mx-auto">
+<!-- Active Speaker (Host) - Spans 3 cols, 2 rows -->
+<div class="col-span-3 row-span-2 rounded-xl bg-inverse-surface relative overflow-hidden border-2 border-primary shadow-[0_8px_30px_rgba(0,0,0,0.3)] group">
+<img class="w-full h-full object-cover" data-alt="A professional woman speaking confidently into a high-quality microphone in a modern, well-lit home office setting. The composition is a close-up corporate video call perspective, featuring deep slate and warm amber ambient lighting that creates a premium, high-fidelity aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBufCNmKBWM38G1I7UJJ1uychiMCf6qabnEkU0EXyjSbL9cHihG3U5-mlV4PjQo8s_uPiIJQn9DwrnHtlB3nEVOh8rPOL7NGtQhCSIMwjBA8Yges5fAqgBOv0Q7dQhBTbKbGrehKxuLBMLwsAT5UpPi8886uCGm37HDEN0k-_hBIsrPCS64NhJpx-ojsZ2ME0y6jCprjGrQD7anTHrJ38QpdtF7FRLcaFVnLFYxQRi1LTRuPT4z9WWqkBft_fK5hqy6WaRv08UPKjGm"/>
+<div class="absolute top-md left-md bg-inverse-surface/80 backdrop-blur-md border border-outline/20 px-sm py-xs rounded-md flex items-center gap-xs font-label-sm text-label-sm text-on-primary shadow-sm">
+<span class="material-symbols-outlined text-[16px] text-primary-fixed">shield_person</span>
+                        Host
+                    </div>
+<div class="absolute bottom-md left-md bg-inverse-surface/80 backdrop-blur-md border border-outline/20 px-md py-sm rounded-full font-label-md text-label-md text-on-primary flex items-center gap-sm shadow-sm transition-all group-hover:bg-inverse-surface">
+                        Sarah Jenkins
+                        <span class="material-symbols-outlined text-[18px] text-primary-fixed" style="font-variation-settings: 'FILL' 1;">mic</span>
+</div>
+</div>
+<!-- Participant 2 -->
+<div class="col-start-4 row-start-1 rounded-xl bg-inverse-surface relative overflow-hidden border border-outline/10 shadow-sm group">
+<img class="w-full h-full object-cover" data-alt="A male executive in a sharp navy suit looking attentively at a screen during a virtual meeting. The background is a slightly blurred, modern corporate boardroom with glass walls and cool blue lighting, maintaining a sleek, professional aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDxvd6pWV8XT-ZgTreH8sF8auog7eTF8txY93MyJVGcipNY3UN95_BjglvYBtoZiYVELU5mW-EUfudUorDkESUkgRvD7zcCwIoIRZvhrY8itDOYl3Bp0CvS0oG7QTmRBjVBV-SJsfmDCGcbXxiEwKnBc4Nqv5F-xhPU878IVW-ckTA5m7jHktteKmn1P1TOAHXuCpstGiKVIcb24I1LaZy6atEMPUj-awEJOtk5V1ucWQbWcRymKO8IYi3VDQMYX-pGjhPWcGOm_HDh"/>
+<div class="absolute bottom-sm left-sm bg-inverse-surface/80 backdrop-blur-md border border-outline/20 px-sm py-xs rounded-md font-label-sm text-label-sm text-on-primary flex items-center gap-xs">
+                        David Chen
+                        <span class="material-symbols-outlined text-[14px] text-outline-variant">mic_off</span>
+</div>
+</div>
+<!-- Participant 3 (Camera Off) -->
+<div class="col-start-4 row-start-2 rounded-xl bg-inverse-surface relative flex items-center justify-center border border-outline/10 shadow-sm">
+<div class="h-20 w-20 rounded-full bg-surface-variant/10 border border-outline/20 text-outline-variant flex items-center justify-center font-display text-display">
+                        EL
+                    </div>
+<div class="absolute bottom-sm left-sm bg-inverse-surface/80 backdrop-blur-md border border-outline/20 px-sm py-xs rounded-md font-label-sm text-label-sm text-on-primary flex items-center gap-xs">
+                        Emma Lewis
+                        <span class="material-symbols-outlined text-[14px] text-error" style="font-variation-settings: 'FILL' 1;">mic_off</span>
+</div>
+</div>
+<!-- Participant 4 -->
+<div class="col-start-1 row-start-3 rounded-xl bg-inverse-surface relative overflow-hidden border border-outline/10 shadow-sm group">
+<img class="w-full h-full object-cover" data-alt="A creative professional wearing a mustard yellow sweater, smiling warmly into her webcam. The environment is a bright, minimalist studio space featuring exposed brick and soft, diffused natural light that complements a modern corporate design system." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD3QDUBknHRGwsu2f4ZApRat7iTMztJHjpzR9yf1PBp1DN-pCKFIE-4-QSNIiGBaZDfHLsDMUnYjChrTBmB8iDk0TsmZOAwuU10jJ3hVffDHgnLyfwqTUuv7dL4m6d64OoPsLPHCmv1XSTa2-4Ial10ZIfwwoy12fDxjzgHDJuS9CeDZ2U6S_0HwaRYvJUS0LWOIbqyn-DnCAwAuX2AvUblnJ4z9BGYySz0ZKi7Gkrzj2uVJhy5UZku4aDEhxRrOZpVlqCek9XJo3Ix"/>
+<div class="absolute bottom-sm left-sm bg-inverse-surface/80 backdrop-blur-md border border-outline/20 px-sm py-xs rounded-md font-label-sm text-label-sm text-on-primary flex items-center gap-xs">
+                        Maya Patel
+                        <span class="material-symbols-outlined text-[14px] text-outline-variant">mic_off</span>
+</div>
+</div>
+<!-- Participant 5 -->
+<div class="col-start-2 row-start-3 rounded-xl bg-inverse-surface relative overflow-hidden border border-outline/10 shadow-sm group">
+<img class="w-full h-full object-cover" data-alt="A mature businessman with glasses concentrating deeply on a presentation during a video conference. He is seated in a dark, high-end home library with subtle spotlighting on bookshelves behind him, conveying a serious, focused tone." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtpmq8n4sheiKI8qF--2GQnitznJ11kBhGjEIMHxunyZlrcH6eu8zzlRB8jBKDZC-ea7ttAYI830cMnulSwRJBaaRgvxdc-6G0qrBDVl18QlN236aXWnpiiaWdjFamQSHr46q6c6g3SGEzLOvmvSUd9r770IoZ6pDnKElC_qsDFu10P4kHlZGERwqAv7eL_Z3o9awGH0un958cx2V49QZFuII-nJoF70WHZ0TQCN4b2PwmV5one8mF1ZSfjya5K-lDgDmXo7vmR6iW"/>
+<div class="absolute bottom-sm left-sm bg-inverse-surface/80 backdrop-blur-md border border-outline/20 px-sm py-xs rounded-md font-label-sm text-label-sm text-on-primary flex items-center gap-xs">
+                        Robert Fox
+                        <span class="material-symbols-outlined text-[14px] text-outline-variant">mic_off</span>
+</div>
+</div>
+<!-- Participant 6 (Spans 2 cols to fill remaining space nicely) -->
+<div class="col-span-2 row-start-3 rounded-xl bg-inverse-surface relative overflow-hidden border border-outline/10 shadow-sm group">
+<img class="w-full h-full object-cover" data-alt="A young female designer actively gesturing while explaining a concept on a video call. The framing is slightly wider, showing a clean, modern workspace with a minimalist desk setup, utilizing cool white lighting against a deep gray backdrop." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCpCjY_ILgqGdv23h83Avs0HY02r5qrK70rp7hROnzr1285-qQNXLLn6rb7Y5vNvRkmNHGG1_14jWi7MCfCTPr7hHXHo32fMS5Gj4xicq3vdQv5eEvtvw1RzwEg8g3kGMOpfj1Lh9V-ta742r56lfLrIFRWM4_v9MReq9ywvn8n-Uk7H3HDMcCtBP1Z9omUlNuH0EZRVYrMCAgstde5R1pCnWhb2gdd6TFVpcz9XOUPZI_gmynV4oUmv6xots8gn0kqvXTyKDNw_1ca"/>
+<div class="absolute bottom-sm left-sm bg-inverse-surface/80 backdrop-blur-md border border-outline/20 px-sm py-xs rounded-md font-label-sm text-label-sm text-on-primary flex items-center gap-xs">
+                        Jessica Wong
+                        <span class="material-symbols-outlined text-[14px] text-outline-variant">mic_off</span>
+</div>
+</div>
+</div>
+</main>
+<!-- Right Panel (Chat) -->
+<aside class="w-[340px] bg-inverse-surface border-l border-outline/10 flex flex-col shrink-0 shadow-[-4px_0_24px_rgba(0,0,0,0.1)] z-10 hidden md:flex">
+<div class="h-14 border-b border-outline/10 flex items-center px-md justify-between shrink-0">
+<h2 class="font-headline-sm text-headline-sm text-on-primary">In-call messages</h2>
+<button class="h-8 w-8 rounded-full hover:bg-surface-variant/20 flex items-center justify-center transition-colors text-outline-variant hover:text-on-primary">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<div class="flex-1 p-md overflow-y-auto custom-scrollbar flex flex-col gap-lg">
+<!-- System Message -->
+<div class="text-center">
+<span class="bg-surface-variant/10 px-sm py-xs rounded-full font-label-sm text-label-sm text-outline-variant border border-outline/10">
+                        Messages are saved for recorded calls
+                    </span>
+</div>
+<!-- Received Message -->
+<div class="flex flex-col gap-xs">
+<div class="flex items-center gap-xs font-label-sm text-label-sm text-outline-variant">
+<span>Sarah Jenkins</span>
+<span>•</span>
+<span>10:42 AM</span>
+</div>
+<div class="bg-surface-variant/10 border border-outline/10 p-sm rounded-xl rounded-tl-none font-body-sm text-body-sm text-on-primary max-w-[90%] shadow-sm">
+                        Let's review the Q3 numbers before we move to the roadmap discussion. I've updated the core deck.
+                    </div>
+</div>
+<!-- Sent Message -->
+<div class="flex flex-col gap-xs items-end">
+<div class="flex items-center gap-xs font-label-sm text-label-sm text-outline-variant">
+<span>10:44 AM</span>
+<span>•</span>
+<span>You</span>
+</div>
+<div class="bg-primary text-on-primary p-sm rounded-xl rounded-tr-none font-body-sm text-body-sm max-w-[90%] shadow-sm">
+                        Perfect, I've just uploaded the supplementary spreadsheet to the Files tab for everyone to access.
+                    </div>
+</div>
+<!-- Received Message -->
+<div class="flex flex-col gap-xs">
+<div class="flex items-center gap-xs font-label-sm text-label-sm text-outline-variant">
+<span>David Chen</span>
+<span>•</span>
+<span>10:45 AM</span>
+</div>
+<div class="bg-surface-variant/10 border border-outline/10 p-sm rounded-xl rounded-tl-none font-body-sm text-body-sm text-on-primary max-w-[90%] shadow-sm">
+                        Looking at it now. The variance in EMEA region needs a deep dive.
+                    </div>
+</div>
+</div>
+<div class="p-md border-t border-outline/10 shrink-0 bg-inverse-surface">
+<div class="bg-surface-variant/10 rounded-xl flex items-end p-xs border border-outline/20 focus-within:border-primary focus-within:bg-surface-variant/20 transition-all shadow-inner">
+<textarea class="bg-transparent border-none outline-none resize-none flex-1 py-sm pl-sm font-body-sm text-body-sm placeholder-outline-variant text-on-primary min-h-[40px] max-h-[120px] custom-scrollbar" placeholder="Send a message..." rows="1"></textarea>
+<button class="h-10 w-10 shrink-0 flex items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors mb-[2px] mr-[2px]">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">send</span>
+</button>
+</div>
+</div>
+</aside>
+</div>
+<!-- Bottom Control Bar -->
+<div class="h-24 bg-inverse-surface border-t border-outline/10 flex justify-between items-center px-lg shrink-0 z-20">
+<div class="w-[200px] hidden lg:block">
+<!-- Placeholder for balance -->
+</div>
+<div class="flex items-center gap-sm md:gap-md flex-1 justify-center">
+<button class="h-12 w-12 rounded-full bg-surface-variant/20 hover:bg-surface-variant/30 flex items-center justify-center text-on-primary transition-colors border border-outline/10 shadow-sm">
+<span class="material-symbols-outlined">mic</span>
+</button>
+<button class="h-12 w-12 rounded-full bg-surface-variant/20 hover:bg-surface-variant/30 flex items-center justify-center text-on-primary transition-colors border border-outline/10 shadow-sm">
+<span class="material-symbols-outlined">videocam</span>
+</button>
+<button class="h-12 w-12 rounded-full bg-surface-variant/20 hover:bg-surface-variant/30 flex items-center justify-center text-on-primary transition-colors border border-outline/10 shadow-sm hidden sm:flex">
+<span class="material-symbols-outlined">present_to_all</span>
+</button>
+<!-- Separator -->
+<div class="h-8 w-px bg-outline/20 mx-xs hidden sm:block"></div>
+<button class="h-12 w-12 rounded-full bg-primary/20 hover:bg-primary/30 text-primary-fixed relative flex items-center justify-center transition-colors border border-primary/30 shadow-sm">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">chat</span>
+<span class="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-error border-2 border-inverse-surface"></span>
+</button>
+<button class="h-12 w-12 rounded-full bg-surface-variant/20 hover:bg-surface-variant/30 flex items-center justify-center text-on-primary transition-colors border border-outline/10 shadow-sm">
+<span class="material-symbols-outlined">group</span>
+</button>
+<button class="h-12 w-12 rounded-full bg-surface-variant/20 hover:bg-surface-variant/30 flex items-center justify-center text-on-primary transition-colors border border-outline/10 shadow-sm hidden md:flex">
+<span class="material-symbols-outlined">draw</span>
+</button>
+<button class="h-12 w-12 rounded-full bg-surface-variant/20 hover:bg-surface-variant/30 flex items-center justify-center text-on-primary transition-colors border border-outline/10 shadow-sm hidden lg:flex">
+<span class="material-symbols-outlined">cloud_upload</span>
+</button>
+<button class="h-12 w-12 rounded-full bg-surface-variant/20 hover:bg-surface-variant/30 flex items-center justify-center text-on-primary transition-colors border border-outline/10 shadow-sm hidden lg:flex">
+<span class="material-symbols-outlined">closed_caption</span>
+</button>
+<button class="h-12 w-12 rounded-full bg-surface-variant/20 hover:bg-surface-variant/30 flex items-center justify-center text-on-primary transition-colors border border-outline/10 shadow-sm">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="w-[200px] flex justify-end">
+<button class="h-12 px-xl rounded-full bg-error hover:bg-on-error-container text-on-error font-label-md text-label-md flex items-center gap-sm transition-colors shadow-lg border border-error/50">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">call_end</span>
+                End Call
+            </button>
+</div>
+</div>
+<!-- Host Warning Modal Overlay (Demonstrating Interaction State) -->
+<div class="fixed inset-0 bg-on-background/70 backdrop-blur-sm z-[100] flex items-center justify-center p-md">
+<!-- Glassmorphism Card for Modal -->
+<div class="bg-inverse-surface w-full max-w-md rounded-2xl shadow-2xl p-xl flex flex-col gap-lg border border-outline/20">
+<div class="flex justify-between items-start">
+<div class="h-14 w-14 rounded-full bg-error/20 text-error flex items-center justify-center border border-error/30 shadow-inner">
+<span class="material-symbols-outlined text-[28px]" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+<button class="h-8 w-8 rounded-full hover:bg-surface-variant/20 flex items-center justify-center transition-colors text-outline-variant hover:text-on-primary">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div>
+<h2 class="font-headline-md text-headline-md text-on-primary mb-sm">End meeting for all?</h2>
+<p class="font-body-md text-body-md text-outline-variant leading-relaxed">
+                    You are the host. Ending the call will disconnect all participants and stop the active recording. The recording will be saved to your workspace shortly.
+                </p>
+</div>
+<div class="flex justify-end gap-sm mt-sm">
+<button class="px-lg py-sm rounded-lg hover:bg-surface-variant/20 font-label-md text-label-md text-outline-variant hover:text-on-primary transition-colors border border-transparent">
+                    Cancel
+                </button>
+<button class="px-lg py-sm rounded-lg bg-error hover:bg-on-error-container text-on-error font-label-md text-label-md transition-colors shadow-md">
+                    End for All
+                </button>
+</div>
+</div>
+</div>
+</body></html>

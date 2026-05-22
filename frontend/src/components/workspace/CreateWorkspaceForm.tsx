@@ -1,10 +1,14 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import api from '@/services/api';
+import { AxiosError } from 'axios';
+import { useAuthStore } from '@/store/authStore';
 
 interface CreateWorkspaceModalProps {
   open: boolean;
   onClose: () => void;
+  onCreated?: () => void;
 }
 
 type ChannelSetup = 'default' | 'custom';
@@ -16,6 +20,14 @@ type SearchUser = {
   name: string;
   email: string;
   avatar?: string;
+};
+
+type WorkspaceCategory = {
+  _id: string;
+  name: string;
+  slug: string;
+  color: string;
+  icon?: string;
 };
 
 type InvitedMember = {
@@ -35,7 +47,8 @@ const getInitials = (email: string) => {
 
 export const CreateWorkspaceModal = ({
   open,
-  onClose
+  onClose,
+  onCreated,
 }: CreateWorkspaceModalProps) => {
   // Animation states
   const [isRendered, setIsRendered] = useState(false);
@@ -49,7 +62,9 @@ export const CreateWorkspaceModal = ({
   // ---------- form fields ----------
   const [workspaceName, setWorkspaceName] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [categories, setCategories] = useState<WorkspaceCategory[]>([]);
+  const [isCategoriesLoading, setIsCategoriesLoading] = useState(false);
   const [teamSize, setTeamSize] = useState('1-10');
   const [channelSetup, setChannelSetup] = useState<ChannelSetup>('default');
 
@@ -61,9 +76,8 @@ export const CreateWorkspaceModal = ({
 
   // ---------- members ----------
   const [inviteEmail, setInviteEmail] = useState('');
-  const [members, setMembers] = useState<InvitedMember[]>([
-    { email: 'david@uit.edu.vn', role: 'owner', name: 'David Lê' }
-  ]);
+  const authUser = useAuthStore((state) => state.user);
+  const [members, setMembers] = useState<InvitedMember[]>([]);
 
   // ---------- loading & toast ----------
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -72,7 +86,16 @@ export const CreateWorkspaceModal = ({
     message: string;
   } | null>(null);
 
-  const canAddMember = useMemo(() => inviteEmail.trim().length > 0, [inviteEmail]);
+  const userPlan = useMemo(() => {
+    const plan = authUser?.subscriptionPlan || authUser?.plan || 'free';
+    return String(plan).toLowerCase() === 'pro' ? 'pro' : 'free';
+  }, [authUser]);
+  const maxMembers = userPlan === 'pro' ? 500 : 50;
+  const remainingMembers = Math.max(maxMembers - members.length, 0);
+  const canAddMember = useMemo(
+    () => inviteEmail.trim().length > 0 && members.length < maxMembers,
+    [inviteEmail, members.length, maxMembers]
+  );
 
   // Handle Animation Logic
   useEffect(() => {
@@ -88,7 +111,12 @@ export const CreateWorkspaceModal = ({
     }
   }, [open]);
 
-  // ---------- effects ----------
+  useEffect(() => {
+    if (authUser?.email) {
+      setMembers([{ email: authUser.email.toLowerCase(), role: 'owner', name: authUser.name }]);
+    }
+  }, [authUser]);
+
   useEffect(() => {
     const keyword = inviteEmail.trim();
     if (!keyword || keyword.length < 2) {
@@ -99,19 +127,8 @@ export const CreateWorkspaceModal = ({
     const timer = setTimeout(async () => {
       try {
         setIsSearching(true);
-        const res = await fetch(
-          `http://localhost:5000/api/v1/users/search?q=${encodeURIComponent(
-            keyword
-          )}`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token') || ''}`
-            }
-          }
-        );
-        if (!res.ok) throw new Error('Search failed');
-        const data = await res.json();
-        setSearchResults(data.users || []);
+        const res = await api.get(`/users/search?keyword=${encodeURIComponent(keyword)}`);
+        setSearchResults(res.data?.data?.users || []);
         setShowDropdown(true);
       } catch (err) {
         console.error(err);
@@ -124,10 +141,38 @@ export const CreateWorkspaceModal = ({
     return () => clearTimeout(timer);
   }, [inviteEmail]);
 
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setIsCategoriesLoading(true);
+        const res = await api.get('/categories');
+        const data = Array.isArray(res.data) ? res.data : res.data.categories || res.data.data || [];
+        setCategories(data);
+      } catch (err) {
+        const error = err as AxiosError;
+        console.error(error.message);
+        setCategories([]);
+      } finally {
+        setIsCategoriesLoading(false);
+      }
+    };
+
+    if (open) {
+      fetchCategories();
+    }
+  }, [open]);
+
   // ---------- handlers ----------
   const handleSelectUser = (user: SearchUser) => {
     const email = user.email.toLowerCase();
     if (members.some((m) => m.email === email)) return;
+    if (members.length >= maxMembers) {
+      setToast({
+        type: 'error',
+        message: `Gói ${userPlan === 'pro' ? 'Pro' : 'Free'} chỉ cho phép tối đa ${maxMembers} thành viên.`,
+      });
+      return;
+    }
     setMembers((prev) => [...prev, { email, role: 'member', name: user.name }]);
     setInviteEmail('');
     setSearchResults([]);
@@ -147,7 +192,7 @@ export const CreateWorkspaceModal = ({
   const resetForm = () => {
     setWorkspaceName('');
     setDescription('');
-    setCategory('');
+    setCategoryId('');
     setTeamSize('1-10');
     setChannelSetup('default');
     setCustomChannelName('');
@@ -156,7 +201,11 @@ export const CreateWorkspaceModal = ({
     setInviteEmail('');
     setSearchResults([]);
     setShowDropdown(false);
-    setMembers([{ email: 'david@uit.edu.vn', role: 'owner', name: 'David Lê' }]);
+    setMembers(
+      authUser?.email
+        ? [{ email: authUser.email.toLowerCase(), role: 'owner', name: authUser.name }]
+        : []
+    );
     setToast(null);
   };
 
@@ -170,34 +219,51 @@ export const CreateWorkspaceModal = ({
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!categoryId) {
+      setToast({ type: 'error', message: 'Vui lòng chọn danh mục workspace.' });
+      return;
+    }
+
+    if (members.length > maxMembers) {
+      setToast({
+        type: 'error',
+        message: `Workspace vượt giới hạn ${maxMembers} thành viên của gói ${userPlan === 'pro' ? 'Pro' : 'Free'}.`,
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     setToast(null);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-      console.log({
-        workspaceName,
-        description,
-        category,
-        teamSize,
-        members,
+      const payload = {
+        name: workspaceName.trim(),
+        description: description.trim() || undefined,
+        categoryId,
+        members: members.map((member) => ({
+          email: member.email.toLowerCase(),
+          role: member.role,
+        })),
         channelSetup,
-        customChannel:
-          channelSetup === 'custom'
-            ? {
-                name: customChannelName,
-                description: customChannelDescription,
-                visibility: customChannelVisibility
-              }
-            : null
-      });
+        ...(channelSetup === 'custom' && customChannelName.trim() && {
+          customChannel: {
+            name: customChannelName.trim(),
+            description: customChannelDescription.trim() || undefined,
+            visibility: customChannelVisibility,
+          },
+        }),
+      };
+
+      await api.post('/workspaces', payload);
       setToast({ type: 'success', message: 'Tạo workspace thành công!' });
+      onCreated?.();
       setTimeout(() => {
         handleClose();
       }, 700);
     } catch (err) {
+      const error = err as AxiosError<{ message?: string }>;
       setToast({
         type: 'error',
-        message: 'Tạo workspace thất bại, vui lòng thử lại.'
+        message: error.response?.data?.message || 'Tạo workspace thất bại, vui lòng thử lại.'
       });
     } finally {
       setIsSubmitting(false);
@@ -208,9 +274,8 @@ export const CreateWorkspaceModal = ({
 
   return (
     <div
-      className={`fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-md md:p-lg transition-opacity duration-300 ${
-        isVisible ? 'opacity-100' : 'opacity-0'
-      }`}
+      className={`fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-md md:p-lg transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'
+        }`}
       onClick={(e) => {
         if (e.target === e.currentTarget) handleClose();
       }}
@@ -218,9 +283,8 @@ export const CreateWorkspaceModal = ({
       {/* Toast */}
       {toast && (
         <div
-          className={`absolute top-4 left-1/2 -translate-x-1/2 rounded-lg px-4 py-2 text-sm shadow z-[60] transition-all duration-300 ${
-            toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
-          }`}
+          className={`absolute top-4 left-1/2 -translate-x-1/2 rounded-lg px-4 py-2 text-sm shadow z-[60] transition-all duration-300 ${toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+            }`}
         >
           {toast.message}
         </div>
@@ -228,9 +292,8 @@ export const CreateWorkspaceModal = ({
 
       <form
         onSubmit={handleSubmit}
-        className={`w-full max-w-3xl bg-surface rounded-xl shadow-xl border border-surface-variant overflow-hidden flex flex-col max-h-[90vh] transition-all duration-300 transform ${
-          isVisible ? 'translate-y-0 scale-100' : 'translate-y-8 scale-95'
-        }`}
+        className={`w-full max-w-3xl bg-surface rounded-xl shadow-xl border border-surface-variant overflow-hidden flex flex-col max-h-[90vh] transition-all duration-300 transform ${isVisible ? 'translate-y-0 scale-100' : 'translate-y-8 scale-95'
+          }`}
       >
         {/* Header */}
         <header className="px-lg py-md border-b border-surface-variant flex items-center justify-between bg-surface-container-lowest shrink-0">
@@ -240,6 +303,9 @@ export const CreateWorkspaceModal = ({
             </h1>
             <p className="font-body-sm text-body-sm text-on-surface-variant">
               Set up a new collaborative environment for your team.
+            </p>
+            <p className="font-label-sm text-label-sm text-primary mt-1">
+              Gói {userPlan === 'pro' ? 'Pro' : 'Free'}: {members.length}/{maxMembers} thành viên
             </p>
           </div>
           <div className="flex items-center gap-md">
@@ -314,22 +380,18 @@ export const CreateWorkspaceModal = ({
                   <div className="relative">
                     <select
                       id="workspace-category"
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
+                      value={categoryId}
+                      onChange={(e) => setCategoryId(e.target.value)}
                       className="w-full h-12 px-md py-sm bg-surface border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface appearance-none focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all"
                     >
                       <option value="" disabled>
-                        Chọn danh mục
+                        {isCategoriesLoading ? 'Đang tải danh mục...' : 'Chọn danh mục'}
                       </option>
-                      <option value="work">Công việc</option>
-                      <option value="education">Giáo dục</option>
-                      <option value="community">Cộng đồng</option>
-                      <option value="personal">Cá nhân</option>
-                      <option value="events">Sự kiện</option>
-                      <option value="projects">Dự án</option>
-                      <option value="social">Mạng xã hội</option>
-                      <option value="gaming">Giải trí / Gaming</option>
-                      <option value="other">Khác</option>
+                      {categories.map((category) => (
+                        <option key={category._id} value={category._id}>
+                          {category.name}
+                        </option>
+                      ))}
                     </select>
                     <span className="material-symbols-outlined absolute right-md top-1/2 -translate-y-1/2 text-outline pointer-events-none">
                       expand_more
@@ -352,16 +414,20 @@ export const CreateWorkspaceModal = ({
                     >
                       <option value="1-10">1 - 10 người</option>
                       <option value="11-50">11 - 50 người</option>
-                      <option value="51-200">51 - 200 người (gói Pro)</option>
-                      <option value="201-500">201 - 500 người (gói Pro)</option>
+                      {userPlan === 'pro' && (
+                        <>
+                          <option value="51-200">51 - 200 người</option>
+                          <option value="201-500">201 - 500 người</option>
+                        </>
+                      )}
                     </select>
                     <span className="material-symbols-outlined absolute right-md top-1/2 -translate-y-1/2 text-outline pointer-events-none">
                       expand_more
                     </span>
                   </div>
                   <p className="font-body-sm text-body-sm text-on-surface-variant mt-xs">
-                    Gói Free: tối đa 50 thành viên/Group • Gói Pro: tối đa 500
-                    thành viên/Group
+                    Gói {userPlan === 'pro' ? 'Pro' : 'Free'} cho phép tối đa {maxMembers} thành viên/Group.
+                    Còn có thể thêm {remainingMembers} thành viên.
                   </p>
                 </div>
               </div>
@@ -372,7 +438,7 @@ export const CreateWorkspaceModal = ({
                 Invite Members
               </h2>
               <p className="font-body-sm text-body-sm text-on-surface-variant">
-                Search and select members from the system. Members can be assigned roles later.
+                Search and select members from the system. Usage: {members.length}/{maxMembers} members.
               </p>
 
               <div className="relative z-10">
@@ -403,7 +469,7 @@ export const CreateWorkspaceModal = ({
                         Đang tìm...
                       </div>
                     ) : searchResults.length === 0 ? (
-                      <div className="px-md py-md text-sm text-on-// surface-variant break-words">
+                      <div className="px-md py-md text-sm text-on-surface-variant break-words">
                         Không tìm thấy người dùng phù hợp
                       </div>
                     ) : (
@@ -431,9 +497,8 @@ export const CreateWorkspaceModal = ({
                   >
                     <div className="flex items-center gap-md min-w-0 flex-1">
                       <span
-                        className={`w-10 h-10 rounded-full shrink-0 flex items-center justify-center font-label-md text-label-md ${
-                          idx % 2 === 0 ? 'bg-secondary-container text-on-secondary-container' : 'bg-tertiary-container text-on-tertiary-container'
-                        }`}
+                        className={`w-10 h-10 rounded-full shrink-0 flex items-center justify-center font-label-md text-label-md ${idx % 2 === 0 ? 'bg-secondary-container text-on-secondary-container' : 'bg-tertiary-container text-on-tertiary-container'
+                          }`}
                       >
                         {getInitials(member.email)}
                       </span>
@@ -484,9 +549,8 @@ export const CreateWorkspaceModal = ({
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
                 <label
-                  className={`relative flex cursor-pointer rounded-lg border bg-surface p-md focus:outline-none transition-colors ${
-                    channelSetup === 'default' ? 'border-primary ring-1 ring-primary' : 'border-outline-variant hover:bg-surface-container-low'
-                  }`}
+                  className={`relative flex cursor-pointer rounded-lg border bg-surface p-md focus:outline-none transition-colors ${channelSetup === 'default' ? 'border-primary ring-1 ring-primary' : 'border-outline-variant hover:bg-surface-container-low'
+                    }`}
                 >
                   <input
                     checked={channelSetup === 'default'}
@@ -517,9 +581,8 @@ export const CreateWorkspaceModal = ({
                   </span>
                 </label>
                 <label
-                  className={`relative flex cursor-pointer rounded-lg border bg-surface p-md focus:outline-none transition-colors ${
-                    channelSetup === 'custom' ? 'border-primary ring-1 ring-primary' : 'border-outline-variant hover:bg-surface-container-low'
-                  }`}
+                  className={`relative flex cursor-pointer rounded-lg border bg-surface p-md focus:outline-none transition-colors ${channelSetup === 'custom' ? 'border-primary ring-1 ring-primary' : 'border-outline-variant hover:bg-surface-container-low'
+                    }`}
                 >
                   <input
                     className="peer sr-only"
@@ -578,9 +641,8 @@ export const CreateWorkspaceModal = ({
                       <label className="block font-label-md text-label-md text-on-surface">Trạng thái channel</label>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-sm">
                         <label
-                          className={`cursor-pointer rounded-lg border p-md bg-surface transition-colors ${
-                            customChannelVisibility === 'public' ? 'border-primary ring-1 ring-primary' : 'border-outline-variant hover:bg-surface-container-low'
-                          }`}
+                          className={`cursor-pointer rounded-lg border p-md bg-surface transition-colors ${customChannelVisibility === 'public' ? 'border-primary ring-1 ring-primary' : 'border-outline-variant hover:bg-surface-container-low'
+                            }`}
                         >
                           <input
                             className="sr-only"
@@ -601,9 +663,8 @@ export const CreateWorkspaceModal = ({
                           </div>
                         </label>
                         <label
-                          className={`cursor-pointer rounded-lg border p-md bg-surface transition-colors ${
-                            customChannelVisibility === 'private' ? 'border-primary ring-1 ring-primary' : 'border-outline-variant hover:bg-surface-container-low'
-                          }`}
+                          className={`cursor-pointer rounded-lg border p-md bg-surface transition-colors ${customChannelVisibility === 'private' ? 'border-primary ring-1 ring-primary' : 'border-outline-variant hover:bg-surface-container-low'
+                            }`}
                         >
                           <input
                             className="sr-only"
@@ -629,36 +690,36 @@ export const CreateWorkspaceModal = ({
                 </div>
               )}
             </section>
-
-            <footer className="px-0 pt-md border-t border-surface-variant bg-surface-container-lowest flex items-center justify-end gap-md shrink-0">
-              <button
-                type="button"
-                onClick={handleClose}
-                className="px-lg py-2.5 rounded-lg font-label-md text-label-md text-secondary hover:bg-surface-variant/50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="px-lg py-2.5 rounded-lg bg-primary hover:bg-on-primary-fixed-variant text-on-primary font-label-md text-label-md shadow-sm transition-colors flex items-center gap-sm disabled:opacity-70 min-w-[160px] justify-center"
-              >
-                {isSubmitting ? (
-                  <>
-                    <span className="h-4 w-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-                    Đang tạo...
-                  </>
-                ) : (
-                  <>
-                    Create Workspace
-                    <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-                  </>
-                )}
-              </button>
-            </footer>
           </div>
         </div>
-      </div>
+
+        <footer className="px-10 py-5 pt-md border-t border-surface-variant bg-surface-container-lowest flex items-center justify-end gap-md shrink-0">
+          <button
+            type="button"
+            onClick={handleClose}
+            className="cursor-pointer px-lg py-2.5 rounded-lg font-label-md text-label-md text-secondary hover:bg-surface-variant/50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="cursor-pointer px-lg py-2.5 rounded-lg bg-primary hover:bg-on-primary-fixed-variant text-on-primary font-label-md text-label-md shadow-sm transition-colors flex items-center gap-sm disabled:opacity-70 min-w-[160px] justify-center"
+          >
+            {isSubmitting ? (
+              <>
+                <span className="h-4 w-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                Đang tạo...
+              </>
+            ) : (
+              <>
+                Create Workspace
+                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+              </>
+            )}
+          </button>
+        </footer>
+      </form>
     </div>
   );
 };

@@ -1,27 +1,13 @@
 import mongoose, { Document, Model, Schema, Types } from "mongoose";
 import { WorkspaceRole } from "../types";
 
-<<<<<<< Updated upstream
-export type WorkspacePlan = "standard" | "pro";
-=======
-export type WorkspacePlan = 'standard' | 'pro';
-export type WorkspaceCategory = 
-  | 'work'
-  | 'education'
-  | 'community'
-  | 'personal'
-  | 'events'
-  | 'projects'
-  | 'social'
-  | 'gaming'
-  | 'other';
->>>>>>> Stashed changes
+export type WorkspacePlan = 'free' | 'pro';
 
 export interface IWorkspace extends Document {
   name: string;
   slug: string;
   description?: string;
-  category: WorkspaceCategory; // thêm
+  category: Types.ObjectId; // Reference to Category
   ownerId: Types.ObjectId;
   members: {
     userId: Types.ObjectId;
@@ -43,8 +29,8 @@ const workspaceMemberSchema = new Schema(
     },
     role: {
       type: String,
-      enum: ["admin", "owner", "member"],
-      default: "member",
+      enum: ["admin", "owner", "member", "pending"],
+      default: "pending",
       required: true,
     },
     joinedAt: {
@@ -78,11 +64,9 @@ const workspaceSchema = new Schema<IWorkspace>(
       default: "",
     },
     category: {
-      type: String,
-      enum: ['work', 'education', 'community', 'personal', 'events', 'projects', 'social', 'gaming', 'other'],
-      trim: true, 
-      maxlength: 50,
-      default: 'work'
+      type: Schema.Types.ObjectId,
+      ref: 'Category',
+      required: true,
     },
     ownerId: {
       type: Schema.Types.ObjectId,
@@ -95,8 +79,8 @@ const workspaceSchema = new Schema<IWorkspace>(
     },
     plan: {
       type: String,
-      enum: ["standard", "pro"],
-      default: "standard",
+      enum: ["free", "pro"],
+      default: "free",
     },
     channelCount: {
       type: Number,

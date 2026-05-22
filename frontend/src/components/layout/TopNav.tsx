@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import api from "@/services/api";
 import { useAuthStore } from "@/store/authStore";
+import { goToAuthOrDashboard } from "@/utils/authRedirect";
 
 export default function TopNav() {
   const router = useRouter();
@@ -83,17 +84,21 @@ export default function TopNav() {
         ) : (
           // Chưa đăng nhập
           <>
-        <Link href="/login"
+        <button
           className="font-label-md text-label-md text-secondary hover:text-primary transition-colors hidden md:block"
+          onClick={() => goToAuthOrDashboard(router, "/login")}
+          type="button"
         >
           Đăng nhập
-        </Link>
+        </button>
 
-        <Link href="/register"
+        <button
           className="bg-primary text-on-primary font-label-md text-label-md px-4 py-1 rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
+          onClick={() => goToAuthOrDashboard(router, "/register")}
+          type="button"
         >
           Bắt đầu ngay
-        </Link>
+        </button>
         </> )}
       </div>
       

@@ -31,6 +31,8 @@ const toSafeUser = (user: IUser) => ({
   email: user.email,
   avatar: user.avatar || "",
   role: user.role,
+  plan: user.plan || "free",
+  subscriptionPlan: user.subscriptionPlan || user.plan || "free",
   emailVerified: user.emailVerified,
   workspaces: user.workspaces.map((item) => ({
     workspaceId: String(item.workspaceId),
@@ -339,9 +341,7 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
 
     const tokenIndex = await findRefreshTokenIndex(user, refreshToken);
     if (tokenIndex < 0) {
-      user.refreshTokens = [];
-      await user.save();
-      throw new AppError("Refresh token has been revoked", 401, "REFRESH_REVOKED");
+      throw new AppError("Refresh token has been revoked or expired", 401, "REFRESH_REVOKED");
     }
 
     user.refreshTokens.splice(tokenIndex, 1);
@@ -355,7 +355,14 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
       },
     });
   } catch (error) {
-    next(error instanceof AppError ? error : new AppError("Refresh token is invalid", 401, "REFRESH_INVALID"));
+    const appError =
+      error instanceof AppError ? error : new AppError("Refresh token is invalid", 401, "REFRESH_INVALID");
+
+    if (["REFRESH_REQUIRED", "REFRESH_INVALID", "USER_NOT_FOUND", "REFRESH_REVOKED"].includes(appError.code || "")) {
+      res.clearCookie(REFRESH_COOKIE_NAME, { ...cookieOptions, maxAge: undefined });
+    }
+
+    next(appError);
   }
 };
 

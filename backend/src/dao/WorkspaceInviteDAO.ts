@@ -20,6 +20,14 @@ export class WorkspaceInviteDAO extends BaseDAO<IWorkspaceInvite> {
       .lean();
   }
 
+  async findActiveByWorkspace(workspaceId: string) {
+    return this.model.findOne({
+      workspaceId,
+      status: 'active',
+      expiresAt: { $gt: new Date() }
+    }).lean();
+  }
+
   async incrementUsedCount(inviteId: string) {
     return this.model
       .findByIdAndUpdate(

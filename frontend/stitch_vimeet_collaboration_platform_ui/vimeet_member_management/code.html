@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ViMeet - Member Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-low": "#f3f4f6",
+                        "on-secondary-fixed": "#0e1d2b",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "inverse-on-surface": "#f0f1f3",
+                        "tertiary": "#535555",
+                        "outline": "#737686",
+                        "tertiary-fixed": "#e2e2e2",
+                        "on-secondary-fixed-variant": "#3a4858",
+                        "on-tertiary-container": "#f0f0f0",
+                        "surface-tint": "#0053db",
+                        "surface": "#f8f9fb",
+                        "on-primary-fixed": "#00174b",
+                        "on-primary-container": "#eeefff",
+                        "primary": "#004ac6",
+                        "on-surface-variant": "#434655",
+                        "surface-container-high": "#e7e8ea",
+                        "inverse-primary": "#b4c5ff",
+                        "surface-container-lowest": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "on-primary": "#ffffff",
+                        "background": "#f8f9fb",
+                        "on-secondary": "#ffffff",
+                        "tertiary-container": "#6c6d6d",
+                        "secondary": "#516070",
+                        "surface-bright": "#f8f9fb",
+                        "on-error": "#ffffff",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "primary-fixed": "#dbe1ff",
+                        "tertiary-fixed-dim": "#c6c6c7",
+                        "secondary-fixed-dim": "#b9c8db",
+                        "on-tertiary-fixed": "#1a1c1c",
+                        "error": "#ba1a1a",
+                        "primary-container": "#2563eb",
+                        "on-surface": "#191c1e",
+                        "surface-container-highest": "#e1e2e4",
+                        "secondary-fixed": "#d5e4f8",
+                        "on-background": "#191c1e",
+                        "surface-variant": "#e1e2e4",
+                        "on-error-container": "#93000a",
+                        "surface-container": "#edeef0",
+                        "on-tertiary": "#ffffff",
+                        "secondary-container": "#d5e4f8",
+                        "outline-variant": "#c3c6d7",
+                        "surface-dim": "#d9dadc",
+                        "on-tertiary-fixed-variant": "#454747",
+                        "on-secondary-container": "#576676",
+                        "inverse-surface": "#2e3132"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xs": "4px",
+                        "md": "16px",
+                        "xl": "32px",
+                        "sidebar_width": "280px",
+                        "gutter": "24px",
+                        "sm": "8px",
+                        "lg": "24px",
+                        "base": "4px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "display": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "label-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "600" }],
+                        "display": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen flex">
+<!-- SideNavBar -->
+<nav class="hidden md:flex flex-col w-sidebar_width h-full px-md py-lg bg-surface-container-lowest border-r border-outline-variant fixed left-0 top-0">
+<div class="flex items-center gap-sm mb-lg">
+<img alt="ViMeet Workspace" class="w-10 h-10 rounded-full" data-alt="A small circular avatar logo for the ViMeet Workspace. The avatar has a solid professional blue background (#004ac6) with clean, sans-serif white initials 'VP' centered perfectly. The style is modern, minimalist, and corporate, fitting a high-end productivity tool." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXGfEU5VkLapCMkF36NIVJjgww04Zy27vtRRiowqbk1M4shLytNhBuFtQtvSMeIH4bcRG9lLW2Oplt1JUqcJ1K01A8Y5edUdLL08SB_WPuHsEQmTimkcZW3wQC9WynnSvIHXrc2yGtHKfUjdHODiGhkemsoSQwksexoyk8me14OODKghopbSmK0BN1GkFOchS_Y7aa45AgkGkCtndtEH9JskjgY7i9E_0H2gvP4910v0jWlxKvh2HBARW3C_xgUfhC9OEzw7vHlrDO"/>
+<div>
+<h1 class="text-headline-sm font-headline-sm font-bold text-primary">ViMeet Pro</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Enterprise Plan</p>
+</div>
+</div>
+<button class="w-full bg-primary text-on-primary font-label-md text-label-md py-sm px-md rounded-lg mb-lg hover:bg-primary-container transition-colors flex items-center justify-center gap-sm shadow-sm hover:shadow-md">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">add</span>
+            New Meeting
+        </button>
+<ul class="flex flex-col gap-xs flex-grow">
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container transition-all scale-100 active:scale-[0.98] duration-150" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container transition-all scale-100 active:scale-[0.98] duration-150" href="#">
+<span class="material-symbols-outlined">video_call</span>
+<span class="font-label-md text-label-md">Meetings</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container transition-all scale-100 active:scale-[0.98] duration-150" href="#">
+<span class="material-symbols-outlined">videocam</span>
+<span class="font-label-md text-label-md">Recordings</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded-lg bg-secondary-container text-on-secondary-container font-bold hover:bg-surface-container transition-all scale-100 active:scale-[0.98] duration-150 relative" href="#">
+<div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-2/3 bg-primary rounded-r-full"></div>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">group</span>
+<span class="font-label-md text-label-md">Contacts</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container transition-all scale-100 active:scale-[0.98] duration-150" href="#">
+<span class="material-symbols-outlined">folder</span>
+<span class="font-label-md text-label-md">Files</span>
+</a>
+</li>
+</ul>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 md:ml-sidebar_width min-h-screen flex flex-col">
+<!-- TopNavBar (Mobile only for Nav, Web for actions) -->
+<header class="flex justify-between items-center w-full px-lg h-16 bg-surface border-b border-outline-variant shadow-sm z-40 sticky top-0">
+<div class="md:hidden flex items-center gap-sm">
+<span class="text-headline-sm font-headline-sm font-bold text-primary">ViMeet</span>
+</div>
+<!-- Search Bar -->
+<div class="hidden md:flex flex-1 max-w-md mx-lg">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-full py-2 pl-xl pr-md font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-shadow" placeholder="Search members..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-sm">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors duration-200 cursor-pointer active:scale-95 transition-transform">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors duration-200 cursor-pointer active:scale-95 transition-transform hidden md:block">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors duration-200 cursor-pointer active:scale-95 transition-transform hidden sm:block">
+<span class="material-symbols-outlined">help</span>
+</button>
+<div class="ml-sm w-8 h-8 rounded-full bg-surface-container-highest border border-outline-variant overflow-hidden cursor-pointer">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="A professional headshot of a person looking directly at the camera. The image is cropped in a tight circle. The lighting is soft and natural, emphasizing a friendly yet corporate appearance. The background is a slightly blurred, neutral light gray to keep the focus entirely on the subject." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAtu-D6tRlkWxiHxAMi4C_F7VcbZWFFFQCTQPHD_6xE7Gv2_9T6HUkYjJ32WivDwEGlifzo0Nj2Mtpc5RqBZAzPpAPsvtiL4a5Q3gEgsirzVgnxY7Yxf4i2jESuNhKZJU6U1a6A-wd4XrRt5nM2bG6B4ER0-0IE-3Ndop7qnj1s6i7ks-95xpAg6x46ARbBapX_Cy09f6Coc6ZXmszA9fbcpGvaBBWZqD2CP_Dsg7mG8boUx2CQoX-S-0heNHNUgUo5Wukfc484bvBb"/>
+</div>
+</div>
+</header>
+<!-- Page Content -->
+<div class="p-lg max-w-7xl mx-auto w-full">
+<!-- Header Section -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-md mb-lg">
+<div>
+<h2 class="text-headline-lg font-headline-lg text-on-surface">Design Leadership Team</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Manage workspace members and their roles.</p>
+</div>
+<button class="bg-primary text-on-primary font-label-md text-label-md py-2 px-md rounded-lg hover:bg-primary-container transition-colors flex items-center gap-sm shadow-sm hover:shadow-md">
+<span class="material-symbols-outlined text-[20px]">person_add</span>
+                    Invite Members
+                </button>
+</div>
+<!-- Tabs -->
+<div class="flex border-b border-outline-variant mb-lg">
+<button class="px-md py-sm font-label-md text-label-md text-primary border-b-2 border-primary mr-lg">Active Members (12)</button>
+<button class="px-md py-sm font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors">Pending Invitations (3)</button>
+</div>
+<!-- Main Card (Table) -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+<!-- Table Controls -->
+<div class="p-md flex flex-col sm:flex-row justify-between items-center gap-md border-b border-outline-variant bg-surface-bright">
+<div class="relative w-full sm:w-64">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg py-1.5 pl-xl pr-md font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-shadow" placeholder="Filter by name or email" type="text"/>
+</div>
+<div class="flex items-center gap-sm w-full sm:w-auto">
+<button class="flex items-center gap-xs px-sm py-1.5 text-on-surface-variant font-label-sm text-label-sm hover:bg-surface-container rounded-md transition-colors border border-outline-variant bg-surface-container-lowest">
+<span class="material-symbols-outlined text-[18px]">filter_list</span>
+                            Filter
+                        </button>
+<button class="flex items-center gap-xs px-sm py-1.5 text-on-surface-variant font-label-sm text-label-sm hover:bg-surface-container rounded-md transition-colors border border-outline-variant bg-surface-container-lowest">
+                            Role: All
+                            <span class="material-symbols-outlined text-[18px]">arrow_drop_down</span>
+</button>
+</div>
+</div>
+<!-- Table -->
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-outline-variant bg-surface text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
+<th class="py-sm px-md font-medium">Member</th>
+<th class="py-sm px-md font-medium">Role</th>
+<th class="py-sm px-md font-medium">Last Active</th>
+<th class="py-sm px-md font-medium text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant font-body-sm text-body-sm">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-bright transition-colors group">
+<td class="py-md px-md">
+<div class="flex items-center gap-md">
+<img alt="Sarah Jenkins" class="w-10 h-10 rounded-full border border-outline-variant" data-alt="A professional headshot of a smiling woman with dark hair pulled back, wearing a light blue corporate blouse. The image is tightly cropped into a circle. The lighting is bright studio lighting on a pure white background, conveying approachability and competence." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBFX89EAc9Wb3tcU3YL5AytWj1AixSoFwgp_FpRpJNoVdeDjiBs4irE2b8sQHnPCQs6Le0OgwrVahCgIgQsiMWlpQxi2htKPAdZoDAkEV9U2pi2mqNhRFfb1fpN7j9IEv78gypRcPFBqeFYGu3DvMAZpoI-UJM1_B-KtjHlwkROR21Gxpuhw68DDcxTyCVCvt-tfFme3TeiIypRDQalURjYHxhvG5BXmjOo0U_eHxJV81MyGV5eKPBv33Ju5H965fu9Rc-7JMCQO4Pp"/>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Sarah Jenkins <span class="text-on-surface-variant font-body-sm">(You)</span></p>
+<p class="text-on-surface-variant">sarah.j@vimeet.com</p>
+</div>
+</div>
+</td>
+<td class="py-md px-md">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-container text-on-primary-container">
+                                        Owner
+                                    </span>
+</td>
+<td class="py-md px-md text-on-surface-variant">
+                                    Just now
+                                </td>
+<td class="py-md px-md text-right">
+<button class="text-on-surface-variant hover:text-primary transition-colors p-1 rounded-md hover:bg-surface-container opacity-0 group-hover:opacity-100 focus:opacity-100">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-bright transition-colors group">
+<td class="py-md px-md">
+<div class="flex items-center gap-md">
+<img alt="David Chen" class="w-10 h-10 rounded-full border border-outline-variant" data-alt="A professional headshot of a man with short black hair and glasses, wearing a dark gray collared shirt. He is looking off slightly to the right with a neutral, attentive expression. The background is a soft, muted corporate gray, creating a polished, professional aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXqxRC8iD1yXTh2geNc5QIVidhyyVF67IoCTCcUX6ooe7tHYYB8-iqhTW62dCk6uDYNb4-_ktExx9eFCGfRixgdOlBkTor3Xr54rA26MTkr3UrJzWGcadt9Cs1PkaNKZ9SziPhfyjbFdAvipQrWx2iNyPj1b2IR1GfQjnoIhPbSOEQ-7Z0AomhADeanY4ZoIh4ZfYgykqQzSOEDNZgsQ9JvCG8ghGnJVH_ie2mxZ4b5Lr6NZDnrLpJJ-Y3kRVZiwZjh2HKXKPVScZj"/>
+<div>
+<p class="font-label-md text-label-md text-on-surface">David Chen</p>
+<p class="text-on-surface-variant">d.chen@vimeet.com</p>
+</div>
+</div>
+</td>
+<td class="py-md px-md">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-surface-container-high text-on-surface">
+                                        Admin
+                                    </span>
+</td>
+<td class="py-md px-md text-on-surface-variant">
+                                    2 hours ago
+                                </td>
+<td class="py-md px-md text-right">
+<button class="text-on-surface-variant hover:text-primary transition-colors p-1 rounded-md hover:bg-surface-container opacity-0 group-hover:opacity-100 focus:opacity-100">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-bright transition-colors group">
+<td class="py-md px-md">
+<div class="flex items-center gap-md">
+<img alt="Elena Rodriguez" class="w-10 h-10 rounded-full border border-outline-variant" data-alt="A high-quality portrait of a woman with curly brown hair, smiling brightly. She wears a navy blue blazer over a white shirt. The lighting is warm and inviting, set against a subtle, light beige background. The image is a standard circular avatar used in professional dashboards." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBxifAooPpKuXgUUGSdU0SMMwViHeKjfX29bvTRxvu-rWTKEEc1BmBe-hbD8aqaxaxdVa9dN6oudVKIfz6d-3LcSXMfCFHG2-Advy0rtRPmLBSgUvo2S4Hg-r7rOLHyH6ovGTsUmWZOIMagTDZwFETObkZ6GkpAdmoThDrqfEzGnnsVQYGKfiDRpDLcZ_n8zNNualnWS4wmGrXwv-tjowC20lmjjILdqCo0ZbBOkYxujunF80NkahDexHx-P_0-WpV5HTT80IMEmz_F"/>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Elena Rodriguez</p>
+<p class="text-on-surface-variant">elena.r@external.com</p>
+</div>
+</div>
+</td>
+<td class="py-md px-md">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-surface-variant text-on-surface-variant">
+                                        Member
+                                    </span>
+</td>
+<td class="py-md px-md text-on-surface-variant">
+                                    Yesterday
+                                </td>
+<td class="py-md px-md text-right">
+<button class="text-on-surface-variant hover:text-primary transition-colors p-1 rounded-md hover:bg-surface-container opacity-0 group-hover:opacity-100 focus:opacity-100">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-bright transition-colors group">
+<td class="py-md px-md">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold text-lg border border-outline-variant">
+                                            MJ
+                                        </div>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Marcus Johnson</p>
+<p class="text-on-surface-variant">marcus.j@vimeet.com</p>
+</div>
+</div>
+</td>
+<td class="py-md px-md">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-surface-variant text-on-surface-variant">
+                                        Member
+                                    </span>
+</td>
+<td class="py-md px-md text-on-surface-variant">
+                                    Oct 24, 2023
+                                </td>
+<td class="py-md px-md text-right">
+<button class="text-on-surface-variant hover:text-primary transition-colors p-1 rounded-md hover:bg-surface-container opacity-0 group-hover:opacity-100 focus:opacity-100">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination Footer -->
+<div class="p-md border-t border-outline-variant bg-surface flex items-center justify-between">
+<p class="font-body-sm text-body-sm text-on-surface-variant">Showing 1 to 4 of 12 members</p>
+<div class="flex gap-sm">
+<button class="px-sm py-1 border border-outline-variant rounded-md text-on-surface-variant hover:bg-surface-container disabled:opacity-50" disabled="">Previous</button>
+<button class="px-sm py-1 border border-outline-variant rounded-md text-on-surface-variant hover:bg-surface-container">Next</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

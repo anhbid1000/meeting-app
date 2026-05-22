@@ -9,6 +9,7 @@ export const notFound = (req: Request, _res: Response, next: NextFunction) => {
 export const errorHandler = (
   err: Error & {
     statusCode?: number;
+    status?: number;
     code?: string | number;
     keyValue?: Record<string, unknown>;
     retryAfterSeconds?: number;
@@ -17,7 +18,7 @@ export const errorHandler = (
   res: Response,
   _next: NextFunction
 ) => {
-  let statusCode = err.statusCode || 500;
+  let statusCode = err.statusCode || err.status || 500;
   let message = err.message || "Internal server error";
   let code = typeof err.code === "string" ? err.code : "INTERNAL_ERROR";
 

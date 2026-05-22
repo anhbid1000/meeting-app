@@ -1,6 +1,12 @@
+"use client";
+
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { goToAuthOrDashboard } from "@/utils/authRedirect";
 
 export default function Hero() {
+  const router = useRouter();
+
   return (
     <section className="relative pt-24 pb-32 px-6 overflow-hidden bg-surface-container-lowest">
       {/* Gradient + pattern background */}
@@ -20,13 +26,14 @@ export default function Hero() {
           </p>
 
           <div className="flex flex-wrap gap-4 mt-4">
-            <a
-              href="/register"
+            <button
               className="bg-primary text-on-primary font-label-md text-label-md px-6 py-2 rounded-lg hover:bg-primary/90 transition-colors shadow-md flex items-center gap-2"
+              onClick={() => goToAuthOrDashboard(router, "/register")}
+              type="button"
             >
               Bắt đầu miễn phí
               <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-            </a>
+            </button>
 
             <a
               href="#features"
