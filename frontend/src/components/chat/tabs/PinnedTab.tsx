@@ -8,12 +8,13 @@ interface PinnedTabProps {
 }
 
 export default function PinnedTab({ channelId }: PinnedTabProps) {
-  const { data, isLoading, isFetching, isError } = useQuery<MessageListResponse>({
-    queryKey: ['pinned-messages', channelId],
-    queryFn: () => messageApi.getPinnedMessages(channelId as string),
-    enabled: Boolean(channelId),
-    staleTime: 15000,
-  });
+  const { data, isLoading, isFetching, isError } =
+    useQuery<MessageListResponse>({
+      queryKey: ['pinned-messages', channelId],
+      queryFn: () => messageApi.getPinnedMessages(channelId as string),
+      enabled: Boolean(channelId),
+      staleTime: 15000,
+    });
 
   const pinned = data?.data || [];
 
@@ -22,7 +23,9 @@ export default function PinnedTab({ channelId }: PinnedTabProps) {
   }
 
   if (isError) {
-    return <p className="text-sm text-[#8a90a0]">Unable to load pinned messages.</p>;
+    return (
+      <p className="text-sm text-[#8a90a0]">Unable to load pinned messages.</p>
+    );
   }
 
   if (!pinned.length) {
