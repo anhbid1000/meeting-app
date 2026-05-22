@@ -98,7 +98,7 @@ export class ChannelService {
         channelId: { $in: channelIds },
         userId,
       })
-        .select('channelId lastReadAt')
+        .select("channelId lastReadAt")
         .lean();
 
       const memberByChannelId = new Map(
@@ -128,10 +128,7 @@ export class ChannelService {
           const mentionFilter: any = {
             ...filter,
             mentions: {
-              $in: [
-                new Types.ObjectId(userId),
-                userId,
-              ],
+              $in: [new Types.ObjectId(userId), userId],
             },
           };
 

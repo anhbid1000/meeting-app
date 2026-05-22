@@ -395,7 +395,7 @@ export class ChannelMemberService {
     ).lean();
 
     if (!member) {
-      throw Object.assign(new Error('Channel member not found'), {
+      throw Object.assign(new Error("Channel member not found"), {
         status: 404,
       });
     }
@@ -405,11 +405,11 @@ export class ChannelMemberService {
 
   static async getUnreadCount(channelId: string, userId: string) {
     const member = await ChannelMember.findOne({ channelId, userId })
-      .select('lastReadAt')
+      .select("lastReadAt")
       .lean();
 
     if (!member) {
-      throw Object.assign(new Error('Channel member not found'), {
+      throw Object.assign(new Error("Channel member not found"), {
         status: 404,
       });
     }

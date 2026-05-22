@@ -235,11 +235,13 @@ export default function ChannelDirectoryPage() {
             isFavorite: favoriteOverrides[channel._id] ?? false,
             memberCount: effectiveMemberCount,
             activeNow: Math.max(0, effectiveMemberCount % 8),
-            lastMessageAt: activityOverride?.lastMessageAt || channel.lastMessageAt,
+            lastMessageAt:
+              activityOverride?.lastMessageAt || channel.lastMessageAt,
             lastMessagePreview:
               activityOverride?.lastMessagePreview ?? lastMessagePreview,
             lastActivityActor:
-              activityOverride?.lastActivityActor || channel.lastMessageSenderName,
+              activityOverride?.lastActivityActor ||
+              channel.lastMessageSenderName,
             canManageChannel,
             canJoinWithoutRequest,
           });
@@ -283,8 +285,12 @@ export default function ChannelDirectoryPage() {
           lastMessagePreview: stripLeadingReplyMarkers(
             String(payload?.lastMessageText || '')
           ),
-          lastMessageAt: String(payload?.lastMessageAt || new Date().toISOString()),
-          lastActivityActor: String(payload?.lastMessageSenderName || 'Teammate'),
+          lastMessageAt: String(
+            payload?.lastMessageAt || new Date().toISOString()
+          ),
+          lastActivityActor: String(
+            payload?.lastMessageSenderName || 'Teammate'
+          ),
         },
       }));
 
@@ -292,13 +298,18 @@ export default function ChannelDirectoryPage() {
 
       const isMember =
         joinedChannelIds.includes(channelId) ||
-        Boolean(target.members?.some((memberId) => String(memberId) === userId));
+        Boolean(
+          target.members?.some((memberId) => String(memberId) === userId)
+        );
 
       if (!isMember) return;
 
       setRealtimeUnreadOverrides((prev) => ({
         ...prev,
-        [channelId]: Math.max(0, (prev[channelId] ?? target.unreadCount ?? 0) + 1),
+        [channelId]: Math.max(
+          0,
+          (prev[channelId] ?? target.unreadCount ?? 0) + 1
+        ),
       }));
 
       if (mentionIds.includes(userId)) {

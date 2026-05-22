@@ -204,7 +204,7 @@ export const markChannelRead = async (
 
     const timestamp = rawTimestamp ? new Date(rawTimestamp) : new Date();
     if (Number.isNaN(timestamp.getTime())) {
-      return res.status(422).json({ message: 'Invalid timestamp' });
+      return res.status(422).json({ message: "Invalid timestamp" });
     }
 
     const member = await ChannelMemberService.updateLastReadAt(
