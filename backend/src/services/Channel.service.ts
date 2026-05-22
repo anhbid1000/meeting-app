@@ -13,8 +13,8 @@ export class ChannelService {
   static async getChannelDirectory(
     workspaceId: string,
     options: ChannelListOptions,
+    userId?: string,
   ) {
-    // TODO: later enrich with isMember, unreadCount based on ChannelMember.lastReadAt
     const { items, total, page, limit } = await channelDAO.findByWorkspace(
       workspaceId,
       options,
@@ -90,8 +90,70 @@ export class ChannelService {
       };
     });
 
+    const unreadCountByChannelId = new Map<string, number>();
+    const mentionCountByChannelId = new Map<string, number>();
+
+    if (userId && channelIds.length > 0) {
+      const memberships = await ChannelMember.find({
+        channelId: { $in: channelIds },
+        userId,
+      })
+        .select('channelId lastReadAt')
+        .lean();
+
+      const memberByChannelId = new Map(
+        memberships.map((row: any) => [String(row.channelId), row]),
+      );
+
+      await Promise.all(
+        enrichedItems.map(async (channel: any) => {
+          const channelId = String(channel._id);
+          const membership = memberByChannelId.get(channelId);
+
+          if (!membership) {
+            unreadCountByChannelId.set(channelId, 0);
+            mentionCountByChannelId.set(channelId, 0);
+            return;
+          }
+
+          const filter: any = {
+            channelId: channel._id,
+            isDeleted: { $ne: true },
+          };
+
+          if (membership.lastReadAt) {
+            filter.createdAt = { $gt: membership.lastReadAt };
+          }
+
+          const mentionFilter: any = {
+            ...filter,
+            mentions: {
+              $in: [
+                new Types.ObjectId(userId),
+                userId,
+              ],
+            },
+          };
+
+          const [unreadCount, mentionCount] = await Promise.all([
+            Message.countDocuments(filter),
+            Message.countDocuments(mentionFilter),
+          ]);
+
+          unreadCountByChannelId.set(channelId, unreadCount);
+          mentionCountByChannelId.set(channelId, mentionCount);
+        }),
+      );
+    }
+
+    const withUnread = enrichedItems.map((channel: any) => ({
+      ...channel,
+      unreadCount: unreadCountByChannelId.get(String(channel._id)) || 0,
+      mentionCount: mentionCountByChannelId.get(String(channel._id)) || 0,
+    }));
+
     return {
-      data: enrichedItems,
+      data: withUnread,
       meta: {
         page,
         limit,

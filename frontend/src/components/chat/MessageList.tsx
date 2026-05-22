@@ -5,10 +5,12 @@ import type { ChatMessage } from '@/types/message';
 interface MessageListProps {
   messages: ChatMessage[];
   currentUserId?: string;
+  unreadSince?: string | null;
   forceScrollToken?: number;
   hasMore: boolean;
   isFetchingMore: boolean;
   onLoadOlder: () => void;
+  onUserActivity?: () => void;
   onReply: (messageId: string) => void;
   onStartEdit: (payload: {
     messageId: string;
@@ -29,13 +31,44 @@ interface MessageListProps {
 
 const GROUP_WINDOW_MS = 5 * 60 * 1000;
 
+const getDayKey = (isoDate?: string) => {
+  if (!isoDate) return '';
+  const date = new Date(isoDate);
+  if (Number.isNaN(date.getTime())) return '';
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+};
+
+const formatDayLabel = (isoDate?: string) => {
+  if (!isoDate) return '';
+  const date = new Date(isoDate);
+  if (Number.isNaN(date.getTime())) return '';
+
+  const now = new Date();
+  const todayKey = getDayKey(now.toISOString());
+  const targetKey = getDayKey(isoDate);
+  if (targetKey === todayKey) return 'Today';
+
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const yesterdayKey = getDayKey(yesterday.toISOString());
+  if (targetKey === yesterdayKey) return 'Yesterday';
+
+  return date.toLocaleDateString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+};
+
 export default function MessageList({
   messages,
   currentUserId,
+  unreadSince,
   forceScrollToken,
   hasMore,
   isFetchingMore,
   onLoadOlder,
+  onUserActivity,
   onReply,
   onStartEdit,
   onDelete,
@@ -84,11 +117,26 @@ export default function MessageList({
   }, [messages]);
 
   const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
+    onUserActivity?.();
     const target = event.currentTarget;
     if (target.scrollTop < 120 && hasMore && !isFetchingMore) {
       onLoadOlder();
     }
   };
+
+  const firstUnreadMessageId = useMemo(() => {
+    if (!unreadSince) return null;
+    const unreadSinceTs = new Date(unreadSince).getTime();
+    if (!Number.isFinite(unreadSinceTs)) return null;
+
+    const firstUnread = messages.find(
+      (message) =>
+        new Date(message.createdAt).getTime() > unreadSinceTs &&
+        String(message.userId) !== String(currentUserId || '')
+    );
+
+    return firstUnread?._id || null;
+  }, [messages, unreadSince, currentUserId]);
 
   useEffect(() => {
     const node = listRef.current;
@@ -141,16 +189,6 @@ export default function MessageList({
         </div>
       ) : null}
 
-      {groups.length > 0 ? (
-        <div className="mb-5 flex items-center gap-3 px-2">
-          <div className="h-px flex-1 bg-[#d8dde8]" />
-          <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[#6f7a91] shadow-sm">
-            Today
-          </span>
-          <div className="h-px flex-1 bg-[#d8dde8]" />
-        </div>
-      ) : null}
-
       {groups.length === 0 ? (
         <div className="rounded-xl border border-[#dfe4ef] bg-white px-6 py-10 text-center text-sm text-[#8a90a0]">
           No messages yet. Start the conversation.
@@ -158,21 +196,45 @@ export default function MessageList({
       ) : null}
 
       <div className="space-y-2 pb-2">
-        {groups.map((group) => (
-          <MessageGroup
-            key={group[0]._id}
-            messages={group}
-            currentUserId={currentUserId}
-            resolveMessageById={(id) => messageById.get(id)}
-            onReply={onReply}
-            onStartEdit={onStartEdit}
-            onDelete={onDelete}
-            onPinToggle={onPinToggle}
-            onOpenThread={onOpenThread}
-            onToggleReaction={onToggleReaction}
-            onOpenReactionDetails={onOpenReactionDetails}
-            resolveUserName={resolveUserName}
-          />
+        {groups.map((group, index) => (
+          <React.Fragment key={group[0]._id}>
+            {index === 0 ||
+            getDayKey(group[0]?.createdAt) !==
+              getDayKey(groups[index - 1]?.[0]?.createdAt) ? (
+              <div className="mb-5 mt-2 flex items-center gap-3 px-2">
+                <div className="h-px flex-1 bg-[#d8dde8]" />
+                <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[#6f7a91] shadow-sm">
+                  {formatDayLabel(group[0]?.createdAt)}
+                </span>
+                <div className="h-px flex-1 bg-[#d8dde8]" />
+              </div>
+            ) : null}
+
+            {firstUnreadMessageId &&
+            group.some((message) => message._id === firstUnreadMessageId) ? (
+              <div className="my-4 flex items-center gap-3 px-2">
+                <div className="h-px flex-1 bg-[#f0a8ad]" />
+                <span className="rounded-full bg-[#ffe7e9] px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[#a9343d]">
+                  New messages
+                </span>
+                <div className="h-px flex-1 bg-[#f0a8ad]" />
+              </div>
+            ) : null}
+
+            <MessageGroup
+              messages={group}
+              currentUserId={currentUserId}
+              resolveMessageById={(id) => messageById.get(id)}
+              onReply={onReply}
+              onStartEdit={onStartEdit}
+              onDelete={onDelete}
+              onPinToggle={onPinToggle}
+              onOpenThread={onOpenThread}
+              onToggleReaction={onToggleReaction}
+              onOpenReactionDetails={onOpenReactionDetails}
+              resolveUserName={resolveUserName}
+            />
+          </React.Fragment>
         ))}
       </div>
     </div>

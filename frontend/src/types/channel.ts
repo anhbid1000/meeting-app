@@ -11,6 +11,8 @@ export interface Channel {
   isArchived: boolean;
   lastMessageAt?: string;
   memberCount: number;
+  unreadCount?: number;
+  mentionCount?: number;
   createdAt: string;
   updatedAt: string;
 }

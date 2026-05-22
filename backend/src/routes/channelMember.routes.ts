@@ -77,4 +77,11 @@ router.patch(
   channelMemberController.favoriteChannel,
 );
 
+router.patch(
+  "/:channelId/read",
+  auth,
+  requireChannelMember,
+  channelMemberController.markChannelRead,
+);
+
 export default router;

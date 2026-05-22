@@ -7,6 +7,7 @@ interface ChannelGroupSectionProps {
   nowMs: number;
   channels: (Channel & {
     unreadCount?: number;
+    mentionCount?: number;
     isFavorite?: boolean;
     activeNow?: number;
     lastMessagePreview?: string;

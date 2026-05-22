@@ -2,6 +2,7 @@ import { Types } from "mongoose";
 import ChannelMember from "../models/ChannelMember.model";
 import Channel from "../models/Channel.model";
 import Workspace from "../models/Workspace.model";
+import Message from "../models/Message.model";
 import { realtimeBus } from "../utils/realtime";
 import { MessageDAO } from "../dao/MessageDAO";
 
@@ -378,5 +379,50 @@ export class ChannelMemberService {
     );
 
     return added;
+  }
+
+  static async updateLastReadAt(
+    channelId: string,
+    userId: string,
+    timestamp?: Date,
+  ) {
+    const nextReadAt = timestamp || new Date();
+
+    const member = await ChannelMember.findOneAndUpdate(
+      { channelId, userId },
+      { $set: { lastReadAt: nextReadAt } },
+      { new: true },
+    ).lean();
+
+    if (!member) {
+      throw Object.assign(new Error('Channel member not found'), {
+        status: 404,
+      });
+    }
+
+    return member;
+  }
+
+  static async getUnreadCount(channelId: string, userId: string) {
+    const member = await ChannelMember.findOne({ channelId, userId })
+      .select('lastReadAt')
+      .lean();
+
+    if (!member) {
+      throw Object.assign(new Error('Channel member not found'), {
+        status: 404,
+      });
+    }
+
+    const filter: any = {
+      channelId: new Types.ObjectId(channelId),
+      isDeleted: { $ne: true },
+    };
+
+    if (member.lastReadAt) {
+      filter.createdAt = { $gt: member.lastReadAt };
+    }
+
+    return Message.countDocuments(filter);
   }
 }

@@ -1,6 +1,32 @@
 import { Server, Socket } from "socket.io";
 import { MessageService } from "../services/Message.service";
 import { realtimeBus } from "../utils/realtime";
+import Workspace from "../models/Workspace.model";
+
+const resolveSenderName = (message: any) => {
+  const author = message?.author;
+  return (
+    author?.name ||
+    author?.email ||
+    (typeof message?.userId === "string"
+      ? `User ${message.userId.slice(0, 8)}`
+      : "Teammate")
+  );
+};
+
+const normalizeMentionIds = (mentions: any): string[] => {
+  if (!Array.isArray(mentions)) return [];
+  return mentions
+    .map((item) => {
+      if (!item) return "";
+      if (typeof item === "string") return item;
+      if (typeof item === "object") {
+        return String(item._id || item.id || "");
+      }
+      return "";
+    })
+    .filter(Boolean);
+};
 
 export const registerMessageBusHandlers = (io: Server) => {
   realtimeBus.on("message:new", (message: any) => {
@@ -10,6 +36,46 @@ export const registerMessageBusHandlers = (io: Server) => {
       message?.channelId;
     if (channelId) {
       io.to(`channel:${channelId}`).emit("message:new", message);
+
+      const workspaceId =
+        message?.workspaceId?._id?.toString?.() ||
+        message?.workspaceId?.toString?.() ||
+        message?.workspaceId;
+
+      if (!workspaceId) return;
+
+      Workspace.findById(workspaceId)
+        .select("members")
+        .lean()
+        .then((workspace: any) => {
+          const workspaceMembers = Array.isArray(workspace?.members)
+            ? workspace.members
+            : [];
+
+          const mentionIds = normalizeMentionIds(message?.mentions);
+          const payload = {
+            channelId,
+            messageId: message?._id,
+            userId:
+              message?.userId?._id?.toString?.() ||
+              message?.userId?.toString?.() ||
+              message?.userId,
+            lastMessageAt: message?.createdAt,
+            lastMessageText: message?.content || "",
+            lastMessageSenderName: resolveSenderName(message),
+            mentions: mentionIds,
+          };
+
+          workspaceMembers.forEach((memberId: any) => {
+            const userId = memberId?.toString?.();
+            if (userId) {
+              io.to(`user:${userId}`).emit("channel:activity:update", payload);
+            }
+          });
+        })
+        .catch(() => {
+          // Best-effort realtime signal; ignore failures to avoid interrupting message delivery.
+        });
     }
   });
 

@@ -192,6 +192,13 @@ export const channelApi = {
     });
     return response.data;
   },
+
+  async markChannelRead(channelId: string, timestamp?: string) {
+    const response = await api.patch(`/api/v1/channels/${channelId}/read`, {
+      timestamp,
+    });
+    return response.data;
+  },
 };
 
 export default channelApi;

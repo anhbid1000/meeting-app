@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useEffect, useMemo, useState } from 'react';
+import { use, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -58,6 +58,7 @@ type MeetingBannerData = {
 type ChannelMemberRow = {
   userId?: { _id?: string } | string;
   role?: 'owner' | 'admin' | 'member';
+  lastReadAt?: string;
 };
 
 type MeetingPayload = {
@@ -104,6 +105,10 @@ export default function ChannelPage({ params }: ChannelPageProps) {
   const [reactionDetailsMessageId, setReactionDetailsMessageId] = useState<
     string | null
   >(null);
+  const [localLastReadAt, setLocalLastReadAt] = useState<string | null>(null);
+  const markReadDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
 
   const currentUser = useAuthStore((state) => state.user);
 
@@ -356,6 +361,61 @@ export default function ChannelPage({ params }: ChannelPageProps) {
 
     return map;
   }, [members, messages, currentUser]);
+
+  const memberRows = (channelMembersResponse?.data || []) as ChannelMemberRow[];
+
+  const currentUserLastReadAtFromServer = useMemo(() => {
+    if (!currentUser?.id) return null;
+
+    for (const row of memberRows) {
+      const rawUserId = row?.userId;
+      const memberUserId = String(
+        typeof rawUserId === 'string' ? rawUserId : rawUserId?._id || ''
+      );
+
+      if (memberUserId === String(currentUser.id)) {
+        return row?.lastReadAt || null;
+      }
+    }
+
+    return null;
+  }, [memberRows, currentUser?.id]);
+
+  useEffect(() => {
+    setLocalLastReadAt(currentUserLastReadAtFromServer);
+  }, [currentUserLastReadAtFromServer, resolvedChannelId]);
+
+  const scheduleMarkRead = useCallback(() => {
+    if (!resolvedChannelId || !isChannelMember) return;
+
+    if (markReadDebounceRef.current) {
+      clearTimeout(markReadDebounceRef.current);
+    }
+
+    markReadDebounceRef.current = setTimeout(async () => {
+      const timestamp = new Date().toISOString();
+      try {
+        await channelApi.markChannelRead(resolvedChannelId, timestamp);
+        setLocalLastReadAt(timestamp);
+      } catch {
+        // Keep UX smooth if mark-read fails temporarily.
+      }
+    }, 800);
+  }, [resolvedChannelId, isChannelMember]);
+
+  useEffect(
+    () => () => {
+      if (markReadDebounceRef.current) {
+        clearTimeout(markReadDebounceRef.current);
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (!messages.length) return;
+    scheduleMarkRead();
+  }, [messages.length, scheduleMarkRead]);
 
   const typingNames = useMemo(() => {
     const ids = Object.keys(typingUsers).filter((id) => id !== currentUser?.id);
@@ -761,6 +821,7 @@ export default function ChannelPage({ params }: ChannelPageProps) {
           <MessageList
             messages={messages}
             currentUserId={currentUser?.id}
+            unreadSince={localLastReadAt}
             resolveUserName={(userId: string) => {
               const profile = memberLookup.get(String(userId));
               return (
@@ -772,6 +833,7 @@ export default function ChannelPage({ params }: ChannelPageProps) {
             forceScrollToken={forceScrollToken}
             hasMore={Boolean(hasNextPage)}
             isFetchingMore={isFetchingNextPage}
+            onUserActivity={scheduleMarkRead}
             onLoadOlder={() => {
               void fetchNextPage();
             }}

@@ -191,3 +191,38 @@ export const inviteMember = async (
     next(error);
   }
 };
+
+export const markChannelRead = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = (req as any).user.id;
+    const channelId = parseParam(req.params.channelId);
+    const rawTimestamp = req.body?.timestamp as string | undefined;
+
+    const timestamp = rawTimestamp ? new Date(rawTimestamp) : new Date();
+    if (Number.isNaN(timestamp.getTime())) {
+      return res.status(422).json({ message: 'Invalid timestamp' });
+    }
+
+    const member = await ChannelMemberService.updateLastReadAt(
+      channelId,
+      userId,
+      timestamp,
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        channelId,
+        userId,
+        lastReadAt: member.lastReadAt,
+        unreadCount: 0,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};

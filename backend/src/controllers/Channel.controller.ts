@@ -14,6 +14,7 @@ export const getChannelDirectory = async (
 ) => {
   try {
     const { workspaceId } = req.params;
+    const userId = (req as any).user?.id as string | undefined;
     const { search, type, category, page, limit, sort } = req.query;
 
     const result = await ChannelService.getChannelDirectory(
@@ -26,6 +27,7 @@ export const getChannelDirectory = async (
         limit: limit ? Number(parseParam(limit as any)) : 20,
         sort: (parseParam(sort as any) as any) || "activity",
       },
+      userId,
     );
 
     return res.status(200).json(result);

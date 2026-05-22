@@ -12,6 +12,7 @@ type RequestStatus =
 interface ChannelCardProps {
   channel: Channel & {
     unreadCount?: number;
+    mentionCount?: number;
     isFavorite?: boolean;
     activeNow?: number;
     lastMessagePreview?: string;
@@ -120,6 +121,7 @@ export default function ChannelCard({
   const hasLatestMessage = Boolean(
     channel.lastMessagePreview && channel.lastMessagePreview.trim()
   );
+  const hasMentionUnread = isJoined && (channel.mentionCount ?? 0) > 0;
 
   const showLatestActivity = !isArchived && (!isPrivate || isJoined);
   const latestActivitySnippet = stripLeadingReplyMarkers(
@@ -270,7 +272,7 @@ export default function ChannelCard({
           )}
         </div>
 
-        {channel.unreadCount ? (
+        {isJoined && channel.unreadCount ? (
           <span className="bg-[#004ac6] text-white text-xs px-2 py-1 rounded-full min-w-6 text-center">
             {channel.unreadCount}
           </span>
@@ -320,9 +322,20 @@ export default function ChannelCard({
 
       {/* Footer */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs text-[#516070]">
-          <span className="w-1.5 h-1.5 bg-[#004ac6] rounded-full"></span>
-          <span>{channel.activeNow ?? 0} active now</span>
+        <div className="flex items-center gap-3 text-xs text-[#516070]">
+          {hasMentionUnread ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#ffe9eb] px-2.5 py-1 font-semibold text-[#b3261e]">
+              <span className="material-symbols-outlined text-[14px] leading-none">
+                alternate_email
+              </span>
+              Mentioned
+            </span>
+          ) : null}
+
+          <span className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 bg-[#004ac6] rounded-full"></span>
+            <span>{channel.activeNow ?? 0} active now</span>
+          </span>
         </div>
 
         <button

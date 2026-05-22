@@ -24,11 +24,22 @@ import {
 } from '@/hooks/useChannels';
 import { useChannelStore } from '@/store/channelStore';
 import { useAuthStore } from '@/store/authStore';
+import { useSocketStore } from '@/store/socketStore';
 import { applyDevAuthFromUrlOrFallback } from '@/lib/devAuth';
 import type { Channel } from '@/types/channel';
 
 const stripLeadingReplyMarkers = (value: string) =>
   value.replace(/^(?:\[reply:[^\]]+\]\n?)+/, '').trim();
+
+const resolveId = (value: unknown) => {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'object') {
+    const row = value as { _id?: string; id?: string };
+    return String(row._id || row.id || '');
+  }
+  return '';
+};
 
 export default function ChannelDirectoryPage() {
   const router = useRouter();
@@ -48,8 +59,26 @@ export default function ChannelDirectoryPage() {
     name: string;
   } | null>(null);
   const [deletedChannelIds, setDeletedChannelIds] = useState<string[]>([]);
+  const [realtimeUnreadOverrides, setRealtimeUnreadOverrides] = useState<
+    Record<string, number>
+  >({});
+  const [realtimeMentionOverrides, setRealtimeMentionOverrides] = useState<
+    Record<string, number>
+  >({});
+  const [realtimeActivityOverrides, setRealtimeActivityOverrides] = useState<
+    Record<
+      string,
+      {
+        lastMessagePreview?: string;
+        lastMessageAt?: string;
+        lastActivityActor?: string;
+      }
+    >
+  >({});
   const [nowMs] = useState(() => Date.now());
   const currentUser = useAuthStore((state) => state.user);
+  const socket = useSocketStore((state) => state.socket);
+  const isSocketConnected = useSocketStore((state) => state.isConnected);
 
   const { filters, setFilters } = useChannelStore();
 
@@ -152,6 +181,7 @@ export default function ChannelDirectoryPage() {
     type EnrichedChannel = Channel & {
       unreadCount?: number;
       isFavorite?: boolean;
+      mentionCount?: number;
       activeNow?: number;
       lastMessagePreview?: string;
       lastActivityActor?: string;
@@ -190,17 +220,26 @@ export default function ChannelDirectoryPage() {
 
           const effectiveMemberCount =
             memberCountOverrides[channel._id] ?? channel.memberCount ?? 0;
+          const effectiveUnreadCount =
+            realtimeUnreadOverrides[channel._id] ?? channel.unreadCount ?? 0;
+          const effectiveMentionCount =
+            realtimeMentionOverrides[channel._id] ?? channel.mentionCount ?? 0;
+          const activityOverride = realtimeActivityOverrides[channel._id];
 
           merged.push({
             ...channel,
             workspaceName: workspace.name,
             workspaceSlug: workspace.slug,
-            unreadCount: 0,
+            unreadCount: effectiveUnreadCount,
+            mentionCount: effectiveMentionCount,
             isFavorite: favoriteOverrides[channel._id] ?? false,
             memberCount: effectiveMemberCount,
             activeNow: Math.max(0, effectiveMemberCount % 8),
-            lastMessagePreview,
-            lastActivityActor: channel.lastMessageSenderName,
+            lastMessageAt: activityOverride?.lastMessageAt || channel.lastMessageAt,
+            lastMessagePreview:
+              activityOverride?.lastMessagePreview ?? lastMessagePreview,
+            lastActivityActor:
+              activityOverride?.lastActivityActor || channel.lastMessageSenderName,
             canManageChannel,
             canJoinWithoutRequest,
           });
@@ -214,10 +253,71 @@ export default function ChannelDirectoryPage() {
     channelQueries,
     favoriteOverrides,
     memberCountOverrides,
+    realtimeUnreadOverrides,
+    realtimeMentionOverrides,
+    realtimeActivityOverrides,
     currentUser?.id,
     currentUserRole,
     deletedChannelIds,
   ]);
+
+  useEffect(() => {
+    const userId = String(currentUser?.id || '');
+    if (!socket || !isSocketConnected || !userId) return;
+
+    const onChannelActivityUpdate = (payload: any) => {
+      const channelId = resolveId(payload?.channelId);
+      if (!channelId) return;
+
+      const target = channels.find((channel) => channel._id === channelId);
+      if (!target) return;
+
+      const senderId = resolveId(payload?.userId);
+      const mentionIds = Array.isArray(payload?.mentions)
+        ? payload.mentions.map((row: unknown) => resolveId(row)).filter(Boolean)
+        : [];
+
+      setRealtimeActivityOverrides((prev) => ({
+        ...prev,
+        [channelId]: {
+          lastMessagePreview: stripLeadingReplyMarkers(
+            String(payload?.lastMessageText || '')
+          ),
+          lastMessageAt: String(payload?.lastMessageAt || new Date().toISOString()),
+          lastActivityActor: String(payload?.lastMessageSenderName || 'Teammate'),
+        },
+      }));
+
+      if (senderId && senderId === userId) return;
+
+      const isMember =
+        joinedChannelIds.includes(channelId) ||
+        Boolean(target.members?.some((memberId) => String(memberId) === userId));
+
+      if (!isMember) return;
+
+      setRealtimeUnreadOverrides((prev) => ({
+        ...prev,
+        [channelId]: Math.max(0, (prev[channelId] ?? target.unreadCount ?? 0) + 1),
+      }));
+
+      if (mentionIds.includes(userId)) {
+        setRealtimeMentionOverrides((prev) => ({
+          ...prev,
+          [channelId]: Math.max(
+            0,
+            (prev[channelId] ?? target.mentionCount ?? 0) + 1
+          ),
+        }));
+      }
+    };
+
+    socket.on('channel:activity:update', onChannelActivityUpdate);
+
+    return () => {
+      socket.off('channel:activity:update', onChannelActivityUpdate);
+    };
+  }, [socket, isSocketConnected, currentUser?.id, channels, joinedChannelIds]);
 
   useEffect(() => {
     if (didInitJoinedIds || !channels.length) return;
@@ -258,7 +358,8 @@ export default function ChannelDirectoryPage() {
     }
     if (filters.status === 'unread') {
       return baseChannels.filter(
-        (ch: EnrichedChannel) => (ch.unreadCount ?? 0) > 0
+        (ch: EnrichedChannel) =>
+          joinedChannelIds.includes(ch._id) && (ch.unreadCount ?? 0) > 0
       );
     }
     if (filters.status === 'favorites') {
@@ -372,6 +473,9 @@ export default function ChannelDirectoryPage() {
       return;
     }
 
+    setRealtimeUnreadOverrides((prev) => ({ ...prev, [channelId]: 0 }));
+    setRealtimeMentionOverrides((prev) => ({ ...prev, [channelId]: 0 }));
+
     const path = target?.slug || target?._id || channelId;
     router.push(`/channels/${path}`);
   };
@@ -399,6 +503,21 @@ export default function ChannelDirectoryPage() {
       );
       setJoinedChannelIds((prev) => prev.filter((id) => id !== deletedId));
       setFavoriteOverrides((prev) => {
+        const next = { ...prev };
+        delete next[deletedId];
+        return next;
+      });
+      setRealtimeUnreadOverrides((prev) => {
+        const next = { ...prev };
+        delete next[deletedId];
+        return next;
+      });
+      setRealtimeMentionOverrides((prev) => {
+        const next = { ...prev };
+        delete next[deletedId];
+        return next;
+      });
+      setRealtimeActivityOverrides((prev) => {
         const next = { ...prev };
         delete next[deletedId];
         return next;
