@@ -892,7 +892,8 @@ export default function ChannelPage({ params }: ChannelPageProps) {
           <TypingIndicator names={typingNames} />
 
           <MessageComposer
-            disabled={!isConnected || !isChannelMember}
+            channelId={resolvedChannelId || undefined}
+            disabled={!isConnected || !isChannelMember || !resolvedChannelId}
             mentionUsers={members
               .filter(
                 (member) => String(member.id) !== String(currentUser?.id || '')

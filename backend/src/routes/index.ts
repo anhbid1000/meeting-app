@@ -6,6 +6,7 @@ import channelJoinRequestRoutes from "./channelJoinRequest.routes";
 import messageRoutes from "./message.routes";
 import notificationRoutes from "./notification.routes";
 import threadReplyRoutes from "./threadReply.routes";
+import fileRoutes from "./file.routes";
 
 const router = Router();
 
@@ -23,6 +24,9 @@ router.use("/", messageRoutes);
 
 // Thread replies endpoints
 router.use("/", threadReplyRoutes);
+
+// File sharing endpoints
+router.use("/", fileRoutes);
 
 // Notification endpoints
 router.use("/notifications", notificationRoutes);

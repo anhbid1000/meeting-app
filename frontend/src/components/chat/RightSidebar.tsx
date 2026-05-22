@@ -100,7 +100,7 @@ export default function RightSidebar({
             currentUserId={currentUserId}
           />
         ) : null}
-        {activeTab === 'files' ? <FilesTab messages={messages} /> : null}
+        {activeTab === 'files' ? <FilesTab channelId={channelId} /> : null}
         {activeTab === 'pinned' ? <PinnedTab channelId={channelId} /> : null}
         {activeTab === 'activity' ? <ActivityTab messages={messages} /> : null}
       </div>

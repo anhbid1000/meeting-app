@@ -7,8 +7,10 @@ import Message from "../models/Message.model";
 import ChannelMember from "../models/ChannelMember.model";
 import { realtimeBus } from "../utils/realtime";
 import { NotificationService } from "./Notification.service";
+import { FileAssetService } from "./FileAsset.service";
 
 const messageDAO = new MessageDAO();
+const FILE_ONLY_SENTINEL_CONTENT = "[attachment]";
 
 export class MessageService {
   static async sendMessage(params: {
@@ -43,6 +45,8 @@ export class MessageService {
         status: 400,
       });
     }
+    const persistedContent =
+      normalizedContent || (hasAttachments ? FILE_ONLY_SENTINEL_CONTENT : "");
 
     const channel = await Channel.findById(channelId)
       .select("workspaceId")
@@ -57,7 +61,7 @@ export class MessageService {
       workspaceId: channel.workspaceId,
       channelId: new Types.ObjectId(channelId),
       userId: new Types.ObjectId(userId),
-      content: normalizedContent,
+      content: persistedContent,
       attachments,
       mentions: uniqueMentions.map((m) => new Types.ObjectId(m)),
       type,
@@ -66,6 +70,16 @@ export class MessageService {
       isDeleted: false,
       isPinned: false,
     } as any);
+
+    if (attachments.length) {
+      await FileAssetService.recordMessageAttachments({
+        userId,
+        channelId,
+        workspaceId: String(channel.workspaceId),
+        messageId: String(message._id),
+        attachments,
+      });
+    }
 
     await Channel.findByIdAndUpdate(channelId, {
       $set: { lastMessageAt: new Date() },

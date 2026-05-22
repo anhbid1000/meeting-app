@@ -25,6 +25,115 @@ interface MessageItemProps {
 }
 
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '🎉', '🔥', '😮'];
+const FILE_ONLY_SENTINEL_CONTENT = '[attachment]';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+
+const IMAGE_MIME_PREFIX = 'image/';
+const VIDEO_MIME_PREFIX = 'video/';
+const PDF_MIME = 'application/pdf';
+const OFFICE_MIME_PATTERNS = [
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+];
+
+const normalizeCloudinaryFileUrl = (url: string, mimeType?: string) => {
+  try {
+    const parsed = new URL(url);
+    if (!parsed.hostname.includes('res.cloudinary.com')) return url;
+
+    const normalizedMime = String(mimeType || '').toLowerCase();
+    const isImage = normalizedMime.startsWith('image/');
+    const isVideo = normalizedMime.startsWith('video/');
+
+    if (!isImage && !isVideo) {
+      parsed.pathname = parsed.pathname
+        .replace('/image/upload/', '/raw/upload/')
+        .replace('/auto/upload/', '/raw/upload/')
+        .replace('/video/upload/', '/raw/upload/');
+    }
+
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+};
+
+const getFileCategory = (mimeType?: string) => {
+  const normalizedMime = String(mimeType || '').toLowerCase();
+  if (normalizedMime.startsWith(IMAGE_MIME_PREFIX)) return 'image';
+  if (normalizedMime.startsWith(VIDEO_MIME_PREFIX)) return 'video';
+  if (normalizedMime === PDF_MIME) return 'pdf';
+  if (OFFICE_MIME_PATTERNS.includes(normalizedMime)) return 'office';
+  return 'file';
+};
+
+const buildOpenUrl = (url: string, mimeType?: string) => {
+  const normalizedUrl = normalizeCloudinaryFileUrl(url, mimeType);
+  const category = getFileCategory(mimeType);
+
+  if (category === 'image' || category === 'video') {
+    return normalizedUrl;
+  }
+
+  const encoded = encodeURIComponent(normalizedUrl);
+  if (category === 'pdf') {
+    return `${BACKEND_URL}/api/v1/files/open?url=${encoded}&mimeType=${encodeURIComponent(
+      mimeType || PDF_MIME
+    )}`;
+  }
+
+  if (category === 'office') {
+    return `https://view.officeapps.live.com/op/view.aspx?src=${encoded}`;
+  }
+
+  return normalizedUrl;
+};
+
+const buildDownloadUrl = (url: string, fileName: string, mimeType?: string) => {
+  const normalizedUrl = normalizeCloudinaryFileUrl(url, mimeType);
+  return `${BACKEND_URL}/api/v1/files/download?url=${encodeURIComponent(
+    normalizedUrl
+  )}&fileName=${encodeURIComponent(fileName || 'download')}&mimeType=${encodeURIComponent(
+    mimeType || 'application/octet-stream'
+  )}`;
+};
+
+const formatFileSize = (size: number) => {
+  if (!Number.isFinite(size) || size <= 0) return '0 B';
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const getFileTypeLabel = (mimeType?: string) => {
+  const category = getFileCategory(mimeType);
+  if (category === 'image') return 'Image';
+  if (category === 'video') return 'Video';
+  if (category === 'pdf') return 'PDF Document';
+  if (category === 'office') return 'Office Document';
+  return 'File';
+};
+
+const getFileIcon = (mimeType?: string) => {
+  const category = getFileCategory(mimeType);
+  if (category === 'image') return 'image';
+  if (category === 'video') return 'movie';
+  if (category === 'pdf') return 'picture_as_pdf';
+  if (category === 'office') return 'description';
+  return 'draft';
+};
+
+const getPreviewBackground = (mimeType?: string, isOwn?: boolean) => {
+  const category = getFileCategory(mimeType);
+  if (category === 'image') return 'bg-[#eef4ff]';
+  if (category === 'pdf') return isOwn ? 'bg-white/15' : 'bg-[#eef0f4]';
+  if (category === 'office') return isOwn ? 'bg-white/15' : 'bg-[#eef0f4]';
+  return isOwn ? 'bg-white/15' : 'bg-[#eff2f7]';
+};
 
 export default function MessageItem({
   message,
@@ -77,6 +186,17 @@ export default function MessageItem({
     : replyMeta
       ? replyMeta.body
       : message.content;
+  const isFileOnlySentinel =
+    (label || '').trim() === FILE_ONLY_SENTINEL_CONTENT &&
+    (message.attachments || []).length > 0;
+  const shouldShowMessageText =
+    message.isDeleted ||
+    (Boolean((label || '').trim().length > 0) && !isFileOnlySentinel);
+  const isFileOnlyMessage =
+    !message.isDeleted &&
+    !replyMeta &&
+    (message.attachments || []).length > 0 &&
+    !shouldShowMessageText;
 
   const repliedMessage = replyMeta?.replyToId
     ? resolveMessageById?.(replyMeta.replyToId)
@@ -324,7 +444,7 @@ export default function MessageItem({
 
         <div
           className={`relative rounded-2xl px-3 py-2.5 ${
-            isOwn
+            isOwn && !isFileOnlyMessage
               ? 'bg-[#2f63d3] text-white shadow-[0_6px_14px_rgba(47,99,211,0.24)]'
               : 'border border-[#e2e6ef] bg-white text-[#21262a] shadow-[0_2px_6px_rgba(15,23,42,0.06)]'
           }`}
@@ -361,19 +481,21 @@ export default function MessageItem({
           ) : null}
 
           <div className="flex items-start justify-between gap-3">
-            <p
-              className={`whitespace-pre-wrap break-words text-[15px] leading-relaxed ${
-                message.isDeleted
-                  ? isOwn
-                    ? 'italic text-white/80'
-                    : 'italic text-[#8a90a0]'
-                  : isOwn
-                    ? 'text-white'
-                    : 'text-[#21262a]'
-              }`}
-            >
-              {label}
-            </p>
+            {shouldShowMessageText ? (
+              <p
+                className={`whitespace-pre-wrap break-words text-[15px] leading-relaxed ${
+                  message.isDeleted
+                    ? isOwn
+                      ? 'italic text-white/80'
+                      : 'italic text-[#8a90a0]'
+                    : isOwn
+                      ? 'text-white'
+                      : 'text-[#21262a]'
+                }`}
+              >
+                {label}
+              </p>
+            ) : null}
             <span
               className={`shrink-0 text-[11px] ${isOwn ? 'text-white/80' : 'text-[#8a90a0]'}`}
             >
@@ -384,27 +506,104 @@ export default function MessageItem({
           {message.attachments && message.attachments.length > 0 ? (
             <div className="mt-2 space-y-2">
               {message.attachments.map((file) => (
-                <a
+                <div
                   key={`${message._id}-${file.url}`}
-                  href={file.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={`flex items-center justify-between gap-3 rounded-xl border px-2.5 py-2 text-xs ${
-                    isOwn
-                      ? 'border-white/30 bg-white/15 text-white hover:bg-white/25'
-                      : 'border-[#d7dae6] bg-[#f8f9fc] text-[#004ac6] hover:bg-[#eef3ff]'
+                  className={`overflow-hidden rounded-[18px] border text-xs ${
+                    isOwn && !isFileOnlyMessage
+                      ? 'border-white/25 bg-white/10 text-white'
+                      : 'border-[#d7dae6] bg-white text-[#1f2937] shadow-[0_8px_24px_rgba(15,23,42,0.08)]'
                   }`}
                 >
-                  <span className="inline-flex items-center gap-2 truncate">
-                    <span className="material-symbols-outlined text-[16px]">
-                      description
-                    </span>
-                    <span className="truncate">{file.name}</span>
-                  </span>
-                  <span className="material-symbols-outlined text-[16px]">
-                    download
-                  </span>
-                </a>
+                  <a
+                    href={buildOpenUrl(file.url, file.mimeType)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={`flex h-28 items-center justify-center ${getPreviewBackground(
+                      file.mimeType,
+                      isOwn && !isFileOnlyMessage
+                    )}`}
+                    title="Mở file"
+                  >
+                    {getFileCategory(file.mimeType) === 'image' ? (
+                      <img
+                        src={normalizeCloudinaryFileUrl(file.url, file.mimeType)}
+                        alt={file.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span
+                        className={`material-symbols-outlined text-[34px] ${
+                          isOwn && !isFileOnlyMessage
+                            ? 'text-white/85'
+                            : 'text-[#4e6688]'
+                        }`}
+                      >
+                        {getFileIcon(file.mimeType)}
+                      </span>
+                    )}
+                  </a>
+
+                  <div className="flex items-center justify-between gap-3 px-4 py-3">
+                    <a
+                      href={buildOpenUrl(file.url, file.mimeType)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="min-w-0 flex-1"
+                      title="Mở file"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+                            isOwn && !isFileOnlyMessage
+                              ? 'bg-white/15 text-white'
+                              : 'bg-[#ffe3dd] text-[#c94938]'
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-[22px]">
+                            {getFileIcon(file.mimeType)}
+                          </span>
+                        </span>
+
+                        <div className="min-w-0">
+                          <p
+                            className={`truncate text-[15px] font-semibold ${
+                              isOwn && !isFileOnlyMessage
+                                ? 'text-white'
+                                : 'text-[#172033]'
+                            }`}
+                          >
+                            {file.name}
+                          </p>
+                          <p
+                            className={`text-sm ${
+                              isOwn && !isFileOnlyMessage
+                                ? 'text-white/80'
+                                : 'text-[#5f6b7e]'
+                            }`}
+                          >
+                            {formatFileSize(file.size)} • {getFileTypeLabel(file.mimeType)}
+                          </p>
+                        </div>
+                      </div>
+                    </a>
+
+                    <a
+                      href={buildDownloadUrl(file.url, file.name, file.mimeType)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border ${
+                        isOwn && !isFileOnlyMessage
+                          ? 'border-white/20 text-white hover:bg-white/15'
+                          : 'border-[#d6ddea] text-[#44628f] hover:bg-[#eef3fb]'
+                      }`}
+                      title="Tải về"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">
+                        download
+                      </span>
+                    </a>
+                  </div>
+                </div>
               ))}
             </div>
           ) : null}

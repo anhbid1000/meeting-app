@@ -1,6 +1,9 @@
 import React, { useMemo, useRef, useState } from 'react';
+import toast from 'react-hot-toast';
+import { fileApi } from '@/services/fileApi';
 
 interface MessageComposerProps {
+  channelId?: string;
   disabled?: boolean;
   mentionUsers?: Array<{ id: string; name: string }>;
   replyTo?: {
@@ -67,6 +70,7 @@ const stripLeadingReplyMarkers = (value: string) =>
   value.replace(/^(?:\[reply:[^\]]+\]\n?)+/, '');
 
 export default function MessageComposer({
+  channelId,
   disabled,
   mentionUsers = [],
   replyTo,
@@ -80,6 +84,10 @@ export default function MessageComposer({
   const [content, setContent] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>(
+    {}
+  );
   const [isEmojiOpen, setIsEmojiOpen] = useState(false);
   const [mentionQuery, setMentionQuery] = useState('');
   const [mentionStartIndex, setMentionStartIndex] = useState<number | null>(
@@ -115,9 +123,15 @@ export default function MessageComposer({
 
   const canSend = useMemo(
     () =>
-      !disabled && !sending && (content.trim().length > 0 || files.length > 0),
-    [disabled, sending, content, files.length]
+      !disabled &&
+      !sending &&
+      !uploading &&
+      (content.trim().length > 0 || files.length > 0),
+    [disabled, sending, uploading, content, files.length]
   );
+
+  const fileKey = (file: File, index: number) =>
+    `${file.name}-${file.size}-${index}`;
 
   const parseMentions = (text: string) => {
     const matches = text.match(/@([\w.-]+)/g) || [];
@@ -169,9 +183,6 @@ export default function MessageComposer({
     setSending(true);
     const text = content;
     const selectedFiles = files;
-    setContent('');
-    setFiles([]);
-    onTyping(false);
 
     try {
       if (editTo && onEditSubmit) {
@@ -180,24 +191,68 @@ export default function MessageComposer({
           : text;
         await onEditSubmit(editTo.id, finalEditContent);
         onCancelEdit?.();
+        setContent('');
+        setFiles([]);
+        setUploadProgress({});
+        onTyping(false);
         return;
       }
 
       const finalContent = replyTo ? `[reply:${replyTo.id}]\n${text}` : text;
+      let uploadedAttachments: Array<{
+        url: string;
+        name: string;
+        mimeType: string;
+        size: number;
+      }> = [];
+
+      if (selectedFiles.length > 0) {
+        if (!channelId) {
+          toast.error('Kênh chưa sẵn sàng, vui lòng thử lại sau vài giây');
+          return;
+        }
+
+        setUploading(true);
+        uploadedAttachments = [];
+
+        for (let index = 0; index < selectedFiles.length; index += 1) {
+          const file = selectedFiles[index];
+          const key = fileKey(file, index);
+          setUploadProgress((prev) => ({ ...prev, [key]: 0 }));
+
+          const uploaded = await fileApi.uploadFileToCloudinary(
+            channelId,
+            file,
+            (progressPercent) => {
+              setUploadProgress((prev) => ({
+                ...prev,
+                [key]: progressPercent,
+              }));
+            }
+          );
+          uploadedAttachments.push(uploaded);
+        }
+      }
 
       await onSend({
         content: finalContent,
         mentions: parseMentions(text),
-        attachments: selectedFiles.map((file) => ({
-          url: URL.createObjectURL(file),
-          name: file.name,
-          mimeType: file.type || 'application/octet-stream',
-          size: file.size,
-        })),
+        attachments: uploadedAttachments,
       });
       onCancelReply?.();
+      setContent('');
+      setFiles([]);
+      setUploadProgress({});
+      onTyping(false);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Failed to send message with attachments';
+      toast.error(message);
     } finally {
       setSending(false);
+      setUploading(false);
     }
   };
 
@@ -265,7 +320,11 @@ export default function MessageComposer({
                 }}
                 className="rounded-full border border-[#d7dae6] bg-[#f6f7fb] px-2 py-1 text-xs text-[#516070]"
               >
-                {file.name} x
+                {file.name}
+                {uploading
+                  ? ` ${uploadProgress[fileKey(file, index)] || 0}%`
+                  : ''}{' '}
+                x
               </button>
             ))}
           </div>
@@ -376,7 +435,11 @@ export default function MessageComposer({
 
           <div className="flex items-center gap-3">
             <p className="hidden text-xs text-[#8a90a0] sm:block">
-              {editTo ? 'Press Enter to save' : 'Press Enter to send'}
+              {uploading
+                ? 'Uploading attachments...'
+                : editTo
+                  ? 'Press Enter to save'
+                  : 'Press Enter to send'}
             </p>
             <button
               type="button"
