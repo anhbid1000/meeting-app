@@ -4,6 +4,18 @@ import { useChannelStore } from '@/store/channelStore';
 import { ChannelDirectoryQuery } from '@/types/channel';
 import toast from 'react-hot-toast';
 
+type MyJoinRequestItem = {
+  channelId?: string | { _id?: string };
+  status?: 'pending' | 'accepted' | 'rejected' | 'expired' | 'revoked';
+  type?: 'request' | 'invite';
+  updatedAt?: string;
+};
+
+type MyJoinRequestsCache = {
+  success?: boolean;
+  data?: MyJoinRequestItem[];
+};
+
 const getErrorMessage = (error: unknown, fallback: string) => {
   if (
     typeof error === 'object' &&
@@ -257,30 +269,35 @@ export const useRequestAccess = () => {
       return channelApi.requestAccess(channelId, message);
     },
     onSuccess: (response, variables) => {
-      queryClient.setQueryData(['myJoinRequests'], (oldData: any) => {
-        const existing = Array.isArray(oldData?.data) ? oldData.data : [];
-        const withoutCurrentChannel = existing.filter((item: any) => {
-          const channelId =
-            typeof item?.channelId === 'string'
-              ? item.channelId
-              : item?.channelId?._id;
-          return channelId !== variables.channelId;
-        });
+      queryClient.setQueryData(
+        ['myJoinRequests'],
+        (oldData: MyJoinRequestsCache | undefined) => {
+          const existing = Array.isArray(oldData?.data) ? oldData.data : [];
+          const withoutCurrentChannel = existing.filter(
+            (item: MyJoinRequestItem) => {
+              const channelId =
+                typeof item?.channelId === 'string'
+                  ? item.channelId
+                  : item?.channelId?._id;
+              return channelId !== variables.channelId;
+            }
+          );
 
-        return {
-          ...(oldData || {}),
-          success: true,
-          data: [
-            {
-              channelId: variables.channelId,
-              status: 'pending',
-              type: 'request',
-              updatedAt: new Date().toISOString(),
-            },
-            ...withoutCurrentChannel,
-          ],
-        };
-      });
+          return {
+            ...(oldData || {}),
+            success: true,
+            data: [
+              {
+                channelId: variables.channelId,
+                status: 'pending',
+                type: 'request',
+                updatedAt: new Date().toISOString(),
+              },
+              ...withoutCurrentChannel,
+            ],
+          };
+        }
+      );
 
       queryClient.invalidateQueries({ queryKey: ['myJoinRequests'] });
       queryClient.invalidateQueries({ queryKey: ['channels'] });

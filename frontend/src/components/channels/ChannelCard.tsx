@@ -25,10 +25,13 @@ interface ChannelCardProps {
   onToggleFavorite?: (channelId: string, isFavorite: boolean) => void;
   onCopyLink?: (channelId: string) => void;
   onViewInfo?: (channelId: string) => void;
+  onOpenChannel?: (channelId: string) => void;
   onDelete?: (channelId: string) => void;
   isJoined?: boolean;
   canManageChannel?: boolean;
+  canJoinWithoutRequest?: boolean;
   requestStatus?: RequestStatus;
+  nowMs?: number;
 }
 
 export default function ChannelCard({
@@ -39,23 +42,29 @@ export default function ChannelCard({
   onToggleFavorite,
   onCopyLink,
   onViewInfo,
+  onOpenChannel,
   onDelete,
   isJoined = false,
   canManageChannel = false,
+  canJoinWithoutRequest = false,
   requestStatus = null,
+  nowMs,
 }: ChannelCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const isPrivate = channel.type === 'private';
   const isArchived = channel.isArchived;
   const isRequestPending = requestStatus === 'pending';
   const isRequestRejected = requestStatus === 'rejected';
+  const isActionLockedByRequest =
+    !canJoinWithoutRequest && (isRequestPending || isRequestRejected);
 
   const formatRelativeTime = (isoDate?: string) => {
     if (!isoDate) return 'No recent activity';
     const time = new Date(isoDate).getTime();
     if (Number.isNaN(time)) return 'No recent activity';
 
-    const diffSeconds = Math.floor((Date.now() - time) / 1000);
+    const now = nowMs ?? 0;
+    const diffSeconds = Math.floor((now - time) / 1000);
     if (diffSeconds < 60) return 'Just now';
     if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)}m ago`;
     if (diffSeconds < 86400) return `${Math.floor(diffSeconds / 3600)}h ago`;
@@ -64,7 +73,8 @@ export default function ChannelCard({
 
   const handleAction = () => {
     if (isArchived) return;
-    if (isJoined) onLeave?.(channel._id);
+    if (isJoined) return;
+    else if (isPrivate && canJoinWithoutRequest) onJoin?.(channel._id);
     else if (isPrivate && !isRequestPending && !isRequestRejected)
       onRequestAccess?.(channel._id);
     else if (!isPrivate) onJoin?.(channel._id);
@@ -73,6 +83,7 @@ export default function ChannelCard({
   const getButtonText = () => {
     if (isArchived) return 'Archived';
     if (isJoined) return 'Joined';
+    if (isPrivate && canJoinWithoutRequest) return 'Join';
     if (isPrivate && isRequestPending) return 'Pending Approval';
     if (isPrivate && isRequestRejected) return 'Rejected';
     if (isPrivate) return 'Request Access';
@@ -81,31 +92,51 @@ export default function ChannelCard({
 
   const getButtonStyle = () => {
     if (isArchived) return 'bg-[#e7e8ea] text-[#737686] cursor-not-allowed';
-    if (isJoined) return 'bg-[#e7e8ea] text-[#516070] hover:bg-[#e1e2e4]';
-    if (isRequestPending) return 'bg-[#fef7cd] text-[#7c6a00] cursor-default';
-    if (isRequestRejected) return 'bg-[#ffdad6] text-[#93000a] cursor-default';
+    if (isJoined) return 'bg-[#e7e8ea] text-[#516070] cursor-not-allowed';
+    if (!canJoinWithoutRequest && isRequestPending)
+      return 'bg-[#fef7cd] text-[#7c6a00] cursor-default';
+    if (!canJoinWithoutRequest && isRequestRejected)
+      return 'bg-[#ffdad6] text-[#93000a] cursor-default';
+    if (isPrivate && canJoinWithoutRequest)
+      return 'bg-[#004ac6] text-white hover:bg-[#003ea8]';
     if (isPrivate) return 'bg-[#d5e4f8] text-[#004ac6] hover:bg-[#b9c8db]';
     return 'bg-[#004ac6] text-white hover:bg-[#003ea8]';
   };
 
+  const latestActorLabel = channel.lastActivityActor || 'Teammate';
+  const latestActorInitial =
+    latestActorLabel.trim().charAt(0).toUpperCase() || 'T';
+  const hasLatestMessage = Boolean(
+    channel.lastMessagePreview && channel.lastMessagePreview.trim()
+  );
+
   const showLatestActivity = !isArchived && (!isPrivate || isJoined);
-  const latestActivityHeadline = channel.lastMessagePreview
-    ? `${channel.lastActivityActor || 'Teammate'}: ${channel.lastMessagePreview}`
-    : channel.description || `Discussion updates in #${channel.name}`;
+  const latestActivitySnippet =
+    channel.lastMessagePreview?.trim() || 'No message';
 
   return (
     <div className="bg-white border border-[#c3c6d7] rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow group relative">
       {/* Header */}
       <div className="flex justify-between items-start mb-4">
         <div className="flex items-center gap-4 flex-1">
-          <div className="w-12 h-12 bg-[#dbe1ff] text-[#004ac6] rounded-xl flex items-center justify-center font-bold text-xl">
+          <button
+            type="button"
+            onClick={() => onOpenChannel?.(channel._id)}
+            className="w-12 h-12 bg-[#dbe1ff] text-[#004ac6] rounded-xl flex items-center justify-center font-bold text-xl hover:bg-[#cfd9ff] cursor-pointer"
+          >
             <span className="material-symbols-outlined">
               {isPrivate ? 'lock' : 'tag'}
             </span>
-          </div>
+          </button>
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <h4 className="font-bold text-[#191c1e]">{channel.name}</h4>
+              <button
+                type="button"
+                onClick={() => onOpenChannel?.(channel._id)}
+                className="font-bold text-[#191c1e] hover:text-[#004ac6] cursor-pointer"
+              >
+                {channel.name}
+              </button>
               {channel.isFavorite && (
                 <span
                   className="material-symbols-outlined text-[#004ac6] text-base"
@@ -139,7 +170,7 @@ export default function ChannelCard({
         <div className="relative">
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="p-1.5 rounded-lg hover:bg-[#f3f4f6] text-[#516070] transition-colors"
+            className="p-1.5 rounded-lg hover:bg-[#f3f4f6] text-[#516070] transition-colors cursor-pointer"
             type="button"
           >
             <span className="material-symbols-outlined text-xl">more_vert</span>
@@ -160,7 +191,7 @@ export default function ChannelCard({
                     );
                     setShowMenu(false);
                   }}
-                  className="w-full px-4 py-2 text-left text-sm text-[#191c1e] hover:bg-[#f3f4f6] flex items-center gap-2"
+                  className="w-full px-4 py-2 text-left text-sm text-[#191c1e] hover:bg-[#f3f4f6] flex items-center gap-2 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-base">
                     star
@@ -172,7 +203,7 @@ export default function ChannelCard({
                     onCopyLink?.(channel._id);
                     setShowMenu(false);
                   }}
-                  className="w-full px-4 py-2 text-left text-sm text-[#191c1e] hover:bg-[#f3f4f6] flex items-center gap-2"
+                  className="w-full px-4 py-2 text-left text-sm text-[#191c1e] hover:bg-[#f3f4f6] flex items-center gap-2 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-base">
                     link
@@ -184,7 +215,7 @@ export default function ChannelCard({
                     onViewInfo?.(channel._id);
                     setShowMenu(false);
                   }}
-                  className="w-full px-4 py-2 text-left text-sm text-[#191c1e] hover:bg-[#f3f4f6] flex items-center gap-2"
+                  className="w-full px-4 py-2 text-left text-sm text-[#191c1e] hover:bg-[#f3f4f6] flex items-center gap-2 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-base">
                     info
@@ -199,7 +230,7 @@ export default function ChannelCard({
                         onDelete?.(channel._id);
                         setShowMenu(false);
                       }}
-                      className="w-full px-4 py-2 text-left text-sm text-[#ba1a1a] hover:bg-[#ffdad6] flex items-center gap-2"
+                      className="w-full px-4 py-2 text-left text-sm text-[#ba1a1a] hover:bg-[#ffdad6] flex items-center gap-2 cursor-pointer"
                     >
                       <span className="material-symbols-outlined text-base">
                         delete
@@ -213,7 +244,7 @@ export default function ChannelCard({
                     <div className="border-t border-[#e1e2e4] my-1" />
                     <button
                       onClick={() => onLeave?.(channel._id)}
-                      className="w-full px-4 py-2 text-left text-sm text-[#ba1a1a] hover:bg-[#ffdad6] flex items-center gap-2"
+                      className="w-full px-4 py-2 text-left text-sm text-[#ba1a1a] hover:bg-[#ffdad6] flex items-center gap-2 cursor-pointer"
                     >
                       <span className="material-symbols-outlined text-base">
                         logout
@@ -228,7 +259,7 @@ export default function ChannelCard({
         </div>
 
         {channel.unreadCount ? (
-          <span className="bg-[#004ac6] text-white text-xs px-2 py-1 rounded-full min-w-[24px] text-center">
+          <span className="bg-[#004ac6] text-white text-xs px-2 py-1 rounded-full min-w-6 text-center">
             {channel.unreadCount}
           </span>
         ) : null}
@@ -236,23 +267,33 @@ export default function ChannelCard({
 
       {/* Description / Preview */}
       {showLatestActivity && (
-        <div className="bg-[#f3f4f6] rounded-lg p-2 mb-4">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="material-symbols-outlined text-sm text-[#516070]">
-              chat_bubble
-            </span>
-            <span className="text-xs text-[#516070]">Latest activity</span>
-          </div>
-          <p className="text-sm text-[#191c1e] line-clamp-2 font-medium">
-            {latestActivityHeadline}
-          </p>
-          <p className="text-xs text-[#516070] mt-1">
-            {formatRelativeTime(channel.lastMessageAt)}
-          </p>
+        <div className="bg-[#f3f4f6] rounded-lg p-3 mb-4">
+          {hasLatestMessage ? (
+            <>
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full overflow-hidden bg-[#dbe1ff] text-[#004ac6] text-xs font-semibold flex items-center justify-center shrink-0">
+                    {latestActorInitial}
+                  </div>
+                  <span className="text-[15px] leading-none font-semibold text-[#191c1e]">
+                    {latestActorLabel}
+                  </span>
+                </div>
+                <p className="text-xs text-[#516070] leading-none">
+                  {formatRelativeTime(channel.lastMessageAt)}
+                </p>
+              </div>
+              <p className="text-[16px] leading-none text-[#6c757d] line-clamp-1 italic">
+                &quot;{latestActivitySnippet}
+              </p>
+            </>
+          ) : (
+            <p className="text-sm font-medium text-[#737686]">No message</p>
+          )}
         </div>
       )}
 
-      {isPrivate && !isJoined && !isArchived && (
+      {isPrivate && !isJoined && !isArchived && !canJoinWithoutRequest && (
         <div className="bg-[#fef7cd] rounded-lg p-3 mb-4 border border-[#e6d68a]">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-base text-[#7c6a00]">
@@ -274,8 +315,8 @@ export default function ChannelCard({
 
         <button
           onClick={handleAction}
-          disabled={isRequestPending || isRequestRejected}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-transform active:scale-95 ${getButtonStyle()}`}
+          disabled={isJoined || isActionLockedByRequest || isArchived}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-transform active:scale-95 ${getButtonStyle()} ${isJoined || isActionLockedByRequest || isArchived ? '' : 'cursor-pointer'}`}
         >
           {getButtonText()}
         </button>

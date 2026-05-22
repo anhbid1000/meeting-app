@@ -10,11 +10,11 @@ const router = Router();
 // Workspace endpoints
 router.use("/workspaces", workspaceRoutes);
 
-// Channel-member actions
-router.use("/channels", channelMemberRoutes);
-
 // Channel join requests
 router.use("/channels", channelJoinRequestRoutes);
+
+// Channel-member actions
+router.use("/channels", channelMemberRoutes);
 
 // Messages endpoints
 router.use("/", messageRoutes);

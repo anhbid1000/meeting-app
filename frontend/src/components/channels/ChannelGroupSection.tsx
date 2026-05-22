@@ -4,6 +4,7 @@ import ChannelCard from './ChannelCard';
 
 interface ChannelGroupSectionProps {
   groupTitle: string;
+  nowMs: number;
   channels: (Channel & {
     unreadCount?: number;
     isFavorite?: boolean;
@@ -11,6 +12,7 @@ interface ChannelGroupSectionProps {
     lastMessagePreview?: string;
     lastActivityActor?: string;
     canManageChannel?: boolean;
+    canJoinWithoutRequest?: boolean;
   })[];
   onJoin?: (channelId: string) => void;
   onLeave?: (channelId: string) => void;
@@ -18,6 +20,7 @@ interface ChannelGroupSectionProps {
   onToggleFavorite?: (channelId: string, isFavorite: boolean) => void;
   onCopyLink?: (channelId: string) => void;
   onViewInfo?: (channelId: string) => void;
+  onOpenChannel?: (channelId: string) => void;
   onDelete?: (channelId: string) => void;
   joinedChannelIds?: string[];
   requestStatusByChannelId?: Record<
@@ -28,6 +31,7 @@ interface ChannelGroupSectionProps {
 
 export default function ChannelGroupSection({
   groupTitle,
+  nowMs,
   channels,
   onJoin,
   onLeave,
@@ -35,6 +39,7 @@ export default function ChannelGroupSection({
   onToggleFavorite,
   onCopyLink,
   onViewInfo,
+  onOpenChannel,
   onDelete,
   joinedChannelIds = [],
   requestStatusByChannelId = {},
@@ -69,15 +74,18 @@ export default function ChannelGroupSection({
             <ChannelCard
               key={channel._id}
               channel={channel}
+              nowMs={nowMs}
               onJoin={onJoin}
               onLeave={onLeave}
               onRequestAccess={onRequestAccess}
               onToggleFavorite={onToggleFavorite}
               onCopyLink={onCopyLink}
               onViewInfo={onViewInfo}
+              onOpenChannel={onOpenChannel}
               onDelete={onDelete}
               isJoined={joinedChannelIds.includes(channel._id)}
               canManageChannel={Boolean(channel.canManageChannel)}
+              canJoinWithoutRequest={Boolean(channel.canJoinWithoutRequest)}
               requestStatus={requestStatusByChannelId[channel._id] || null}
             />
           ))}

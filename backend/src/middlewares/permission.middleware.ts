@@ -22,6 +22,10 @@ export const requireWorkspaceMemberByChannel = async (
       return res.status(400).json({ message: "channelId is required" });
     }
 
+    if (!Types.ObjectId.isValid(channelId)) {
+      return res.status(400).json({ message: "Invalid channelId" });
+    }
+
     const channel = await Channel.findById(channelId)
       .select("workspaceId")
       .lean();

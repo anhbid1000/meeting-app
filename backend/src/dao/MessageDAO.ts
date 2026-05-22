@@ -23,6 +23,48 @@ export class MessageDAO extends BaseDAO<IMessage> {
     super(Message);
   }
 
+  private async attachAuthors(messages: any[]) {
+    if (!messages.length) return [];
+
+    const uniqueUserIds = Array.from(
+      new Set(
+        messages
+          .map((m) => String(m.userId))
+          .filter((id) => Types.ObjectId.isValid(id)),
+      ),
+    ).map((id) => new Types.ObjectId(id));
+
+    const users = uniqueUserIds.length
+      ? await this.model.db
+          .collection("users")
+          .find(
+            { _id: { $in: uniqueUserIds } },
+            { projection: { name: 1, email: 1, avatar: 1 } },
+          )
+          .toArray()
+      : [];
+
+    const userMap = new Map(users.map((user: any) => [String(user._id), user]));
+
+    return messages.map((message) => {
+      const userId = String(message.userId);
+      const user = userMap.get(userId);
+
+      return {
+        ...message,
+        userId,
+        author: user
+          ? {
+              _id: userId,
+              name: user.name,
+              email: user.email,
+              avatar: user.avatar,
+            }
+          : undefined,
+      };
+    });
+  }
+
   private async attachReactions(
     messages: any[],
   ): Promise<MessageWithDetails[]> {
@@ -78,7 +120,8 @@ export class MessageDAO extends BaseDAO<IMessage> {
       .limit(limit)
       .lean();
 
-    const data = await this.attachReactions(rows);
+    const withAuthors = await this.attachAuthors(rows);
+    const data = await this.attachReactions(withAuthors);
 
     return {
       data,
@@ -97,7 +140,8 @@ export class MessageDAO extends BaseDAO<IMessage> {
 
     if (!message) return null;
 
-    const [withReactions] = await this.attachReactions([message]);
+    const [withAuthor] = await this.attachAuthors([message]);
+    const [withReactions] = await this.attachReactions([withAuthor]);
     return withReactions;
   }
 

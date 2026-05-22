@@ -40,6 +40,27 @@ export const channelApi = {
     return response.data;
   },
 
+  async getChannelMembers(channelId: string, page = 1, limit = 200) {
+    const response = await api.get(
+      `/api/v1/channels/${channelId}/members?page=${page}&limit=${limit}`
+    );
+    return response.data;
+  },
+
+  async getInviteCandidates(channelId: string) {
+    const response = await api.get(
+      `/api/v1/channels/${channelId}/invite-candidates`
+    );
+    return response.data;
+  },
+
+  async inviteMember(channelId: string, userId: string) {
+    const response = await api.post(`/api/v1/channels/${channelId}/invite`, {
+      userId,
+    });
+    return response.data;
+  },
+
   /**
    * Create a new channel
    */

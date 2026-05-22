@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import * as React from 'react';
 import { startTransition } from 'react';
-import { useQueries } from '@tanstack/react-query';
+import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import ChannelSearchBar from '@/components/channels/ChannelSearchBar';
@@ -12,6 +12,7 @@ import ChannelGroupSection from '@/components/channels/ChannelGroupSection';
 import ChannelCardSkeleton from '@/components/channels/ChannelCardSkeleton';
 import ChannelEmptyState from '@/components/channels/ChannelEmptyState';
 import RequestAccessDialog from '@/components/channels/RequestAccessDialog';
+import DeleteChannelDialog from '@/components/channels/DeleteChannelDialog';
 import { channelApi } from '@/services/channelApi';
 import { useMyWorkspaces } from '@/hooks/useWorkspaces';
 import { useMyJoinRequests } from '@/hooks/usePendingRequests';
@@ -23,10 +24,12 @@ import {
 } from '@/hooks/useChannels';
 import { useChannelStore } from '@/store/channelStore';
 import { useAuthStore } from '@/store/authStore';
+import { applyDevAuthFromUrlOrFallback } from '@/lib/devAuth';
 import type { Channel } from '@/types/channel';
 
 export default function ChannelDirectoryPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('all');
   const [requestChannelId, setRequestChannelId] = useState<string | null>(null);
   const [joinedChannelIds, setJoinedChannelIds] = useState<string[]>([]);
@@ -37,28 +40,18 @@ export default function ChannelDirectoryPage() {
   const [memberCountOverrides, setMemberCountOverrides] = useState<
     Record<string, number>
   >({});
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [deletedChannelIds, setDeletedChannelIds] = useState<string[]>([]);
+  const [nowMs] = useState(() => Date.now());
+  const currentUser = useAuthStore((state) => state.user);
 
   const { filters, setFilters } = useChannelStore();
 
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      const devToken = process.env.NEXT_PUBLIC_DEV_TOKEN;
-      const devUserId = process.env.NEXT_PUBLIC_DEV_USER_ID;
-      const devUserEmail = process.env.NEXT_PUBLIC_DEV_USER_EMAIL;
-      const devUserName = process.env.NEXT_PUBLIC_DEV_USER_NAME;
-
-      if (devToken && devUserId && devUserEmail) {
-        const realUser = {
-          id: devUserId,
-          email: devUserEmail,
-          name: devUserName || devUserEmail,
-        };
-
-        useAuthStore.getState().setDevUser(realUser);
-        if (typeof window !== 'undefined')
-          localStorage.setItem('accessToken', devToken);
-      }
-    }
+    applyDevAuthFromUrlOrFallback();
   }, []);
 
   const {
@@ -94,7 +87,7 @@ export default function ChannelDirectoryPage() {
     );
   }, [myJoinRequestsData]);
 
-  const workspaces = myWorkspaces?.data ?? [];
+  const workspaces = useMemo(() => myWorkspaces?.data ?? [], [myWorkspaces]);
 
   const channelQueries = useQueries({
     queries: workspaces.map((workspace) => ({
@@ -131,6 +124,27 @@ export default function ChannelDirectoryPage() {
   const deleteChannel = useDeleteChannel();
   const favoriteChannel = useFavoriteChannel();
 
+  const currentUserRole = useMemo<'owner' | 'admin' | 'member' | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const token = localStorage.getItem('accessToken');
+    if (!token) return null;
+
+    try {
+      const [, payload] = token.split('.');
+      if (!payload) return null;
+      const json = JSON.parse(
+        atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
+      );
+      const role = String(json?.role || '').toLowerCase();
+      if (role === 'owner' || role === 'admin' || role === 'member') {
+        return role;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }, []);
+
   const channels = useMemo(() => {
     type EnrichedChannel = Channel & {
       unreadCount?: number;
@@ -141,10 +155,10 @@ export default function ChannelDirectoryPage() {
       workspaceName?: string;
       workspaceSlug?: string;
       canManageChannel?: boolean;
+      canJoinWithoutRequest?: boolean;
     };
 
     const merged: EnrichedChannel[] = [];
-    let index = 0;
 
     workspaces.forEach((workspace, workspaceIndex) => {
       const response = channelQueries[workspaceIndex]?.data;
@@ -158,18 +172,17 @@ export default function ChannelDirectoryPage() {
             lastMessageSenderName?: string;
           }
         ) => {
-          const isWorkspaceOwner =
-            workspace.ownerId === useAuthStore.getState().user?.id;
+          const isWorkspaceOwner = workspace.ownerId === currentUser?.id;
+          const isWorkspaceAdmin =
+            currentUserRole === 'owner' || currentUserRole === 'admin';
           const canManageChannel =
             isWorkspaceOwner ||
-            channel.createdBy === useAuthStore.getState().user?.id;
+            isWorkspaceAdmin ||
+            channel.createdBy === currentUser?.id;
+          const canJoinWithoutRequest = isWorkspaceOwner || isWorkspaceAdmin;
 
           const lastMessagePreview =
-            channel.lastMessagePreview ||
-            channel.lastMessageText ||
-            (channel.lastMessageAt
-              ? `Recent updates in #${channel.name}`
-              : undefined);
+            channel.lastMessagePreview || channel.lastMessageText;
 
           const effectiveMemberCount =
             memberCountOverrides[channel._id] ?? channel.memberCount ?? 0;
@@ -185,14 +198,22 @@ export default function ChannelDirectoryPage() {
             lastMessagePreview,
             lastActivityActor: channel.lastMessageSenderName,
             canManageChannel,
+            canJoinWithoutRequest,
           });
-          index += 1;
         }
       );
     });
 
-    return merged;
-  }, [workspaces, channelQueries, favoriteOverrides, memberCountOverrides]);
+    return merged.filter((channel) => !deletedChannelIds.includes(channel._id));
+  }, [
+    workspaces,
+    channelQueries,
+    favoriteOverrides,
+    memberCountOverrides,
+    currentUser?.id,
+    currentUserRole,
+    deletedChannelIds,
+  ]);
 
   useEffect(() => {
     if (didInitJoinedIds || !channels.length) return;
@@ -207,18 +228,13 @@ export default function ChannelDirectoryPage() {
       )
       .map((ch) => ch._id);
 
-    // Use startTransition to avoid blocking render
     if (typeof window !== 'undefined') {
       startTransition(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setJoinedChannelIds(initialJoinedIds);
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setDidInitJoinedIds(true);
       });
     } else {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setJoinedChannelIds(initialJoinedIds);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDidInitJoinedIds(true);
     }
   }, [channels, didInitJoinedIds]);
@@ -260,7 +276,7 @@ export default function ChannelDirectoryPage() {
       },
       {}
     );
-  }, [visibleChannels, channels]);
+  }, [visibleChannels]);
 
   const handleSearch = (search: string) => setFilters({ search, page: 1 });
 
@@ -331,34 +347,79 @@ export default function ChannelDirectoryPage() {
 
   const handleCopyLink = async (channelId: string) => {
     if (typeof window === 'undefined') return;
-    const url = `${window.location.origin}/channels/${channelId}`;
+    const target = channels.find((ch) => ch._id === channelId);
+    const path = target?.slug || target?._id || channelId;
+    const url = `${window.location.origin}/channels/${path}`;
     await navigator.clipboard.writeText(url);
     toast.success('Channel link copied');
   };
 
   const handleViewInfo = (channelId: string) => {
-    router.push(`/channels/${channelId}`);
+    const target = channels.find((ch) => ch._id === channelId);
+    const userId = useAuthStore.getState().user?.id;
+
+    const isMember =
+      joinedChannelIds.includes(channelId) ||
+      (Boolean(userId) &&
+        Boolean(target?.members?.some((m) => String(m) === String(userId))));
+
+    if (!isMember) {
+      toast.error('You must join this channel before opening chat');
+      return;
+    }
+
+    const path = target?.slug || target?._id || channelId;
+    router.push(`/channels/${path}`);
   };
 
-  const handleDelete = async (channelId: string) => {
-    const confirmed =
-      typeof window !== 'undefined' &&
-      window.confirm('Delete this channel permanently?');
-    if (!confirmed) return;
+  const handleOpenChannel = (channelId: string) => {
+    handleViewInfo(channelId);
+  };
+
+  const handleDelete = (channelId: string) => {
+    const target = channels.find((ch) => ch._id === channelId);
+    setDeleteTarget({
+      id: channelId,
+      name: target?.name || 'this channel',
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
 
     try {
-      await deleteChannel.mutateAsync(channelId);
-      setJoinedChannelIds((prev) => prev.filter((id) => id !== channelId));
+      const deletedId = deleteTarget.id;
+      await deleteChannel.mutateAsync(deletedId);
+      setDeletedChannelIds((prev) =>
+        prev.includes(deletedId) ? prev : [...prev, deletedId]
+      );
+      setJoinedChannelIds((prev) => prev.filter((id) => id !== deletedId));
       setFavoriteOverrides((prev) => {
         const next = { ...prev };
-        delete next[channelId];
+        delete next[deletedId];
         return next;
       });
       setMemberCountOverrides((prev) => {
         const next = { ...prev };
-        delete next[channelId];
+        delete next[deletedId];
         return next;
       });
+
+      // Keep directory cache in sync immediately without waiting for refetch.
+      queryClient.setQueriesData(
+        { queryKey: ['channels-by-workspace'] },
+        (oldData: any) => {
+          if (!oldData) return oldData;
+          if (!Array.isArray(oldData.data)) return oldData;
+          return {
+            ...oldData,
+            data: oldData.data.filter((ch: any) => ch?._id !== deletedId),
+          };
+        }
+      );
+      queryClient.invalidateQueries({ queryKey: ['channels-by-workspace'] });
+
+      setDeleteTarget(null);
     } catch {
       // Mutation already shows toast; suppress unhandled promise rejection in click handler.
     }
@@ -453,6 +514,7 @@ export default function ChannelDirectoryPage() {
             <ChannelGroupSection
               key={groupTitle}
               groupTitle={groupTitle}
+              nowMs={nowMs}
               channels={groupChannels}
               joinedChannelIds={joinedChannelIds}
               requestStatusByChannelId={requestStatusByChannelId}
@@ -462,6 +524,7 @@ export default function ChannelDirectoryPage() {
               onToggleFavorite={handleToggleFavorite}
               onCopyLink={handleCopyLink}
               onViewInfo={handleViewInfo}
+              onOpenChannel={handleOpenChannel}
               onDelete={handleDelete}
             />
           ))}
@@ -474,6 +537,16 @@ export default function ChannelDirectoryPage() {
           onClose={() => setRequestChannelId(null)}
         />
       )}
+
+      <DeleteChannelDialog
+        isOpen={Boolean(deleteTarget)}
+        channelName={deleteTarget?.name}
+        isDeleting={deleteChannel.isPending}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          void handleConfirmDelete();
+        }}
+      />
     </main>
   );
 }

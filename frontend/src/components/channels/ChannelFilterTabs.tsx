@@ -30,7 +30,7 @@ export default function ChannelFilterTabs({
         <button
           key={tab.id}
           onClick={() => onTabChange(tab)}
-          className={`px-4 py-2 rounded-full text-xs whitespace-nowrap transition-colors ${
+          className={`px-4 py-2 rounded-full text-xs whitespace-nowrap transition-colors cursor-pointer ${
             activeTab === tab.id
               ? 'bg-[#004ac6] text-white'
               : 'bg-[#e7e8ea] text-[#516070] hover:bg-[#e1e2e4]'
