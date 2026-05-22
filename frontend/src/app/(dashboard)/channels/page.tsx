@@ -27,6 +27,9 @@ import { useAuthStore } from '@/store/authStore';
 import { applyDevAuthFromUrlOrFallback } from '@/lib/devAuth';
 import type { Channel } from '@/types/channel';
 
+const stripLeadingReplyMarkers = (value: string) =>
+  value.replace(/^(?:\[reply:[^\]]+\]\n?)+/, '').trim();
+
 export default function ChannelDirectoryPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -181,8 +184,9 @@ export default function ChannelDirectoryPage() {
             channel.createdBy === currentUser?.id;
           const canJoinWithoutRequest = isWorkspaceOwner || isWorkspaceAdmin;
 
-          const lastMessagePreview =
-            channel.lastMessagePreview || channel.lastMessageText;
+          const lastMessagePreview = stripLeadingReplyMarkers(
+            channel.lastMessagePreview || channel.lastMessageText || ''
+          );
 
           const effectiveMemberCount =
             memberCountOverrides[channel._id] ?? channel.memberCount ?? 0;

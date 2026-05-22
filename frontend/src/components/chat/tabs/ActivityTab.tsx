@@ -5,6 +5,14 @@ interface ActivityTabProps {
   messages: ChatMessage[];
 }
 
+const stripLeadingReplyMarkers = (value: string) =>
+  value.replace(/^(?:\[reply:[^\]]+\]\n?)+/, '').trim();
+
+const getActivityText = (message: ChatMessage) => {
+  const cleaned = stripLeadingReplyMarkers(message.content || '');
+  return cleaned || 'Message updated';
+};
+
 export default function ActivityTab({ messages }: ActivityTabProps) {
   const latest = [...messages]
     .sort(
@@ -25,7 +33,7 @@ export default function ActivityTab({ messages }: ActivityTabProps) {
           className="rounded-xl border border-[#e1e5ef] bg-white px-3 py-3"
         >
           <p className="line-clamp-2 text-sm text-[#21262a]">
-            {message.content || 'Message updated'}
+            {getActivityText(message)}
           </p>
           <p className="mt-2 text-xs text-[#8a90a0]">
             {new Date(message.updatedAt).toLocaleString()}

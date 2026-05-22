@@ -34,6 +34,17 @@ interface ChannelCardProps {
   nowMs?: number;
 }
 
+const stripLeadingReplyMarkers = (value: string) =>
+  value.replace(/^(?:\[reply:[^\]]+\]\n?)+/, '').trim();
+
+const normalizeActorLabel = (value?: string) => {
+  const actor = (value || '').trim();
+  if (!actor) return 'Teammate';
+  if (/^[a-f\d]{24}$/i.test(actor)) return 'Teammate';
+  if (/^user\s+[a-f\d]{6,}$/i.test(actor)) return 'Teammate';
+  return actor;
+};
+
 export default function ChannelCard({
   channel,
   onJoin,
@@ -103,7 +114,7 @@ export default function ChannelCard({
     return 'bg-[#004ac6] text-white hover:bg-[#003ea8]';
   };
 
-  const latestActorLabel = channel.lastActivityActor || 'Teammate';
+  const latestActorLabel = normalizeActorLabel(channel.lastActivityActor);
   const latestActorInitial =
     latestActorLabel.trim().charAt(0).toUpperCase() || 'T';
   const hasLatestMessage = Boolean(
@@ -111,8 +122,9 @@ export default function ChannelCard({
   );
 
   const showLatestActivity = !isArchived && (!isPrivate || isJoined);
-  const latestActivitySnippet =
-    channel.lastMessagePreview?.trim() || 'No message';
+  const latestActivitySnippet = stripLeadingReplyMarkers(
+    channel.lastMessagePreview || ''
+  );
 
   return (
     <div className="bg-white border border-[#c3c6d7] rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow group relative">
@@ -284,7 +296,7 @@ export default function ChannelCard({
                 </p>
               </div>
               <p className="text-[16px] leading-none text-[#6c757d] line-clamp-1 italic">
-                &quot;{latestActivitySnippet}
+                &quot;{latestActivitySnippet || 'No message'}&quot;
               </p>
             </>
           ) : (
