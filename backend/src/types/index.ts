@@ -9,6 +9,7 @@ export interface AuthUser {
   id: string;
   email: string;
   role: AppRole;
+  name?: string;
 }
 
 export interface WorkspaceMembership {

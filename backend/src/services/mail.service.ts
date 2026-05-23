@@ -231,3 +231,39 @@ export const sendWorkspaceJoinApprovedEmail = async ({
     `,
   });
 };
+
+interface SendMeetingReminderEmailParams {
+  to: string;
+  name: string;
+  meetingTitle: string;
+  startTime: string;
+  meetingUrl: string;
+}
+
+export const sendMeetingReminderEmail = async ({
+  to,
+  name,
+  meetingTitle,
+  startTime,
+  meetingUrl,
+}: SendMeetingReminderEmailParams) => {
+  await getTransporter().sendMail({
+    from: getMailFrom(),
+    to,
+    subject: `[Nhắc hẹn] Cuộc họp sắp diễn ra: ${meetingTitle}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; color: #111827; line-height: 1.6;">
+        <h2 style="color: #0b55d9;">Nhắc lịch họp trên ViMeet</h2>
+        <p>Xin chào ${name},</p>
+        <p>Đây là thông báo nhắc nhở cuộc họp <strong>${meetingTitle}</strong> của bạn sẽ bắt đầu vào lúc <strong>${startTime}</strong>.</p>
+        <p>
+          <a href="${meetingUrl}" style="display: inline-block; background: #0b55d9; color: white; padding: 12px 18px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+            Vào Phòng Chờ
+          </a>
+        </p>
+        <p>Chúc bạn có một buổi họp hiệu quả!</p>
+        <p>Đội ngũ ViMeet</p>
+      </div>
+    `,
+  });
+};

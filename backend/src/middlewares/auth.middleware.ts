@@ -19,7 +19,7 @@ export const auth = async (req: Request, _res: Response, next: NextFunction) => 
       throw new AppError("Token xac thuc khong hop le", 401, "TOKEN_INVALID");
     }
 
-    const user = await User.findById(decoded.sub).select("_id email role").lean();
+    const user = await User.findById(decoded.sub).select("_id email role name").lean();
     if (!user) {
       throw new AppError("Nguoi dung khong con ton tai", 401, "USER_NOT_FOUND");
     }
@@ -28,6 +28,7 @@ export const auth = async (req: Request, _res: Response, next: NextFunction) => 
       id: String(user._id),
       email: user.email,
       role: user.role,
+      name: user.name, // <--- Đã thêm name
     };
 
     next();

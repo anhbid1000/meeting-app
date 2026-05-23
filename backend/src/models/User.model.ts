@@ -15,6 +15,7 @@ export interface IUser extends Document {
   role: AppRole;
   plan?: 'free' | 'pro';
   subscriptionPlan?: 'free' | 'pro';
+  subscriptionExpireTime?: Date;
   workspaces: {
     workspaceId: Types.ObjectId;
     role: WorkspaceRole;
@@ -132,6 +133,9 @@ const userSchema = new Schema<IUser>(
       type: String,
       enum: ["free", "pro"],
       default: "free",
+    },
+    subscriptionExpireTime: {
+      type: Date,
     },
     workspaces: {
       type: [workspaceMembershipSchema],

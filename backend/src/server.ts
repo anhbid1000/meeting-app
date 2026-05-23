@@ -5,6 +5,7 @@ import { Server } from "socket.io";
 import cors from "cors";
 import mongoose from "mongoose";
 import routes from "./routes"; // Import tất cả routes từ thư mục routes
+import { initCronJobs } from "./scripts/cron";
 
 const app = express();
 const server = http.createServer(app);
@@ -44,7 +45,10 @@ io.on("connection", (socket) => {
 // Ket noi MongoDB
 mongoose
   .connect(process.env.MONGODB_URI!)
-  .then(() => console.log("MongoDB Atlas connected successfully"))
+  .then(() => {
+    console.log("MongoDB Atlas connected successfully");
+    initCronJobs(); // Start cron jobs after DB connection
+  })
   .catch((err) => console.error("MongoDB connection error:", err));
 
 app.get("/", (_req: Request, res: Response) => {
