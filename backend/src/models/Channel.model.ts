@@ -1,4 +1,4 @@
-import mongoose, {Schema, Document, Types} from "mongoose";
+import mongoose, { Schema, Document, Types } from "mongoose";
 
 export type ChannelType = "private" | "public";
 
@@ -8,8 +8,12 @@ export interface IChannel extends Document {
   description?: string;
   slug: string;
   type: ChannelType;
+  category?: string;
   createdBy: Types.ObjectId;
   members: Types.ObjectId[];
+  isArchived: boolean;
+  lastMessageAt?: Date;
+  memberCount: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -19,7 +23,8 @@ const channelSchema = new Schema<IChannel>(
     workspaceId: {
       type: Schema.Types.ObjectId,
       ref: 'Workspace',
-      required: true
+      required: true,
+      index: true
     },
     name: {
       type: String,
@@ -42,6 +47,11 @@ const channelSchema = new Schema<IChannel>(
       enum: ['public', 'private'],
       default: 'public'
     },
+    category: {
+      type: String,
+      trim: true,
+      default: 'General'
+    },
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',
@@ -52,11 +62,25 @@ const channelSchema = new Schema<IChannel>(
         type: Schema.Types.ObjectId,
         ref: 'User'
       }
-    ]
+    ],
+    isArchived: {
+      type: Boolean,
+      default: false
+    },
+    lastMessageAt: {
+      type: Date
+    },
+    memberCount: {
+      type: Number,
+      default: 0
+    }
   },
   { timestamps: true }
 );
 
+// Indexes
 channelSchema.index({ workspaceId: 1, slug: 1 }, { unique: true });
+channelSchema.index({ workspaceId: 1, type: 1 });
+channelSchema.index({ lastMessageAt: -1 });
 
 export default mongoose.model<IChannel>('Channel', channelSchema);

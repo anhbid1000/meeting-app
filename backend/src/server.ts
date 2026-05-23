@@ -6,6 +6,9 @@ import cors from "cors";
 import mongoose from "mongoose";
 import routes from "./routes"; // Import tất cả routes từ thư mục routes
 import { initCronJobs } from "./scripts/cron";
+import index from "./routes"; // Import tất cả routes từ thư mục routes
+import { setupSocketHandlers } from "./sockets";
+
 
 const app = express();
 const server = http.createServer(app);
@@ -21,7 +24,7 @@ app.use(
 );
 app.use(express.json()); // Middleware parse JSON
 
-app.use("/api/v1", routes);
+app.use("/api/v1", index);
 
 // Cau hinh Socket.io cho WebRTC Signaling
 const io = new Server(server, {

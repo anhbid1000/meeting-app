@@ -75,7 +75,7 @@ export default function TopNav() {
             </Link>
 
             <button
-              onClick={logout}
+              onClick={authLogout}
               className="font-label-md text-label-md text-secondary hover:text-error transition-colors hidden md:block"
             >
               Dang xuat
@@ -101,7 +101,6 @@ export default function TopNav() {
         </button>
         </> )}
       </div>
-      
     </nav>
   );
 }

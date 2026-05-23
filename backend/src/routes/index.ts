@@ -8,6 +8,12 @@ import channelRoutes from "./Channel.route";
 import fileAssetRoutes from "./FileAsset.route";
 import meetingRoutes from "./Meeting.route";
 import meetingGlobalRoutes from "./MeetingGlobal.route";
+import channelJoinRequestRoutes from "./channelJoinRequest.routes";
+import messageRoutes from "./message.routes";
+import notificationRoutes from "./notification.routes";
+import threadReplyRoutes from "./threadReply.routes";
+import fileRoutes from "./file.routes";
+import channelMemberRoutes from "./channelMember.routes";
 
 const router = Router();
 
@@ -22,6 +28,27 @@ router.use("/categories", categoryRoutes);
 // Cac endpoint moi workspace:
 // - /api/v1/workspaces/:workspaceId/invites
 // - /api/v1/workspace-invites/:code
+router.use("/", workspaceInviteRoutes);
+
+// Channel join requests
+router.use("/channels", channelJoinRequestRoutes);
+
+// Channel-member actions
+router.use("/channels", channelMemberRoutes);
+
+// Messages endpoints
+router.use("/", messageRoutes);
+
+// Thread replies endpoints
+router.use("/", threadReplyRoutes);
+
+// File sharing endpoints
+router.use("/", fileRoutes);
+
+// Notification endpoints
+router.use("/notifications", notificationRoutes);
+
+// Invite endpoints
 router.use("/", workspaceInviteRoutes);
 
 export default router;

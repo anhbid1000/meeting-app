@@ -1,170 +1,686 @@
-type Channel = {
-  name: string;
-  message: string;
-  members: number;
+'use client';
+
+import { useMemo, useState, useEffect } from 'react';
+import * as React from 'react';
+import { startTransition } from 'react';
+import { useQueries, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
+import ChannelSearchBar from '@/components/channels/ChannelSearchBar';
+import ChannelFilterTabs from '@/components/channels/ChannelFilterTabs';
+import ChannelGroupSection from '@/components/channels/ChannelGroupSection';
+import ChannelCardSkeleton from '@/components/channels/ChannelCardSkeleton';
+import ChannelEmptyState from '@/components/channels/ChannelEmptyState';
+import RequestAccessDialog from '@/components/channels/RequestAccessDialog';
+import DeleteChannelDialog from '@/components/channels/DeleteChannelDialog';
+import { channelApi } from '@/services/channelApi';
+import { useMyWorkspaces } from '@/hooks/useWorkspaces';
+import { useMyJoinRequests } from '@/hooks/usePendingRequests';
+import {
+  useDeleteChannel,
+  useFavoriteChannel,
+  useJoinChannel,
+  useLeaveChannel,
+} from '@/hooks/useChannels';
+import { useChannelStore } from '@/store/channelStore';
+import { useAuthStore } from '@/store/authStore';
+import { useSocketStore } from '@/store/socketStore';
+import { applyDevAuthFromUrlOrFallback } from '@/lib/devAuth';
+import type { Channel } from '@/types/channel';
+
+const stripLeadingReplyMarkers = (value: string) =>
+  value.replace(/^(?:\[reply:[^\]]+\]\n?)+/, '').trim();
+
+const resolveId = (value: unknown) => {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'object') {
+    const row = value as { _id?: string; id?: string };
+    return String(row._id || row.id || '');
+  }
+  return '';
 };
-
-type ChannelGroup = {
-  title: string;
-  memberCount: number;
-  channels: Channel[];
-};
-
-const groups: ChannelGroup[] = [
-  {
-    title: 'Engineering',
-    memberCount: 4,
-    channels: [
-      {
-        name: 'development',
-        message: 'Alex: Merged the latest PR for the UI shell...',
-        members: 128,
-      },
-      {
-        name: 'backend-api',
-        message: 'Update on the OAuth2 integration timelines...',
-        members: 82,
-      },
-    ],
-  },
-  {
-    title: 'Marketing',
-    memberCount: 2,
-    channels: [
-      {
-        name: 'campaign-q4',
-        message: 'James: Ads for the autumn launch are live...',
-        members: 42,
-      },
-    ],
-  },
-  {
-    title: 'Design',
-    memberCount: 1,
-    channels: [
-      {
-        name: 'design-sync',
-        message: 'Sarah: Shared 4 new screen mockups for...',
-        members: 14,
-      },
-    ],
-  },
-];
-
-function Icon({ name, filled = false }: { name: string; filled?: boolean }) {
-  return (
-    <span
-      className="material-symbols-outlined"
-      style={{
-        fontVariationSettings: filled
-          ? "'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24"
-          : "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24",
-      }}
-    >
-      {name}
-    </span>
-  );
-}
 
 export default function ChannelDirectoryPage() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState('all');
+  const [requestChannelId, setRequestChannelId] = useState<string | null>(null);
+  const [joinedChannelIds, setJoinedChannelIds] = useState<string[]>([]);
+  const [didInitJoinedIds, setDidInitJoinedIds] = useState(false);
+  const [favoriteOverrides, setFavoriteOverrides] = useState<
+    Record<string, boolean>
+  >({});
+  const [memberCountOverrides, setMemberCountOverrides] = useState<
+    Record<string, number>
+  >({});
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [deletedChannelIds, setDeletedChannelIds] = useState<string[]>([]);
+  const [realtimeUnreadOverrides, setRealtimeUnreadOverrides] = useState<
+    Record<string, number>
+  >({});
+  const [realtimeMentionOverrides, setRealtimeMentionOverrides] = useState<
+    Record<string, number>
+  >({});
+  const [realtimeActivityOverrides, setRealtimeActivityOverrides] = useState<
+    Record<
+      string,
+      {
+        lastMessagePreview?: string;
+        lastMessageAt?: string;
+        lastActivityActor?: string;
+      }
+    >
+  >({});
+  const [nowMs] = useState(() => Date.now());
+  const currentUser = useAuthStore((state) => state.user);
+  const socket = useSocketStore((state) => state.socket);
+  const isSocketConnected = useSocketStore((state) => state.isConnected);
+
+  const { filters, setFilters } = useChannelStore();
+
+  useEffect(() => {
+    applyDevAuthFromUrlOrFallback();
+  }, []);
+
+  const {
+    data: myWorkspaces,
+    isLoading: isWorkspacesLoading,
+    isError: isWorkspacesError,
+  } = useMyWorkspaces(1, 50);
+
+  const { data: myJoinRequestsData } = useMyJoinRequests();
+  const requestStatusByChannelId = useMemo(() => {
+    const requests = myJoinRequestsData?.data ?? [];
+    return requests.reduce(
+      (
+        acc: Record<
+          string,
+          'pending' | 'accepted' | 'rejected' | 'expired' | 'revoked'
+        >,
+        req: {
+          channelId: string | { _id?: string };
+          status: 'pending' | 'accepted' | 'rejected' | 'expired' | 'revoked';
+        }
+      ) => {
+        const channelId =
+          typeof req.channelId === 'string'
+            ? req.channelId
+            : req.channelId?._id || '';
+        if (channelId) {
+          acc[channelId] = req.status;
+        }
+        return acc;
+      },
+      {}
+    );
+  }, [myJoinRequestsData]);
+
+  const workspaces = useMemo(() => myWorkspaces?.data ?? [], [myWorkspaces]);
+
+  const channelQueries = useQueries({
+    queries: workspaces.map((workspace) => ({
+      queryKey: [
+        'channels-by-workspace',
+        workspace._id,
+        filters.search,
+        filters.type,
+        filters.category,
+        filters.page,
+        filters.limit,
+        filters.sort,
+      ],
+      queryFn: () =>
+        channelApi.getChannelDirectory(workspace.slug, {
+          search: filters.search,
+          type: filters.type,
+          category: filters.category,
+          page: filters.page,
+          limit: filters.limit,
+          sort: filters.sort,
+        }),
+      enabled: !!workspace.slug,
+      staleTime: 30000,
+    })),
+  });
+
+  const isLoading =
+    isWorkspacesLoading || channelQueries.some((q) => q.isLoading);
+  const isError = isWorkspacesError || channelQueries.some((q) => q.isError);
+
+  const joinChannel = useJoinChannel();
+  const leaveChannel = useLeaveChannel();
+  const deleteChannel = useDeleteChannel();
+  const favoriteChannel = useFavoriteChannel();
+
+  const currentUserRole = useMemo<'owner' | 'admin' | 'member' | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const token = localStorage.getItem('accessToken');
+    if (!token) return null;
+
+    try {
+      const [, payload] = token.split('.');
+      if (!payload) return null;
+      const json = JSON.parse(
+        atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
+      );
+      const role = String(json?.role || '').toLowerCase();
+      if (role === 'owner' || role === 'admin' || role === 'member') {
+        return role;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const channels = useMemo(() => {
+    type EnrichedChannel = Channel & {
+      unreadCount?: number;
+      isFavorite?: boolean;
+      mentionCount?: number;
+      activeNow?: number;
+      lastMessagePreview?: string;
+      lastActivityActor?: string;
+      workspaceName?: string;
+      workspaceSlug?: string;
+      canManageChannel?: boolean;
+      canJoinWithoutRequest?: boolean;
+    };
+
+    const merged: EnrichedChannel[] = [];
+
+    workspaces.forEach((workspace, workspaceIndex) => {
+      const response = channelQueries[workspaceIndex]?.data;
+      const source: Channel[] = response?.data ?? [];
+
+      source.forEach(
+        (
+          channel: Channel & {
+            lastMessagePreview?: string;
+            lastMessageText?: string;
+            lastMessageSenderName?: string;
+          }
+        ) => {
+          const isWorkspaceOwner = workspace.ownerId === currentUser?.id;
+          const isWorkspaceAdmin =
+            currentUserRole === 'owner' || currentUserRole === 'admin';
+          const canManageChannel =
+            isWorkspaceOwner ||
+            isWorkspaceAdmin ||
+            channel.createdBy === currentUser?.id;
+          const canJoinWithoutRequest = isWorkspaceOwner || isWorkspaceAdmin;
+
+          const lastMessagePreview = stripLeadingReplyMarkers(
+            channel.lastMessagePreview || channel.lastMessageText || ''
+          );
+
+          const effectiveMemberCount =
+            memberCountOverrides[channel._id] ?? channel.memberCount ?? 0;
+          const effectiveUnreadCount =
+            realtimeUnreadOverrides[channel._id] ?? channel.unreadCount ?? 0;
+          const effectiveMentionCount =
+            realtimeMentionOverrides[channel._id] ?? channel.mentionCount ?? 0;
+          const activityOverride = realtimeActivityOverrides[channel._id];
+
+          merged.push({
+            ...channel,
+            workspaceName: workspace.name,
+            workspaceSlug: workspace.slug,
+            unreadCount: effectiveUnreadCount,
+            mentionCount: effectiveMentionCount,
+            isFavorite: favoriteOverrides[channel._id] ?? false,
+            memberCount: effectiveMemberCount,
+            activeNow: Math.max(0, effectiveMemberCount % 8),
+            lastMessageAt:
+              activityOverride?.lastMessageAt || channel.lastMessageAt,
+            lastMessagePreview:
+              activityOverride?.lastMessagePreview ?? lastMessagePreview,
+            lastActivityActor:
+              activityOverride?.lastActivityActor ||
+              channel.lastMessageSenderName,
+            canManageChannel,
+            canJoinWithoutRequest,
+          });
+        }
+      );
+    });
+
+    return merged.filter((channel) => !deletedChannelIds.includes(channel._id));
+  }, [
+    workspaces,
+    channelQueries,
+    favoriteOverrides,
+    memberCountOverrides,
+    realtimeUnreadOverrides,
+    realtimeMentionOverrides,
+    realtimeActivityOverrides,
+    currentUser?.id,
+    currentUserRole,
+    deletedChannelIds,
+  ]);
+
+  useEffect(() => {
+    const userId = String(currentUser?.id || '');
+    if (!socket || !isSocketConnected || !userId) return;
+
+    const onChannelActivityUpdate = (payload: any) => {
+      const channelId = resolveId(payload?.channelId);
+      if (!channelId) return;
+
+      const target = channels.find((channel) => channel._id === channelId);
+      if (!target) return;
+
+      const senderId = resolveId(payload?.userId);
+      const mentionIds = Array.isArray(payload?.mentions)
+        ? payload.mentions.map((row: unknown) => resolveId(row)).filter(Boolean)
+        : [];
+
+      setRealtimeActivityOverrides((prev) => ({
+        ...prev,
+        [channelId]: {
+          lastMessagePreview: stripLeadingReplyMarkers(
+            String(payload?.lastMessageText || '')
+          ),
+          lastMessageAt: String(
+            payload?.lastMessageAt || new Date().toISOString()
+          ),
+          lastActivityActor: String(
+            payload?.lastMessageSenderName || 'Teammate'
+          ),
+        },
+      }));
+
+      if (senderId && senderId === userId) return;
+
+      const isMember =
+        joinedChannelIds.includes(channelId) ||
+        Boolean(
+          target.members?.some((memberId) => String(memberId) === userId)
+        );
+
+      if (!isMember) return;
+
+      setRealtimeUnreadOverrides((prev) => ({
+        ...prev,
+        [channelId]: Math.max(
+          0,
+          (prev[channelId] ?? target.unreadCount ?? 0) + 1
+        ),
+      }));
+
+      if (mentionIds.includes(userId)) {
+        setRealtimeMentionOverrides((prev) => ({
+          ...prev,
+          [channelId]: Math.max(
+            0,
+            (prev[channelId] ?? target.mentionCount ?? 0) + 1
+          ),
+        }));
+      }
+    };
+
+    socket.on('channel:activity:update', onChannelActivityUpdate);
+
+    return () => {
+      socket.off('channel:activity:update', onChannelActivityUpdate);
+    };
+  }, [socket, isSocketConnected, currentUser?.id, channels, joinedChannelIds]);
+
+  useEffect(() => {
+    if (didInitJoinedIds || !channels.length) return;
+    const userId = useAuthStore.getState().user?.id;
+    if (!userId) return;
+
+    const initialJoinedIds = channels
+      .filter(
+        (ch) =>
+          Array.isArray(ch.members) &&
+          ch.members.some((m) => String(m) === String(userId))
+      )
+      .map((ch) => ch._id);
+
+    if (typeof window !== 'undefined') {
+      startTransition(() => {
+        setJoinedChannelIds(initialJoinedIds);
+        setDidInitJoinedIds(true);
+      });
+    } else {
+      setJoinedChannelIds(initialJoinedIds);
+      setDidInitJoinedIds(true);
+    }
+  }, [channels, didInitJoinedIds]);
+
+  const visibleChannels = useMemo(() => {
+    type EnrichedChannel = (typeof channels)[0];
+
+    const baseChannels =
+      filters.status === 'archived'
+        ? channels.filter((ch: EnrichedChannel) => ch.isArchived)
+        : channels.filter((ch: EnrichedChannel) => !ch.isArchived);
+
+    if (filters.status === 'joined') {
+      return baseChannels.filter((ch: EnrichedChannel) =>
+        joinedChannelIds.includes(ch._id)
+      );
+    }
+    if (filters.status === 'unread') {
+      return baseChannels.filter(
+        (ch: EnrichedChannel) =>
+          joinedChannelIds.includes(ch._id) && (ch.unreadCount ?? 0) > 0
+      );
+    }
+    if (filters.status === 'favorites') {
+      return baseChannels.filter((ch: EnrichedChannel) => ch.isFavorite);
+    }
+
+    return baseChannels;
+  }, [channels, filters.status, joinedChannelIds]);
+
+  const groupedChannels = useMemo(() => {
+    type EnrichedChannel = (typeof channels)[0];
+    return visibleChannels.reduce<Record<string, EnrichedChannel[]>>(
+      (acc, channel: EnrichedChannel) => {
+        const group =
+          channel.workspaceName || channel.workspaceId || 'Unknown Workspace';
+        if (!acc[group]) acc[group] = [];
+        acc[group].push(channel);
+        return acc;
+      },
+      {}
+    );
+  }, [visibleChannels]);
+
+  const handleSearch = (search: string) => setFilters({ search, page: 1 });
+
+  const handleFilterTab = (tab: {
+    id: string;
+    type?: 'public' | 'private';
+    status?: 'all' | 'joined' | 'unread' | 'favorites' | 'archived';
+  }) => {
+    setActiveTab(tab.id);
+    setFilters({ type: tab.type, status: tab.status, page: 1 });
+  };
+
+  const handleJoin = async (channelId: string) => {
+    try {
+      const target = channels.find((ch) => ch._id === channelId);
+      const alreadyJoined = joinedChannelIds.includes(channelId);
+
+      await joinChannel.mutateAsync(channelId);
+      setJoinedChannelIds((prev) =>
+        prev.includes(channelId) ? prev : [...prev, channelId]
+      );
+
+      if (!alreadyJoined && target) {
+        const currentCount =
+          memberCountOverrides[channelId] ?? target.memberCount ?? 0;
+        setMemberCountOverrides((prev) => ({
+          ...prev,
+          [channelId]: currentCount + 1,
+        }));
+      }
+    } catch {
+      // Mutation already shows toast; suppress unhandled promise rejection in click handler.
+    }
+  };
+
+  const handleLeave = async (channelId: string) => {
+    try {
+      const target = channels.find((ch) => ch._id === channelId);
+      const wasJoined = joinedChannelIds.includes(channelId);
+
+      await leaveChannel.mutateAsync(channelId);
+      setJoinedChannelIds((prev) => prev.filter((id) => id !== channelId));
+
+      if (wasJoined && target) {
+        const currentCount =
+          memberCountOverrides[channelId] ?? target.memberCount ?? 0;
+        setMemberCountOverrides((prev) => ({
+          ...prev,
+          [channelId]: Math.max(0, currentCount - 1),
+        }));
+      }
+    } catch {
+      // Mutation already shows toast; suppress unhandled promise rejection in click handler.
+    }
+  };
+
+  const handleToggleFavorite = async (
+    channelId: string,
+    isFavorite: boolean
+  ) => {
+    try {
+      await favoriteChannel.mutateAsync({ channelId, isFavorite });
+      setFavoriteOverrides((prev) => ({ ...prev, [channelId]: isFavorite }));
+    } catch {
+      // Mutation already shows toast; suppress unhandled promise rejection in click handler.
+    }
+  };
+
+  const handleCopyLink = async (channelId: string) => {
+    if (typeof window === 'undefined') return;
+    const target = channels.find((ch) => ch._id === channelId);
+    const path = target?.slug || target?._id || channelId;
+    const url = `${window.location.origin}/channels/${path}`;
+    await navigator.clipboard.writeText(url);
+    toast.success('Channel link copied');
+  };
+
+  const handleViewInfo = (channelId: string) => {
+    const target = channels.find((ch) => ch._id === channelId);
+    const userId = useAuthStore.getState().user?.id;
+
+    const isMember =
+      joinedChannelIds.includes(channelId) ||
+      (Boolean(userId) &&
+        Boolean(target?.members?.some((m) => String(m) === String(userId))));
+
+    if (!isMember) {
+      toast.error('You must join this channel before opening chat');
+      return;
+    }
+
+    setRealtimeUnreadOverrides((prev) => ({ ...prev, [channelId]: 0 }));
+    setRealtimeMentionOverrides((prev) => ({ ...prev, [channelId]: 0 }));
+
+    const path = target?.slug || target?._id || channelId;
+    router.push(`/channels/${path}`);
+  };
+
+  const handleOpenChannel = (channelId: string) => {
+    handleViewInfo(channelId);
+  };
+
+  const handleDelete = (channelId: string) => {
+    const target = channels.find((ch) => ch._id === channelId);
+    setDeleteTarget({
+      id: channelId,
+      name: target?.name || 'this channel',
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+
+    try {
+      const deletedId = deleteTarget.id;
+      await deleteChannel.mutateAsync(deletedId);
+      setDeletedChannelIds((prev) =>
+        prev.includes(deletedId) ? prev : [...prev, deletedId]
+      );
+      setJoinedChannelIds((prev) => prev.filter((id) => id !== deletedId));
+      setFavoriteOverrides((prev) => {
+        const next = { ...prev };
+        delete next[deletedId];
+        return next;
+      });
+      setRealtimeUnreadOverrides((prev) => {
+        const next = { ...prev };
+        delete next[deletedId];
+        return next;
+      });
+      setRealtimeMentionOverrides((prev) => {
+        const next = { ...prev };
+        delete next[deletedId];
+        return next;
+      });
+      setRealtimeActivityOverrides((prev) => {
+        const next = { ...prev };
+        delete next[deletedId];
+        return next;
+      });
+      setMemberCountOverrides((prev) => {
+        const next = { ...prev };
+        delete next[deletedId];
+        return next;
+      });
+
+      // Keep directory cache in sync immediately without waiting for refetch.
+      queryClient.setQueriesData(
+        { queryKey: ['channels-by-workspace'] },
+        (oldData: any) => {
+          if (!oldData) return oldData;
+          if (!Array.isArray(oldData.data)) return oldData;
+          return {
+            ...oldData,
+            data: oldData.data.filter((ch: any) => ch?._id !== deletedId),
+          };
+        }
+      );
+      queryClient.invalidateQueries({ queryKey: ['channels-by-workspace'] });
+
+      setDeleteTarget(null);
+    } catch {
+      // Mutation already shows toast; suppress unhandled promise rejection in click handler.
+    }
+  };
+
   return (
-    <div className="space-y-xl">
-      <section className="space-y-lg">
-        <div className="flex flex-col gap-md lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl space-y-sm">
-            <p className="font-label-md text-label-md uppercase tracking-[0.2em] text-primary">
-              Channels
-            </p>
-            <h1 className="font-headline-lg text-headline-lg text-on-surface">
-              Channel Directory
-            </h1>
-            <p className="font-body-md text-body-md text-on-surface-variant">
-              Here&apos;s an overview of the channels you are part of.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-sm">
-            <button className="rounded-lg border border-outline px-md py-sm font-label-md text-on-surface transition-colors hover:bg-surface-container-high">
-              Join Channel
-            </button>
-
-            <button className="flex items-center gap-xs rounded-lg bg-primary px-md py-sm font-label-md text-on-primary shadow-sm transition-colors hover:bg-on-primary-fixed-variant">
-              <Icon name="add" />
-              Create Channel
-            </button>
-          </div>
-        </div>
-
-        <div className="flex max-w-[25%] items-center rounded-full border border-outline-variant bg-surface-container-low px-md py-xs">
-          <span className="material-symbols-outlined mr-sm text-on-surface-variant">
-            search
-          </span>
-          <input
-            type="text"
-            placeholder="Search for channels..."
-            className="w-full border-none bg-transparent text-body-md placeholder:text-on-surface-variant focus:ring-0"
+    <main className="flex-1 flex flex-col h-screen overflow-hidden bg-[#f8f9fb] text-[#191c1e]">
+      <header className="flex items-center px-6 w-full h-16 sticky top-0 z-40 bg-white border-b border-[#e1e2e4] shadow-sm">
+        <div className="relative w-full max-w-2xl">
+          <ChannelSearchBar
+            value={filters.search || ''}
+            onChange={handleSearch}
+            placeholder="Search channels..."
           />
         </div>
+      </header>
+
+      <section className="p-6 bg-[#f8f9fb] border-b border-[#e1e2e4]">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-semibold text-[#191c1e]">
+              Channel Directory
+            </h2>
+            <p className="text-sm text-[#516070]">
+              Discover and join communication spaces across your workspaces.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <select
+              value={filters.type || 'all'}
+              onChange={(e) =>
+                setFilters({
+                  type:
+                    e.target.value === 'all'
+                      ? undefined
+                      : (e.target.value as 'public' | 'private'),
+                  page: 1,
+                })
+              }
+              className="bg-white border border-[#c3c6d7] rounded-lg text-sm px-4 py-2 outline-none focus:border-[#004ac6]"
+            >
+              <option value="all">All Types</option>
+              <option value="public">Public</option>
+              <option value="private">Private</option>
+            </select>
+            <select
+              value={filters.sort || 'activity'}
+              onChange={(e) =>
+                setFilters({
+                  sort: e.target.value as 'activity' | 'name' | 'memberCount',
+                  page: 1,
+                })
+              }
+              className="bg-white border border-[#c3c6d7] rounded-lg text-sm px-4 py-2 outline-none focus:border-[#004ac6]"
+            >
+              <option value="activity">Sort: Most Active</option>
+              <option value="name">Sort: Alphabetical</option>
+              <option value="memberCount">Sort: Member Count</option>
+            </select>
+          </div>
+        </div>
+
+        <ChannelFilterTabs
+          activeTab={activeTab}
+          onTabChange={handleFilterTab}
+        />
       </section>
 
-      <div className="space-y-xl">
-        {groups.map((group) => (
-          <section key={group.title} className="space-y-md">
-            <div className="flex items-center justify-between border-b border-outline-variant pb-xs">
-              <div className="flex flex-wrap items-center gap-sm">
-                <h2 className="font-headline-sm text-headline-sm text-on-surface">
-                  {group.title}
-                </h2>
-                <span className="text-label-md text-on-surface-variant">
-                  ({group.memberCount} members)
-                </span>
-              </div>
+      <div className="flex-1 overflow-y-auto p-6 custom-scrollbar space-y-8">
+        {isLoading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <ChannelCardSkeleton key={index} />
+            ))}
+          </div>
+        )}
 
-              <button className="flex items-center gap-xs font-label-md text-primary hover:underline">
-                Join More
-                <span className="material-symbols-outlined text-[18px]">
-                  arrow_forward
-                </span>
-              </button>
-            </div>
+        {isError && (
+          <div className="bg-[#ffdad6] text-[#93000a] rounded-xl p-4">
+            Failed to load channels. Please check the backend connection and try
+            again.
+          </div>
+        )}
 
-            <div className="grid grid-cols-1 gap-lg md:grid-cols-2 xl:grid-cols-3">
-              {group.channels.map((channel) => (
-                <div
-                  key={channel.name}
-                  className="rounded-xl border border-outline-variant bg-surface-container-lowest p-md shadow-sm transition-shadow hover:shadow-md"
-                >
-                  <div className="mb-sm flex items-center justify-between gap-sm">
-                    <span className="text-lg font-bold text-primary">
-                      #{channel.name}
-                    </span>
-                    <span className="rounded-full bg-green-100 px-2 py-0.5 text-label-sm font-medium text-green-800">
-                      Member
-                    </span>
-                  </div>
+        {!isLoading && !isError && visibleChannels.length === 0 && (
+          <ChannelEmptyState />
+        )}
 
-                  <p className="mb-md line-clamp-2 text-body-sm text-on-surface-variant">
-                    {channel.message}
-                  </p>
-
-                  <div className="flex items-center justify-between gap-md">
-                    <div className="flex items-center gap-sm text-label-sm text-on-secondary-container">
-                      <span className="material-symbols-outlined text-[16px]">
-                        group
-                      </span>
-                      {channel.members} members
-                    </div>
-
-                    <button className="rounded-lg border border-outline-variant px-sm py-1 text-label-sm hover:bg-surface-container-high">
-                      Leave
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        ))}
+        {!isLoading &&
+          !isError &&
+          Object.entries(groupedChannels).map(([groupTitle, groupChannels]) => (
+            <ChannelGroupSection
+              key={groupTitle}
+              groupTitle={groupTitle}
+              nowMs={nowMs}
+              channels={groupChannels}
+              joinedChannelIds={joinedChannelIds}
+              requestStatusByChannelId={requestStatusByChannelId}
+              onJoin={handleJoin}
+              onLeave={handleLeave}
+              onRequestAccess={setRequestChannelId}
+              onToggleFavorite={handleToggleFavorite}
+              onCopyLink={handleCopyLink}
+              onViewInfo={handleViewInfo}
+              onOpenChannel={handleOpenChannel}
+              onDelete={handleDelete}
+            />
+          ))}
       </div>
-    </div>
+
+      {requestChannelId && (
+        <RequestAccessDialog
+          channelId={requestChannelId}
+          isOpen={!!requestChannelId}
+          onClose={() => setRequestChannelId(null)}
+        />
+      )}
+
+      <DeleteChannelDialog
+        isOpen={Boolean(deleteTarget)}
+        channelName={deleteTarget?.name}
+        isDeleting={deleteChannel.isPending}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          void handleConfirmDelete();
+        }}
+      />
+    </main>
   );
 }

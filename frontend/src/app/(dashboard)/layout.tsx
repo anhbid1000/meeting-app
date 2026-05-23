@@ -1,5 +1,6 @@
 import Sidebar from "@/components/layout/SideBar";
 import AuthGuard from "@/components/auth/AuthGuard";
+import PresenceBootstrap from '@/components/realtime/PresenceBootstrap';
 
 export default function DashboardLayout({
   children,
@@ -7,6 +8,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
+    <>
     <AuthGuard>
       <div className="flex min-h-screen bg-background">
         <Sidebar />
@@ -15,5 +17,14 @@ export default function DashboardLayout({
         </main>
       </div>
     </AuthGuard>
+    <div className="flex min-h-screen bg-background">
+      <PresenceBootstrap />
+      <Sidebar />
+      <main className="flex-1 ml-0 md:ml-sidebar_width p-md md:p-lg lg:p-xl">
+        {children}
+      </main>
+    </div>
+    </>
   );
+  
 }

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { AppToaster } from "@/components/ui/Toast";
 import UnifiedProgressBar from "@/components/ui/UnifiedProgressBar";
 import "./globals.css";
+import { Providers } from '@/components/providers/Providers';
+
 
 export const metadata: Metadata = {
   title: "ViMeet - Video Conferencing Platform",
@@ -26,10 +28,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen flex flex-col antialiased">
         <Suspense fallback={null}>
           <UnifiedProgressBar />
-        </Suspense>
+        </Suspense>``
         {children}
         <AppToaster />
-      </body>
+        <Providers>{children}</Providers>
+        </body>
     </html>
   );
 }
