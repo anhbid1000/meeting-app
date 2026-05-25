@@ -223,6 +223,56 @@ export default function MessageItem({
     return trimmed || text;
   }, [normalizedSystemText, systemActorName]);
 
+  if (message.type === 'meeting') {
+    let parsed: any = null;
+    try {
+      parsed = JSON.parse(message.content);
+    } catch {
+      parsed = { title: message.content };
+    }
+
+    const meetingTitle = parsed.title || 'Cuộc họp mới';
+    const isEnded = parsed.status === 'ended' || message.content.toLowerCase().includes('đã kết thúc');
+
+    return (
+      <div id={`message-${message._id}`} className="my-4 flex w-full justify-center">
+        <div className="flex w-[280px] sm:w-[400px] shrink-0 flex-col overflow-hidden rounded-2xl border border-[#d9e2f6] bg-white shadow-sm">
+          <div className="flex items-center gap-3 bg-[#f0f4ff] px-4 py-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#2f63d3] text-white">
+              <span className="material-symbols-outlined text-[20px]">
+                {isEnded ? 'event_available' : 'videocam'}
+              </span>
+            </div>
+            <div className="flex min-w-0 flex-1 flex-col">
+              <h4 className="truncate text-sm font-bold text-[#1a2b4b]">
+                {isEnded ? 'Cuộc họp đã kết thúc' : 'Cuộc họp đang diễn ra'}
+              </h4>
+              <p className="truncate text-xs text-[#58657d]">{meetingTitle}</p>
+            </div>
+          </div>
+          <div className="flex items-center justify-between border-t border-[#eef2fc] bg-white px-4 py-3">
+            <div className="text-[11px] text-[#8a90a0]">
+              Bắt đầu lúc {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </div>
+            {!isEnded && (
+              <button
+                type="button"
+                onClick={() => {
+                  const meetingId = parsed.meetingId || message._id;
+                  const url = parsed.url || `/meetings?meetingId=${meetingId}`;
+                  window.open(url, '_blank');
+                }}
+                className="cursor-pointer whitespace-nowrap rounded-lg bg-[#2f63d3] px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-[#1e4fb3]"
+              >
+                Tham gia ngay
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (message.type === 'system') {
     const actorInitial = systemActorName.trim().charAt(0).toUpperCase() || 'T';
 

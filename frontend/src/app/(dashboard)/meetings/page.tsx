@@ -180,7 +180,14 @@ function CustomMeetingRoom({ meetingTitle, meetingId, onLeave }: { meetingTitle:
   const hasActiveScreenShare = screenShareTracks.length > 0;
   const primaryScreenShareTrack = screenShareTracks[0];
   const secondaryTracks = hasActiveScreenShare
-    ? tracks.filter((t) => !(t.participant.identity === primaryScreenShareTrack.participant.identity && t.source === Track.Source.ScreenShare))
+    ? tracks.filter((t) => {
+      const isPrimaryScreenShare =
+        t.participant.identity === primaryScreenShareTrack.participant.identity &&
+        t.source === Track.Source.ScreenShare;
+      const hasRenderableTrack = Boolean((t as { publication?: unknown; track?: unknown }).publication || (t as { publication?: unknown; track?: unknown }).track);
+
+      return !isPrimaryScreenShare && hasRenderableTrack;
+    })
     : tracks;
 
   return (
@@ -207,11 +214,11 @@ function CustomMeetingRoom({ meetingTitle, meetingId, onLeave }: { meetingTitle:
       </header>
 
       <div className="relative flex flex-1 overflow-hidden pb-[72px] md:pb-[88px]">
-        <main className="relative z-0 flex flex-1 items-center justify-center bg-[#121212] p-md transition-all duration-300 md:p-lg md:pr-[280px]">
+        <main className="relative z-0 flex flex-1 items-start justify-start bg-[#121212] p-md transition-all duration-300 md:p-lg md:pr-[280px]">
           {/* Ô hiển thị Participant Grid */}
-          <div className="flex h-full w-full items-center justify-center">
+          <div className="flex h-full w-full items-start justify-start">
             {!hasActiveScreenShare ? (
-              <div className="grid w-full max-w-6xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid w-full max-w-6xl grid-cols-1 content-start gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {tracks.map((trackRef, index) => {
                   const isLocal = trackRef.participant.identity === localParticipant.identity;
 

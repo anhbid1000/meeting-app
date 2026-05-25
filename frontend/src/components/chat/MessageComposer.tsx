@@ -202,12 +202,10 @@ export default function MessageComposer({
       }
 
       const finalContent = replyTo ? `[reply:${replyTo.id}]\n${text}` : text;
-      let uploadedAttachments: Array<{
-        url: string;
-        name: string;
-        mimeType: string;
-        size: number;
-      }> = [];
+      // NOTE: Upload endpoint already creates a message attachment on the backend.
+      // If we also send attachments via chat message payload, it will duplicate in the chat.
+      // So we only upload files here and DO NOT include attachments in onSend().
+      let uploadedAnyFile = false;
 
       if (selectedFiles.length > 0) {
         if (!channelId) {
@@ -216,7 +214,7 @@ export default function MessageComposer({
         }
 
         setUploading(true);
-        uploadedAttachments = [];
+        uploadedAnyFile = false;
 
         if (!workspaceId) {
           throw new Error('Không tìm thấy workspace');
@@ -251,12 +249,7 @@ export default function MessageComposer({
             throw new Error('Upload thất bại: không nhận được phản hồi');
           }
 
-          uploadedAttachments.push({
-            url: fileData.cloudinaryUrl || '',
-            name: fileData.originalName || file.name,
-            mimeType: fileData.mimeType || file.type || 'application/octet-stream',
-            size: fileData.size || file.size,
-          });
+          uploadedAnyFile = true;
         }
       }
 
@@ -267,11 +260,18 @@ export default function MessageComposer({
       setUploadProgress({});
       onTyping(false);
 
-      await onSend({
-        content: finalContent,
-        mentions: parseMentions(text),
-        attachments: uploadedAttachments,
-      });
+      // If user only uploaded files (no text), we skip sending a chat message to avoid duplicates.
+      const hasText = Boolean(text?.trim());
+      if (hasText) {
+        await onSend({
+          content: finalContent,
+          mentions: parseMentions(text),
+          attachments: [],
+        });
+      } else if (!uploadedAnyFile) {
+        // Nothing to send
+        return;
+      }
     } catch (error) {
       // Revert if error
       setContent(text);

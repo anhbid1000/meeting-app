@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import api from "@/services/api";
+import { useToast } from "@/components/ui/Toast";
 import { useAuthStore } from "@/store/authStore";
 import { MaterialSymbol } from "@/components/ui/MaterialSymbol";
 
@@ -13,13 +14,14 @@ type MeetingItem = {
   startedAt: string;
   status: "live" | "working" | "ended";
   workspaceId?: { _id: string; name: string };
-  channelId?: { _id: string; name: string; slug: string };
+  channelId?: { _id: string; name: string; slug: string; type?: 'public' | 'private' };
 };
 
 type FileItem = {
   _id: string;
   originalName: string;
   mimeType: string;
+  cloudinaryUrl?: string;
   uploadedBy?: { name: string };
   createdAt: string;
   channelId?: { _id: string; name: string; slug: string };
@@ -41,6 +43,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
+  const toast = useToast();
   const firstName = user?.name?.trim().split(/\s+/)[0] || "bạn";
 
   const [meetings, setMeetings] = useState<MeetingItem[]>([]);
@@ -107,7 +110,15 @@ export default function DashboardPage() {
         const wsItems: WorkspaceItem[] = wsRes.data?.data || [];
         const meetingsToday: MeetingItem[] = meetingsRes.data?.data || [];
         setWorkspaces(wsItems);
-        setMeetings(meetingsToday);
+        const nonPrivateMeetings = meetingsToday.filter(
+          (meeting) => meeting?.channelId?.type !== 'private'
+        );
+
+        setMeetings(
+          [...nonPrivateMeetings].sort(
+            (a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime()
+          )
+        );
 
         if (!wsItems.length) {
           setWorkspaceId("");
@@ -185,6 +196,22 @@ export default function DashboardPage() {
   const handleWorkspaceChange = (nextWorkspaceId: string) => {
     setWorkspaceId(nextWorkspaceId);
     setChannelId((channelsByWorkspaceId[nextWorkspaceId] || [])[0]?._id || "");
+  };
+
+  const handleDownload = (file: FileItem) => {
+    if (!file.cloudinaryUrl) {
+      toast.error('File này chưa có link xem/tải trực tuyến');
+      return;
+    }
+
+    const link = document.createElement('a');
+    link.href = file.cloudinaryUrl;
+    link.setAttribute('download', file.originalName || 'download');
+    link.setAttribute('target', '_blank');
+    link.setAttribute('rel', 'noopener noreferrer');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   };
 
   const handleCreateMeeting = async () => {
@@ -270,40 +297,40 @@ export default function DashboardPage() {
             </div>
           </button>
 
-          <div className="group flex h-32 cursor-pointer flex-col justify-between rounded-xl border border-transparent bg-secondary-container p-lg shadow-sm transition-colors hover:border-primary/20 hover:bg-primary-fixed">
-            <div className="flex items-start justify-between">
-              <MaterialSymbol icon="event" className="!text-3xl text-primary" />
-              <MaterialSymbol icon="arrow_forward" className="text-primary opacity-50 transition-opacity group-hover:opacity-100" />
-            </div>
-            <div>
-              <h3 className="font-headline-sm text-headline-sm text-on-surface">Lên lịch</h3>
-              <p className="font-body-sm text-body-sm text-on-surface-variant">Lập kế hoạch trước</p>
-            </div>
-          </div>
         </div>
 
         <div className="col-span-12 md:col-span-8">
           <div className="flex h-full flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm">
             <div className="flex items-center justify-between border-b border-outline-variant bg-surface-bright p-lg">
-              <h2 className="flex items-center gap-sm font-headline-sm text-headline-sm text-on-surface"><MaterialSymbol icon="schedule" className="text-primary" />Lịch họp hôm nay</h2>
+              <h2 className="flex items-center gap-sm font-headline-sm text-headline-sm text-on-surface"><MaterialSymbol icon="schedule" className="text-primary" />Lịch họp sắp tới</h2>
               <button className="cursor-pointer font-label-md text-label-md text-primary hover:underline">Xem lịch</button>
             </div>
             <div className="flex min-h-[220px] flex-1 flex-col gap-md p-md">
-              {meetings.length === 0 ? <div className="flex flex-1 flex-col items-center justify-center py-10 text-on-surface-variant"><MaterialSymbol icon="event_busy" className="mb-2 !text-4xl opacity-20" /><p className="font-body-sm">Hôm nay chưa có cuộc họp nào.</p><p className="mt-1 text-xs">Bấm “Cuộc họp mới” để bắt đầu ngay.</p></div> : meetings.map((meeting) => (
+              {meetings.length === 0 ? <div className="flex flex-1 flex-col items-center justify-center py-10 text-on-surface-variant"><MaterialSymbol icon="event_busy" className="mb-2 !text-4xl opacity-20" /><p className="font-body-sm">Hiện chưa có cuộc họp nào.</p><p className="mt-1 text-xs">Bấm “Cuộc họp mới” để bắt đầu ngay.</p></div> : meetings.map((meeting) => {
+                const meetingDate = new Date(meeting.startedAt);
+                const isToday = meetingDate.toDateString() === new Date().toDateString();
+
+                return (
                 <div key={meeting._id} className="group relative flex items-center gap-md overflow-hidden rounded-lg border border-outline-variant p-md shadow-sm transition-colors hover:bg-surface-bright">
                   <div className="absolute bottom-0 left-0 top-0 w-1 bg-primary" />
-                  <div className="w-20 border-r border-outline-variant pr-md text-center"><p className="font-label-md text-label-md text-on-surface">{new Date(meeting.startedAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}</p><p className={`font-body-sm text-body-sm ${meeting.status === 'working' ? 'font-bold text-success animate-pulse' : 'text-on-surface-variant'}`}>{meeting.status === "working" ? "ĐANG HỌP" : meeting.status === "live" ? "SẮP DIỄN RA" : "ĐÃ KẾT THÚC"}</p></div>
-                  <div className="flex-1 pl-sm">
+                  <div className="w-24 border-r border-outline-variant pr-md text-center">
+                    {!isToday && (
+                      <p className="font-label-sm text-[10px] text-on-surface-variant mb-1">{meetingDate.toLocaleDateString("vi-VN", { day: '2-digit', month: '2-digit' })}</p>
+                    )}
+                    <p className="font-label-md text-label-md text-on-surface">{meetingDate.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}</p>
+                    <p className={`font-body-sm text-[9px] mt-1 ${meeting.status === 'working' ? 'font-bold text-success animate-pulse' : 'text-on-surface-variant'}`}>{meeting.status === "working" ? "ĐANG HỌP" : meeting.status === "live" ? "SẮP DIỄN RA" : "ĐÃ KẾT THÚC"}</p>
+                  </div>
+                  <div className="flex-1 pl-sm min-w-0">
                     <h3 className="mb-xs truncate font-headline-sm text-headline-sm text-on-surface">
                       {meeting.title}
                       {meeting.status === 'working' && (
-                        <span className="ml-sm inline-flex items-center rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-medium text-success ring-1 ring-inset ring-success/20">LIVE</span>
+                        <span className="ml-sm inline-flex items-center rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-medium text-success ring-1 ring-inset ring-success/20"><span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse mr-1" /> LIVE</span>
                       )}
                       {meeting.status === 'ended' && (
-                        <span className="ml-sm inline-flex items-center rounded-full bg-surface-container-highest px-2 py-0.5 text-[10px] font-medium text-on-surface-variant ring-1 ring-inset ring-outline-variant">ĐÃ KẾT THÚC</span>
+                        <span className="ml-sm inline-flex items-center rounded-full bg-surface-container-highest px-2 py-0.5 text-[10px] font-medium text-on-surface-variant ring-1 ring-inset ring-outline-variant">ENDED</span>
                       )}
                     </h3>
-                    <p className="font-body-sm text-body-sm text-on-surface-variant">
+                    <p className="truncate font-body-sm text-body-sm text-on-surface-variant">
                       #{meeting.channelId?.slug || meeting.channelId?.name || "kênh"} - {meeting.workspaceId?.name || "Workspace"}
                     </p>
                   </div>
@@ -321,33 +348,34 @@ export default function DashboardPage() {
                     </button>
                   ) : (
                     <div className="rounded-lg bg-surface-container px-md py-sm font-label-md text-label-md text-on-surface-variant opacity-60">
-                      Hết hạn
+                      Đã kết thúc
                     </div>
                   )}
                 </div>
-              ))}
+              )})}
             </div>
           </div>
         </div>
 
-        <div className="col-span-12 flex flex-col gap-6 md:col-span-4">
-          <div className="relative overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest p-lg shadow-sm">
-            <div className="absolute -right-8 -top-8 text-primary opacity-5"><MaterialSymbol icon="auto_awesome" className="!text-[120px]" /></div>
-            <div className="relative z-10 mb-md flex items-center gap-sm"><MaterialSymbol icon="auto_awesome" className="text-primary" /><h2 className="font-headline-sm text-headline-sm text-on-surface">Tóm tắt gần đây</h2></div>
-            <p className="relative z-10 mb-md font-body-sm text-body-sm text-on-surface-variant">AI sẽ tổng hợp nội dung quan trọng từ các buổi họp và phiên cộng tác của bạn.</p>
-            <button className="cursor-pointer relative z-10 flex items-center gap-xs font-label-md text-label-md text-primary hover:underline">Xem tóm tắt <MaterialSymbol icon="arrow_forward" className="!text-[16px]" /></button>
-          </div>
-
+        <div className="col-span-12 flex flex-col gap-6 md:col-span-4 order-first md:order-none">
           <div className="flex flex-1 flex-col rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm">
             <div className="rounded-t-xl border-b border-outline-variant bg-surface-bright p-md"><h2 className="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">Tệp gần đây</h2></div>
             <div className="flex min-h-[160px] flex-col gap-xs p-sm">
               {recentFiles.length === 0 ? <div className="flex flex-1 items-center justify-center py-10 text-xs italic text-on-surface-variant">Không có tệp gần đây</div> : recentFiles.map((file) => (
-                <div key={file._id} className="group flex cursor-pointer items-center gap-md rounded-lg p-sm transition-colors hover:bg-surface-bright">
+                <div key={file._id} className="group flex items-center gap-md rounded-lg p-sm transition-colors hover:bg-surface-bright">
                   <div className="flex h-10 w-10 items-center justify-center rounded bg-secondary-container text-on-secondary-container transition-colors group-hover:bg-primary group-hover:text-on-primary"><MaterialSymbol icon={getFileIcon(file.mimeType)} /></div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-label-md text-label-md text-on-surface" title={file.originalName}>{file.originalName}</p>
                     <p className="truncate font-body-sm text-body-sm text-on-surface-variant">{file.uploadedBy?.name || "Không rõ"} đã upload {file.originalName} vào {getRelativeTime(file.createdAt)} · #{file.channelId?.slug || file.channelId?.name || "kênh"} - {file.workspaceName || "Workspace"}</p>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDownload(file)}
+                    className="cursor-pointer rounded-lg border border-outline-variant px-2 py-1 text-xs text-on-surface-variant hover:bg-surface-container-high"
+                    title="Download"
+                  >
+                    <MaterialSymbol icon="download" className="!text-[16px]" />
+                  </button>
                 </div>
               ))}
             </div>

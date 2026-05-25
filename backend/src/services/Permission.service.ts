@@ -95,10 +95,16 @@ export class PermissionService {
     channelId: string,
   ): Promise<boolean> {
     const channel = await Channel.findById(channelId)
-      .select("workspaceId")
+      .select("workspaceId createdBy")
       .lean();
     if (!channel) return false;
 
+    // Channel creator can approve/reject/view join requests
+    if (String(channel.createdBy) === userId) {
+      return true;
+    }
+
+    // Workspace owner/admin can approve/reject/view join requests
     return this.isWorkspaceOwnerOrAdmin(userId, channel.workspaceId.toString());
   }
 

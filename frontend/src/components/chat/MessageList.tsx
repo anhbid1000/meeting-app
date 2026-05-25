@@ -172,7 +172,7 @@ export default function MessageList({
     <div
       ref={listRef}
       onScroll={handleScroll}
-      className="chat-scrollbar flex-1 overflow-y-auto bg-[#f5f7fb] px-3 py-4 md:px-4"
+      className="chat-scrollbar min-h-0 flex-1 overflow-y-auto bg-[#f5f7fb] px-3 py-4 md:px-4"
     >
       {hasMore ? (
         <div className="mb-4 flex justify-center">

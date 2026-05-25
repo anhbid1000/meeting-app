@@ -59,7 +59,6 @@ export const createMeeting = async (req: Request, res: Response, next: NextFunct
 
     const parsedScheduledAt = scheduledAt ? new Date(scheduledAt) : undefined;
 
-    // Tạo meeting với participants bao gồm host
     const meeting = await Meeting.create({
       title,
       description,
@@ -75,6 +74,26 @@ export const createMeeting = async (req: Request, res: Response, next: NextFunct
         joinedAt: new Date(),
       }]
     });
+
+    // Push a system message to channel about the meeting
+    try {
+      const meetingUrl = `/meetings?meetingId=${meeting._id}&workspaceId=${workspaceId}&channelId=${channelId}`;
+      const messageContent = JSON.stringify({
+        title: meeting.title,
+        status: meeting.status,
+        meetingId: meeting._id,
+        url: meetingUrl
+      });
+
+      await MessageService.sendMessage({
+        channelId: String(channelId),
+        userId,
+        content: messageContent,
+        type: "meeting",
+      });
+    } catch (e) {
+      console.error("[Meeting] Failed to push meeting start message to chat", e);
+    }
 
     res.status(201).json({
       success: true,
@@ -233,13 +252,18 @@ export const listMyMeetingsToday = async (req: Request, res: Response, next: Nex
     })
       .sort({ startedAt: -1 })
       .populate("workspaceId", "name")
-      .populate("channelId", "name slug")
+      .populate("channelId", "name slug type")
       .populate("hostId", "name")
       .lean();
 
+    const dashboardMeetings = meetings.filter((meeting: any) => {
+      const channelType = String(meeting?.channelId?.type || '').toLowerCase();
+      return channelType !== 'private';
+    });
+
     res.status(200).json({
       success: true,
-      data: meetings,
+      data: dashboardMeetings,
     });
   } catch (error) {
     next(error);

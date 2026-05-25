@@ -31,4 +31,15 @@ body {
   .transition-colors {
     @apply transition-colors duration-200;
   }
+
+  .chat-clickable button,
+  .chat-clickable a,
+  .chat-clickable [role='button'] {
+    cursor: pointer;
+  }
+
+  .chat-clickable button:disabled,
+  .chat-clickable [aria-disabled='true'] {
+    cursor: not-allowed;
+  }
 }

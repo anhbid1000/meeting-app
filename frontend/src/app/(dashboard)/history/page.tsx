@@ -63,6 +63,12 @@ export default function HistoryPage() {
     return '?';
   };
 
+  const getRefName = (ref: { name?: string } | string | undefined, fallback: string) => {
+    if (!ref) return fallback;
+    if (typeof ref === 'string') return fallback;
+    return String(ref.name || fallback);
+  };
+
   const formatDuration = (start: string, end?: string) => {
     if (!end) return '--';
     const diff = differenceInMinutes(new Date(end), new Date(start));
@@ -139,6 +145,18 @@ export default function HistoryPage() {
                       </span>
                     )}
                   </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-primary-container px-2 py-0.5 text-[11px] font-medium text-on-primary-container">
+                      <MaterialSymbol icon="tag" className="text-[12px]" />
+                      #{getRefName(meeting.channelId as { name?: string } | string, 'channel')}
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-secondary-container px-2 py-0.5 text-[11px] font-medium text-on-secondary-container">
+                      <MaterialSymbol icon="workspaces" className="text-[12px]" />
+                      {getRefName(meeting.workspaceId as { name?: string } | string, 'Workspace')}
+                    </span>
+                  </div>
+
                   <span className="font-body-sm text-body-sm text-on-surface-variant lg:hidden">
                     {format(new Date(meeting.startedAt), 'dd MMM, yyyy', { locale: vi })} • {formatDuration(meeting.startedAt, meeting.endedAt)}
                   </span>

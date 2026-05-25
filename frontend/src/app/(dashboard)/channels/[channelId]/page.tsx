@@ -53,6 +53,7 @@ type MeetingBannerData = {
   title: string;
   status: 'live' | 'ended' | 'scheduled';
   participantsCount: number;
+  meetingId?: string;
 };
 
 type ChannelMemberRow = {
@@ -76,6 +77,7 @@ type MeetingContent = {
   title?: string;
   participantsCount?: number;
   participants?: unknown[];
+  meetingId?: string;
 };
 
 export default function ChannelPage({ params }: ChannelPageProps) {
@@ -253,11 +255,11 @@ export default function ChannelPage({ params }: ChannelPageProps) {
       attachments: payload.attachments || [],
       author: currentUser
         ? {
-            _id: currentUser.id,
-            name: currentUser.name,
-            email: currentUser.email,
-            avatar: currentUser.avatar,
-          }
+          _id: currentUser.id,
+          name: currentUser.name,
+          email: currentUser.email,
+          avatar: currentUser.avatar,
+        }
         : undefined,
     });
 
@@ -465,7 +467,7 @@ export default function ChannelPage({ params }: ChannelPageProps) {
 
     const participantsCount = Number(
       parsed?.participantsCount ||
-        (Array.isArray(parsed?.participants) ? parsed.participants.length : 0)
+      (Array.isArray(parsed?.participants) ? parsed.participants.length : 0)
     );
 
     return {
@@ -478,6 +480,7 @@ export default function ChannelPage({ params }: ChannelPageProps) {
       participantsCount: Number.isFinite(participantsCount)
         ? participantsCount
         : 0,
+      meetingId: parsed?.meetingId,
     };
   }, [latestMeetingMessage]);
 
@@ -493,9 +496,9 @@ export default function ChannelPage({ params }: ChannelPageProps) {
         return;
       const participantsCount = Number(
         payload.participantsCount ||
-          (Array.isArray(payload.participants)
-            ? payload.participants.length
-            : 0)
+        (Array.isArray(payload.participants)
+          ? payload.participants.length
+          : 0)
       );
 
       setRealtimeMeeting({
@@ -719,14 +722,14 @@ export default function ChannelPage({ params }: ChannelPageProps) {
             <h1 className="text-lg font-semibold">Channel not found</h1>
           </div>
           <p className="mb-4 text-sm text-[#516070]">
-            This channel does not exist or you do not have access to it.
+            Kênh này không tồn tại hoặc bạn không có quyền truy cập vào
           </p>
           <button
             type="button"
             onClick={() => router.replace('/channels')}
             className="rounded-lg cursor-pointer bg-[#004ac6] px-4 py-2 text-sm font-medium text-white hover:bg-[#003ea8]"
           >
-            Back to Channel Directory
+            Quay lại Channel
           </button>
         </section>
       </main>
@@ -741,18 +744,17 @@ export default function ChannelPage({ params }: ChannelPageProps) {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#ffdad6] text-[#93000a]">
               <span className="material-symbols-outlined">lock</span>
             </div>
-            <h1 className="text-lg font-semibold">Access restricted</h1>
+            <h1 className="text-lg font-semibold">Hạn chế</h1>
           </div>
           <p className="mb-4 text-sm text-[#516070]">
-            You are not a member of this channel. Join or request access from
-            Channel Directory first.
+            Bạn không phải là thành viên của Channel.
           </p>
           <button
             type="button"
             onClick={() => router.push('/channels')}
             className="rounded-lg cursor-pointer bg-[#004ac6] px-4 py-2 text-sm font-medium text-white hover:bg-[#003ea8]"
           >
-            Back to Channel Directory
+            Quay lại Channel
           </button>
         </section>
       </main>
@@ -760,15 +762,19 @@ export default function ChannelPage({ params }: ChannelPageProps) {
   }
 
   return (
-    <main className="flex h-screen min-h-screen bg-[radial-gradient(circle_at_top,#f8fbff,#eef1f6_45%,#e8ecf5)] p-3 text-[#191c1e] md:p-4">
-      <section className="flex min-w-0 flex-1 overflow-hidden rounded-2xl border border-[#d7dce8] bg-white shadow-[0_12px_32px_rgba(15,23,42,0.12)]">
-        <div className="flex min-w-0 flex-1 flex-col">
+    <main className="chat-clickable box-border flex h-dvh overflow-hidden bg-[radial-gradient(circle_at_top,#f8fbff,#eef1f6_45%,#e8ecf5)] p-3 text-[#191c1e] md:p-4">
+      <section className="flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-2xl border border-[#d7dce8] bg-white shadow-[0_12px_32px_rgba(15,23,42,0.12)]">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <ChannelHeader
             channelName={activeChannel?.name || shortId(channelKey)}
             channelId={resolvedChannelId}
             workspaceId={activeChannel?.workspaceId || ''}
             description={activeChannel?.description}
-            memberCount={activeChannel?.memberCount || 0}
+            memberCount={
+              members.length ||
+              (channelDetailResponse?.data?.members?.length ?? 0) ||
+              (activeChannel?.memberCount ?? 0)
+            }
             isPrivate={activeChannel?.type === 'private'}
             isConnected={isConnected}
             memberAvatars={members.map((member) => ({
@@ -802,15 +808,20 @@ export default function ChannelPage({ params }: ChannelPageProps) {
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => router.push('/meetings')}
-                    className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-[#1d4fb6] hover:bg-[#f4f6fb]"
+                    onClick={() => {
+                      const url = effectiveMeeting.meetingId 
+                        ? `/meetings?meetingId=${effectiveMeeting.meetingId}&workspaceId=${activeChannel?.workspaceId || ''}&channelId=${resolvedChannelId}`
+                        : '/meetings';
+                      window.open(url, '_blank');
+                    }}
+                    className="cursor-pointer rounded-lg bg-white px-4 py-2 text-sm font-semibold text-[#1d4fb6] hover:bg-[#f4f6fb]"
                   >
-                    Open Meetings
+                    Tham gia ngay
                   </button>
                   <button
                     type="button"
                     onClick={() => setDismissedMeetingKey(effectiveMeeting.key)}
-                    className="rounded-md p-1 text-white/90 hover:bg-white/20"
+                    className="cursor-pointer rounded-md p-1 text-white/90 hover:bg-white/20"
                   >
                     <span className="material-symbols-outlined text-[18px]">
                       close
@@ -894,7 +905,11 @@ export default function ChannelPage({ params }: ChannelPageProps) {
 
           <MessageComposer
             channelId={resolvedChannelId || undefined}
-            workspaceId={activeChannel?.workspaceId || ''}
+            workspaceId={
+              (activeChannel as any)?.workspaceId?._id ||
+              (activeChannel as any)?.workspaceId ||
+              ''
+            }
             disabled={!isConnected || !isChannelMember || !resolvedChannelId}
             mentionUsers={members
               .filter(
@@ -921,7 +936,10 @@ export default function ChannelPage({ params }: ChannelPageProps) {
         <RightSidebar
           isOpen={isSidebarOpen}
           channelId={resolvedChannelId || undefined}
-          workspaceId={activeChannel?.workspaceId || undefined}
+          workspaceId={
+            ((activeChannel as any)?.workspaceId?._id ||
+              (activeChannel as any)?.workspaceId) as any
+          }
           members={members.map((member) => ({
             id: member.id,
             name: member.name,

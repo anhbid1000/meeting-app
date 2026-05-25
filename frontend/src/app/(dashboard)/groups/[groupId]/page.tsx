@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from "next/link";
 import api from '@/services/api';
 import { useToast } from '@/components/ui/Toast';
+import { useAuthStore } from '@/store/authStore';
 
 type WorkspaceCategory = {
   _id: string;
@@ -46,6 +47,16 @@ type ChannelItem = {
   description?: string;
   type: 'public' | 'private';
   memberCount?: number;
+  createdBy?: string | { _id?: string; name?: string };
+};
+
+type ChannelPendingRequest = {
+  _id: string;
+  channelId: string;
+  channelName: string;
+  senderId?: { _id?: string; name?: string; email?: string } | string;
+  message?: string;
+  createdAt?: string;
 };
 
 const Page = () => {
@@ -54,9 +65,12 @@ const Page = () => {
 
   const [workspace, setWorkspace] = useState<WorkspaceDetail | null>(null);
   const [channels, setChannels] = useState<ChannelItem[]>([]);
+  const [channelPendingRequests, setChannelPendingRequests] = useState<ChannelPendingRequest[]>([]);
+  const [isLoadingChannelRequests, setIsLoadingChannelRequests] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const toast = useToast();
+  const currentUser = useAuthStore((s) => s.user);
   const [inviteModal, setInviteModal] = useState<
     | null
     | {
@@ -166,8 +180,86 @@ const Page = () => {
     return workspace.plan === 'pro' ? 500 : 50;
   }, [workspace]);
 
+  // Workspace pending members: owner OR admin (logic cũ)
+  const canManageWorkspacePendingRequests =
+    workspace?.currentUserRole === 'owner' || workspace?.currentUserRole === 'admin';
+
+  // Channel join requests: admin workspace OR createdBy channel (theo yêu cầu mới)
   const canManagePendingRequests =
     workspace?.currentUserRole === 'owner' || workspace?.currentUserRole === 'admin';
+
+  const canManageChannelRequest = (channel: ChannelItem) => {
+    if (canManagePendingRequests) return true;
+    const createdBy = typeof channel.createdBy === 'string' ? channel.createdBy : channel.createdBy?._id;
+    return Boolean(currentUser?.id && createdBy && String(createdBy) === String(currentUser.id));
+  };
+
+  const fetchChannelPendingRequests = async () => {
+    const manageablePrivateChannels = channels.filter(
+      (channel) => channel.type === 'private' && canManageChannelRequest(channel)
+    );
+
+    if (manageablePrivateChannels.length === 0) {
+      setChannelPendingRequests([]);
+      return;
+    }
+
+    try {
+      setIsLoadingChannelRequests(true);
+      const results = await Promise.allSettled(
+        manageablePrivateChannels.map(async (channel) => {
+          const res = await api.get(`/channels/${channel._id}/requests?status=pending&page=1&limit=50`);
+          const items: Omit<ChannelPendingRequest, 'channelName'>[] = res?.data?.items || [];
+          return items.map((item) => ({
+            ...item,
+            channelId: channel._id,
+            channelName: channel.slug || channel.name,
+          }));
+        })
+      );
+
+      setChannelPendingRequests(
+        results.flatMap((result) => result.status === 'fulfilled' ? result.value : [])
+      );
+    } catch (err) {
+      console.error('Fetch channel pending requests error:', err);
+      toast.error('Không tải được yêu cầu vào channel');
+    } finally {
+      setIsLoadingChannelRequests(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!workspace || channels.length === 0) {
+      setChannelPendingRequests([]);
+      return;
+    }
+
+    fetchChannelPendingRequests();
+  }, [workspace?._id, channels, currentUser?.id, canManagePendingRequests]);
+
+  const handleApproveChannelRequest = async (request: ChannelPendingRequest) => {
+    try {
+      await api.patch(`/channels/${request.channelId}/requests/${request._id}/approve`);
+      setChannelPendingRequests((prev) => prev.filter((item) => item._id !== request._id));
+      toast.success('Đã duyệt yêu cầu vào channel');
+      await fetchWorkspaceDetail();
+    } catch (err) {
+      console.error(err);
+      toast.error('Duyệt yêu cầu vào channel thất bại');
+    }
+  };
+
+  const handleRejectChannelRequest = async (request: ChannelPendingRequest) => {
+    try {
+      await api.patch(`/channels/${request.channelId}/requests/${request._id}/reject`, { reason: '' });
+      setChannelPendingRequests((prev) => prev.filter((item) => item._id !== request._id));
+      toast.success('Đã từ chối yêu cầu vào channel');
+    } catch (err) {
+      console.error(err);
+      toast.error('Từ chối yêu cầu vào channel thất bại');
+    }
+  };
 
   if (isLoading) {
     return <main className="pt-16 min-h-screen p-lg">Đang tải workspace...</main>;
@@ -270,7 +362,7 @@ const Page = () => {
 
         <div className="flex items-center justify-between mb-md">
           <h3 className="font-headline-sm text-headline-sm text-on-surface">Channels ({channels.length})</h3>
-          {canManagePendingRequests && (
+          {canManageWorkspacePendingRequests && (
             <button
               onClick={openCreateChannelModal}
               className="cursor-pointer bg-primary text-on-primary px-sm py-1.5 rounded-md hover:bg-primary/90 transition-colors flex items-center gap-xs text-label-md font-label-md"
@@ -321,7 +413,7 @@ const Page = () => {
         )}
 
         {/* --- PENDING REQUESTS SECTION --- */}
-        {canManagePendingRequests && (workspace.pendingMembers?.length || 0) > 0 && (
+        {canManageWorkspacePendingRequests && (workspace.pendingMembers?.length || 0) > 0 && (
           <div className="mt-xl bg-surface-container-lowest rounded-xl border border-outline-variant p-lg shadow-sm">
             <div className="flex items-center justify-between mb-lg">
               <h2 className="font-headline-sm text-headline-sm text-on-surface">Pending Requests</h2>
@@ -387,6 +479,81 @@ const Page = () => {
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {/* --- PRIVATE CHANNEL JOIN REQUESTS --- */}
+        {(isLoadingChannelRequests || channelPendingRequests.length > 0) && (
+          <div className="mt-xl bg-surface-container-lowest rounded-xl border border-outline-variant p-lg shadow-sm">
+            <div className="flex items-center justify-between mb-lg">
+              <h2 className="font-headline-sm text-headline-sm text-on-surface">Yêu cầu vào private channel</h2>
+              <span className="font-label-sm text-label-sm text-on-surface-variant">
+                {isLoadingChannelRequests ? 'Đang tải...' : `${channelPendingRequests.length} pending`}
+              </span>
+            </div>
+
+            {isLoadingChannelRequests ? (
+              <div className="text-on-surface-variant text-body-sm">Đang tải yêu cầu vào channel...</div>
+            ) : channelPendingRequests.length === 0 ? (
+              <div className="text-on-surface-variant text-body-sm">Hiện chưa có yêu cầu nào vào private channel.</div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-md">
+                {channelPendingRequests.map((req) => {
+                  const sender = typeof req.senderId === 'string' ? null : req.senderId;
+                  const senderName = sender?.name || 'Unknown';
+                  const senderEmail = sender?.email || '';
+                  const initials = senderName
+                    .split(' ')
+                    .map((w) => w[0])
+                    .join('')
+                    .slice(0, 2)
+                    .toUpperCase();
+
+                  return (
+                    <div key={req._id} className="p-md rounded-lg border border-outline-variant bg-surface-container-low flex flex-col justify-between">
+                      <div className="flex items-start gap-md mb-md">
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold shrink-0 bg-secondary-fixed text-on-secondary-fixed">
+                          {initials || '?'}
+                        </div>
+                        <div className="flex-grow min-w-0">
+                          <div className="mb-1 inline-flex items-center gap-1 rounded-full bg-primary-container px-2 py-0.5 text-[11px] font-medium text-on-primary-container">
+                            <span className="material-symbols-outlined text-[12px]">tag</span>
+                            #{req.channelName}
+                          </div>
+                          <p className="font-body-md text-body-md text-on-surface">
+                            <strong>{senderName}</strong> yêu cầu tham gia private channel
+                          </p>
+                          {senderEmail && (
+                            <span className="font-label-sm text-label-sm text-outline mt-1 block truncate">
+                              {senderEmail}
+                            </span>
+                          )}
+                          {req.message && (
+                            <p className="text-sm text-on-surface-variant mt-2 line-clamp-3">
+                              {req.message}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-sm">
+                        <button
+                          className="cursor-pointer flex-1 bg-primary text-on-primary py-1.5 rounded-lg font-label-sm text-label-sm hover:opacity-90"
+                          onClick={() => handleApproveChannelRequest(req)}
+                        >
+                          Duyệt
+                        </button>
+                        <button
+                          className="cursor-pointer flex-1 border border-outline text-on-surface py-1.5 rounded-lg font-label-sm text-label-sm hover:bg-surface-container-high"
+                          onClick={() => handleRejectChannelRequest(req)}
+                        >
+                          Từ chối
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 

@@ -117,14 +117,6 @@ export default function ChannelHeader({
 
         <button
           type="button"
-          className="rounded-md p-1.5 text-[#6d7586] transition-colors hover:bg-[#f1f3f8]"
-          title="Call"
-        >
-          <span className="material-symbols-outlined text-[20px]">call</span>
-        </button>
-
-        <button
-          type="button"
           disabled={isCreatingMeeting || !workspaceId || !channelId}
           onClick={handleCreateMeeting}
           className="hidden rounded-md bg-[#0f55cc] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0d49ac] disabled:opacity-50 disabled:cursor-not-allowed md:block"
