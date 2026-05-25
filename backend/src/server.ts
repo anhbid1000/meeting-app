@@ -1,50 +1,57 @@
+import "dotenv/config"; // Nạp biến môi trường ngay lập tức trước bất kỳ import nào khác
 import express, { Request, Response } from "express";
 import http from "http";
 import { Server } from "socket.io";
 import cors from "cors";
-import dotenv from "dotenv";
 import mongoose from "mongoose";
+import routes from "./routes"; // Import tất cả routes từ thư mục routes
+import { initCronJobs } from "./scripts/cron";
+import index from "./routes"; // Import tất cả routes từ thư mục routes
+import { setupSocketHandlers } from "./sockets";
 
-dotenv.config(); // Nạp biến môi trường
 
 const app = express();
 const server = http.createServer(app);
-
-//Middleware
-app.use(cors());
-app.use(express.json()); // Middleware parse JSON
-
-// Cấu hình Socket.io cho WebRTC Signaling
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 
+// Middleware
+app.use(
+  cors({
+    origin: FRONTEND_URL,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  })
+);
+app.use(express.json()); // Middleware parse JSON
+
+app.use("/api/v1", index);
+
+// Cau hinh Socket.io cho WebRTC Signaling
 const io = new Server(server, {
   cors: {
-    origin: FRONTEND_URL, // Chỉ cho phép frontend Next.js kết nối tới
-    methods: ["GET", "POST", "PUT", "DELETE"], // Các phương thức HTTP được phép
+    origin: FRONTEND_URL,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   },
 });
 
-// Lắng nghe sự kiện kết nối cơ bản (Socket handshake)
-io.on("connection", (socket) => {
-  console.log("🟢 Một người dùng vừa kết nối với ID:", socket.id);
+// Register full socket handlers (auth + channel rooms + message bus + presence)
+setupSocketHandlers(io);
 
-  // Lắng nghe khi người dùng ngắt kết nối
-  socket.on("disconnect", () => {
-    console.log("🔴 Người dùng đã ngắt kết nối:", socket.id);
-  });
-});
-
-// Kết nối MongoDB
+// Ket noi MongoDB
 mongoose
   .connect(process.env.MONGODB_URI!)
-  .then(() => console.log("✅ MongoDB Atlas connected successfully"))
-  .catch((err) => console.error("❌ MongoDB connection error:", err));
+  .then(() => {
+    console.log("MongoDB Atlas connected successfully");
+    initCronJobs(); // Start cron jobs after DB connection
+  })
+  .catch((err) => console.error("MongoDB connection error:", err));
 
-app.get("/", (req: Request, res: Response) => {
-  res.send("Backend Server & Socket.io & MongoDB is Running! 🚀");
+app.get("/", (_req: Request, res: Response) => {
+  res.send("Backend Server & Socket.io & MongoDB is Running!");
 });
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
-  console.log(`✅ Server đang chạy tại: http://localhost:${PORT}`);
+  console.log(`Server dang chay tai: http://localhost:${PORT}`);
 });

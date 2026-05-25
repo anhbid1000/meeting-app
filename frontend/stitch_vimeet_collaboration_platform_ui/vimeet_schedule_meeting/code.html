@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ViMeet - Schedule Meeting</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#f3f4f6",
+                        "on-tertiary-container": "#f0f0f0",
+                        "background": "#f8f9fb",
+                        "outline": "#737686",
+                        "secondary-fixed": "#d5e4f8",
+                        "primary-fixed": "#dbe1ff",
+                        "on-tertiary-fixed": "#1a1c1c",
+                        "tertiary-fixed-dim": "#c6c6c7",
+                        "primary-container": "#2563eb",
+                        "on-surface": "#191c1e",
+                        "on-primary": "#ffffff",
+                        "on-secondary-container": "#576676",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-tertiary-fixed-variant": "#454747",
+                        "on-primary-container": "#eeefff",
+                        "surface-container": "#edeef0",
+                        "secondary-fixed-dim": "#b9c8db",
+                        "on-surface-variant": "#434655",
+                        "surface-variant": "#e1e2e4",
+                        "surface-dim": "#d9dadc",
+                        "surface-tint": "#0053db",
+                        "surface-container-high": "#e7e8ea",
+                        "on-secondary-fixed": "#0e1d2b",
+                        "inverse-surface": "#2e3132",
+                        "on-error-container": "#93000a",
+                        "on-secondary": "#ffffff",
+                        "secondary": "#516070",
+                        "on-background": "#191c1e",
+                        "on-primary-fixed": "#00174b",
+                        "on-error": "#ffffff",
+                        "surface": "#f8f9fb",
+                        "inverse-on-surface": "#f0f1f3",
+                        "on-secondary-fixed-variant": "#3a4858",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "tertiary-fixed": "#e2e2e2",
+                        "tertiary": "#535555",
+                        "surface-bright": "#f8f9fb",
+                        "error-container": "#ffdad6",
+                        "tertiary-container": "#6c6d6d",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-highest": "#e1e2e4",
+                        "outline-variant": "#c3c6d7",
+                        "error": "#ba1a1a",
+                        "secondary-container": "#d5e4f8",
+                        "primary": "#004ac6",
+                        "inverse-primary": "#b4c5ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "md": "16px",
+                        "lg": "24px",
+                        "sidebar_width": "280px",
+                        "xl": "32px",
+                        "gutter": "24px",
+                        "base": "4px",
+                        "sm": "8px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "display": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "label-md": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "600" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-surface-container-low min-h-screen text-on-surface font-body-md antialiased selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- TopNavBar Shared Component -->
+<nav class="bg-surface dark:bg-inverse-surface text-primary dark:text-inverse-primary font-headline-sm text-headline-sm font-label-md text-label-md docked full-width top-0 border-b border-outline-variant dark:border-outline shadow-sm flex justify-between items-center w-full px-lg h-16 sticky top-0 z-50">
+<!-- Brand & Nav Group -->
+<div class="flex items-center gap-xl h-full">
+<div class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary cursor-pointer active:opacity-80">
+                ViMeet
+            </div>
+<div class="hidden md:flex items-center h-full gap-lg">
+<a class="text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed transition-colors cursor-pointer active:opacity-80 h-full flex items-center pt-1 font-label-md text-label-md" href="#">
+                    Meetings
+                </a>
+<a class="text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed transition-colors cursor-pointer active:opacity-80 h-full flex items-center pt-1 font-label-md text-label-md" href="#">
+                    Recordings
+                </a>
+<a class="text-primary dark:text-inverse-primary border-b-2 border-primary pb-1 hover:text-primary dark:hover:text-primary-fixed transition-colors cursor-pointer active:opacity-80 h-full flex items-center pt-1 mt-1 font-label-md text-label-md" href="#">
+                    Schedule
+                </a>
+<a class="text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed transition-colors cursor-pointer active:opacity-80 h-full flex items-center pt-1 font-label-md text-label-md" href="#">
+                    Contacts
+                </a>
+</div>
+</div>
+<!-- Trailing Actions -->
+<div class="flex items-center gap-md">
+<div class="hidden md:flex items-center gap-sm text-secondary">
+<button class="p-2 rounded-full hover:bg-surface-variant transition-colors cursor-pointer active:opacity-80 flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 rounded-full hover:bg-surface-variant transition-colors cursor-pointer active:opacity-80 flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]" data-icon="settings">settings</span>
+</button>
+<button class="p-2 rounded-full hover:bg-surface-variant transition-colors cursor-pointer active:opacity-80 flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]" data-icon="help">help</span>
+</button>
+</div>
+<button class="bg-primary text-on-primary font-label-md text-label-md px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors cursor-pointer active:opacity-80 hidden md:block">
+                Start Meeting
+            </button>
+<div class="h-8 w-8 rounded-full bg-surface-variant overflow-hidden ml-2 border border-outline-variant shrink-0 cursor-pointer">
+<img alt="User profile avatar" class="w-full h-full object-cover" data-alt="A professional headshot of a person looking directly at the camera with a neutral, pleasant expression. The lighting is soft and even, highlighting their features against a plain, light background. This serves as a standard user profile placeholder in a high-end enterprise application, conveying reliability and presence." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPWlVbRP4SUGjda9Zfoarw3HlC1AIdAIAO_-fo1tnOKi30BgCaSFH81U-SBq48vn8i0kBlyhkmqSGrgJ-_2k6F--hGaTNuDkJxbMUxXemdvJT8LritYukJ7wks0Dmi5hWNXIG7utBjt-7sxq9KVvUvm2fDiBS23RjuqpY9s3C4LjTcRwp4Vxw9yygV7BJITAj-sp9B_EAL2WbaTNaRwNthSBxc56T5TOivTmTI_uzhMIQIamnC13g46PRyMqK79BaT0Ij0Veax2PCA"/>
+</div>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="w-full max-w-5xl mx-auto py-xl px-md md:px-lg">
+<!-- Header -->
+<div class="mb-lg">
+<h1 class="font-headline-lg text-headline-lg text-on-surface mb-xs hidden md:block">Schedule a Meeting</h1>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface mb-xs md:hidden">Schedule a Meeting</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Set up the details, invite participants, and configure meeting options.</p>
+</div>
+<!-- Form Card Container -->
+<div class="bg-surface rounded-xl shadow-sm border border-outline-variant overflow-hidden">
+<form action="#" class="flex flex-col" method="POST">
+<!-- Section: Core Details -->
+<div class="p-lg md:p-xl border-b border-outline-variant bg-surface">
+<h2 class="font-headline-sm text-headline-sm text-on-surface mb-lg flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary" data-icon="subject">subject</span>
+                        Meeting Details
+                    </h2>
+<div class="space-y-lg">
+<!-- Title Field -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-sm" for="meeting-title">Title</label>
+<input class="w-full bg-surface-container-lowest border border-outline text-on-surface font-body-md text-body-md rounded-lg px-md py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-shadow placeholder:text-outline/70" id="meeting-title" name="meeting-title" placeholder="e.g., Q3 Product Roadmap Review" type="text"/>
+</div>
+<!-- Description Field -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-sm" for="meeting-description">Description <span class="text-on-surface-variant font-body-sm text-body-sm">(Optional)</span></label>
+<textarea class="w-full bg-surface-container-lowest border border-outline text-on-surface font-body-md text-body-md rounded-lg px-md py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-shadow placeholder:text-outline/70 resize-y" id="meeting-description" name="meeting-description" placeholder="Add an agenda or brief context for the participants..." rows="3"></textarea>
+</div>
+</div>
+</div>
+<!-- Section: Time & Logistics -->
+<div class="p-lg md:p-xl border-b border-outline-variant bg-surface-bright">
+<h2 class="font-headline-sm text-headline-sm text-on-surface mb-lg flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary" data-icon="event">event</span>
+                        Time &amp; Duration
+                    </h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-lg">
+<!-- Date Picker -->
+<div class="relative">
+<label class="block font-label-md text-label-md text-on-surface mb-sm" for="meeting-date">Date</label>
+<div class="relative">
+<input class="w-full bg-surface-container-lowest border border-outline text-on-surface font-body-md text-body-md rounded-lg pl-md pr-10 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-shadow appearance-none" id="meeting-date" name="meeting-date" type="date"/>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none" data-icon="calendar_month">calendar_month</span>
+</div>
+</div>
+<!-- Time Picker -->
+<div class="relative">
+<label class="block font-label-md text-label-md text-on-surface mb-sm" for="meeting-time">Time (Local)</label>
+<div class="relative">
+<input class="w-full bg-surface-container-lowest border border-outline text-on-surface font-body-md text-body-md rounded-lg pl-md pr-10 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-shadow appearance-none" id="meeting-time" name="meeting-time" type="time" value="10:00"/>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none" data-icon="schedule">schedule</span>
+</div>
+</div>
+<!-- Duration Dropdown -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-sm" for="meeting-duration">Duration</label>
+<div class="relative">
+<select class="w-full bg-surface-container-lowest border border-outline text-on-surface font-body-md text-body-md rounded-lg pl-md pr-10 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-shadow appearance-none" id="meeting-duration" name="meeting-duration">
+<option value="15">15 minutes</option>
+<option value="30">30 minutes</option>
+<option value="45">45 minutes</option>
+<option selected="" value="60">1 hour</option>
+<option value="90">1.5 hours</option>
+<option value="120">2 hours</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+</div>
+<div class="mt-md text-right">
+<span class="font-body-sm text-body-sm text-on-surface-variant flex items-center justify-end gap-xs">
+<span class="material-symbols-outlined text-[16px]" data-icon="public">public</span>
+                            Timezone: America/New_York (GMT-4)
+                        </span>
+</div>
+</div>
+<!-- Section: Participants -->
+<div class="p-lg md:p-xl border-b border-outline-variant bg-surface">
+<h2 class="font-headline-sm text-headline-sm text-on-surface mb-lg flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary" data-icon="group">group</span>
+                        Participants
+                    </h2>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-xl">
+<!-- Invite by Email -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-sm" for="invite-email">Invite by Email</label>
+<div class="flex items-center gap-sm mb-sm">
+<input class="flex-1 bg-surface-container-lowest border border-outline text-on-surface font-body-md text-body-md rounded-lg px-md py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-shadow" id="invite-email" placeholder="name@company.com" type="email"/>
+<button class="bg-secondary-container text-on-secondary-container px-4 py-3 rounded-lg font-label-md text-label-md hover:bg-secondary-fixed transition-colors" type="button">Add</button>
+</div>
+<!-- Mock Chips -->
+<div class="flex flex-wrap gap-2 mt-sm">
+<span class="inline-flex items-center gap-xs bg-surface-variant text-on-surface font-body-sm text-body-sm px-3 py-1 rounded-full">
+                                    sarah.j@company.com
+                                    <button class="hover:text-error transition-colors flex items-center justify-center" type="button">
+<span class="material-symbols-outlined text-[16px]" data-icon="close">close</span>
+</button>
+</span>
+</div>
+</div>
+<!-- Select Group/Channel -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-sm" for="invite-group">Select Group or Channel</label>
+<div class="relative">
+<select class="w-full bg-surface-container-lowest border border-outline text-on-surface font-body-md text-body-md rounded-lg pl-md pr-10 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-shadow appearance-none" id="invite-group" name="invite-group">
+<option disabled="" selected="" value="">Choose a workspace channel...</option>
+<option value="engineering"># Engineering Team</option>
+<option value="design"># Design Guild</option>
+<option value="leadership">@ Leadership Group</option>
+<option value="all-hands">@ All Hands</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none" data-icon="expand_more">expand_more</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-sm">Invites will be sent to all active members of the selected group.</p>
+</div>
+</div>
+</div>
+<!-- Section: Meeting Options (Bento Style Toggles) -->
+<div class="p-lg md:p-xl bg-surface-bright">
+<h2 class="font-headline-sm text-headline-sm text-on-surface mb-lg flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary" data-icon="settings_suggest">settings_suggest</span>
+                        Meeting Options
+                    </h2>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<!-- Option: Auto Record -->
+<label class="flex items-start gap-md p-md rounded-xl border border-outline-variant bg-surface cursor-pointer hover:border-primary transition-colors group">
+<div class="pt-1">
+<input class="w-5 h-5 rounded border-outline text-primary focus:ring-primary focus:ring-offset-surface" name="auto-record" type="checkbox"/>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-center mb-xs">
+<span class="font-label-md text-label-md text-on-surface group-hover:text-primary transition-colors">Automatically Record Meeting</span>
+<span class="material-symbols-outlined text-secondary text-[20px]" data-icon="radio_button_checked">radio_button_checked</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Start recording as soon as the first participant joins the room.</p>
+</div>
+</label>
+<!-- Option: AI Summary -->
+<label class="flex items-start gap-md p-md rounded-xl border border-outline-variant bg-surface cursor-pointer hover:border-primary transition-colors group relative overflow-hidden">
+<!-- Subtle premium gradient background hint -->
+<div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary-fixed-dim/20 to-transparent rounded-bl-full pointer-events-none"></div>
+<div class="pt-1 relative z-10">
+<input checked="" class="w-5 h-5 rounded border-outline text-primary focus:ring-primary focus:ring-offset-surface" name="ai-summary" type="checkbox"/>
+</div>
+<div class="flex-1 relative z-10">
+<div class="flex items-center gap-sm mb-xs">
+<span class="font-label-md text-label-md text-on-surface group-hover:text-primary transition-colors">Generate AI Summary</span>
+<span class="bg-primary text-on-primary font-label-sm text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full">Pro</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Automatically transcribe and generate action items after the meeting ends.</p>
+</div>
+</label>
+</div>
+</div>
+<!-- Footer Actions -->
+<div class="p-lg md:p-xl bg-surface-container-lowest border-t border-outline-variant flex flex-col-reverse md:flex-row justify-end items-center gap-md">
+<button class="w-full md:w-auto px-6 py-3 font-label-md text-label-md text-secondary hover:bg-surface-variant rounded-lg transition-colors" type="button">
+                        Cancel
+                    </button>
+<button class="w-full md:w-auto px-6 py-3 font-label-md text-label-md bg-primary text-on-primary hover:bg-primary-fixed-variant transition-colors rounded-lg shadow-sm flex items-center justify-center gap-sm" type="submit">
+<span class="material-symbols-outlined text-[20px]" data-icon="send">send</span>
+                        Schedule Meeting
+                    </button>
+</div>
+</form>
+</div>
+</main>
+</body></html>

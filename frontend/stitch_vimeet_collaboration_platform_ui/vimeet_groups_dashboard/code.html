@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ViMeet - Group Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#dbe1ff",
+                        "outline": "#737686",
+                        "tertiary": "#535555",
+                        "secondary-fixed": "#d5e4f8",
+                        "on-secondary-fixed-variant": "#3a4858",
+                        "on-surface-variant": "#434655",
+                        "tertiary-fixed-dim": "#c6c6c7",
+                        "outline-variant": "#c3c6d7",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "on-secondary-fixed": "#0e1d2b",
+                        "surface-variant": "#e1e2e4",
+                        "background": "#f8f9fb",
+                        "on-tertiary-fixed": "#1a1c1c",
+                        "secondary-container": "#d5e4f8",
+                        "surface-tint": "#0053db",
+                        "error": "#ba1a1a",
+                        "inverse-on-surface": "#f0f1f3",
+                        "surface-dim": "#d9dadc",
+                        "surface-container-high": "#e7e8ea",
+                        "on-primary-container": "#eeefff",
+                        "on-error-container": "#93000a",
+                        "surface-bright": "#f8f9fb",
+                        "surface-container-low": "#f3f4f6",
+                        "on-secondary-container": "#576676",
+                        "inverse-primary": "#b4c5ff",
+                        "on-primary": "#ffffff",
+                        "surface-container-highest": "#e1e2e4",
+                        "tertiary-container": "#6c6d6d",
+                        "primary-container": "#2563eb",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "surface": "#f8f9fb",
+                        "on-tertiary-fixed-variant": "#454747",
+                        "primary": "#004ac6",
+                        "secondary": "#516070",
+                        "secondary-fixed-dim": "#b9c8db",
+                        "inverse-surface": "#2e3132",
+                        "on-error": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "on-background": "#191c1e",
+                        "on-secondary": "#ffffff",
+                        "on-surface": "#191c1e",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container": "#edeef0",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed": "#e2e2e2",
+                        "on-tertiary-container": "#f0f0f0",
+                        "on-primary-fixed": "#00174b"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xs": "4px",
+                        "sidebar_width": "280px",
+                        "gutter": "24px",
+                        "sm": "8px",
+                        "base": "4px",
+                        "xl": "32px",
+                        "md": "16px",
+                        "lg": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-sm": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "display": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "label-md": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex">
+<!-- SideNavBar Component -->
+<nav class="hidden md:flex flex-col py-lg px-md gap-sm bg-surface-container-low dark:bg-surface-container-lowest border-r border-outline-variant w-sidebar_width h-screen fixed left-0 top-0 z-40">
+<!-- Header -->
+<div class="flex items-center gap-md px-sm py-sm mb-md">
+<div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-on-primary font-headline-sm text-headline-sm font-bold">V</div>
+<div>
+<h2 class="font-headline-sm text-headline-sm font-black text-primary dark:text-inverse-primary">Workspace</h2>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Premium Plan</p>
+</div>
+</div>
+<!-- CTA -->
+<button class="w-full bg-primary hover:bg-primary/90 text-on-primary font-label-md text-label-md py-sm px-md rounded-lg mb-lg flex items-center justify-center gap-sm transition-colors shadow-sm">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add</span>
+            New Collaboration
+        </button>
+<!-- Main Navigation -->
+<div class="flex-1 overflow-y-auto flex flex-col gap-xs">
+<a class="flex items-center gap-md px-md py-sm rounded-lg font-label-md text-label-md text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant/50 hover:bg-surface-container-high dark:hover:bg-surface-container transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">home</span>
+                Home
+            </a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg font-label-md text-label-md text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant/50 hover:bg-surface-container-high dark:hover:bg-surface-container transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">videocam</span>
+                Meetings
+            </a>
+<!-- Active Tab -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg font-label-md text-label-md bg-secondary-container dark:bg-on-secondary-fixed-variant text-on-secondary-container dark:text-secondary-fixed border-l-4 border-primary transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">groups</span>
+                Groups
+            </a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg font-label-md text-label-md text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant/50 hover:bg-surface-container-high dark:hover:bg-surface-container transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">tag</span>
+                Channels
+            </a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg font-label-md text-label-md text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant/50 hover:bg-surface-container-high dark:hover:bg-surface-container transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">history</span>
+                History
+            </a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg font-label-md text-label-md text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant/50 hover:bg-surface-container-high dark:hover:bg-surface-container transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">folder</span>
+                Files
+            </a>
+</div>
+<!-- Footer Navigation -->
+<div class="mt-auto border-t border-outline-variant pt-sm flex flex-col gap-xs">
+<a class="flex items-center gap-md px-md py-sm rounded-lg font-label-md text-label-md text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant/50 hover:bg-surface-container-high dark:hover:bg-surface-container transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">person</span>
+                Profile
+            </a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg font-label-md text-label-md text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant/50 hover:bg-surface-container-high dark:hover:bg-surface-container transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">settings</span>
+                Settings
+            </a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 ml-0 md:ml-sidebar_width p-md md:p-lg lg:p-xl transition-all duration-300">
+<!-- Header Section -->
+<header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-xl gap-md">
+<div>
+<h1 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-xs">Good morning, David</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Here's an overview of your active groups and channels.</p>
+</div>
+<button class="bg-primary hover:bg-primary/90 text-on-primary font-label-md text-label-md py-sm px-md rounded-lg flex items-center gap-sm transition-colors shadow-sm">
+<span class="material-symbols-outlined">group_add</span>
+                Create Group
+            </button>
+</header>
+<!-- Content Section -->
+<section>
+<div class="flex items-center justify-between mb-lg border-b border-outline-variant pb-sm">
+<h2 class="font-headline-md text-headline-md text-on-surface">Joined Groups</h2>
+<!-- Filter/Sort placeholder -->
+<div class="flex gap-sm">
+<button class="flex items-center gap-xs text-on-surface-variant hover:text-primary font-label-md text-label-md transition-colors">
+<span class="material-symbols-outlined text-[18px]">filter_list</span>
+                        Filter
+                    </button>
+<button class="flex items-center gap-xs text-on-surface-variant hover:text-primary font-label-md text-label-md transition-colors">
+<span class="material-symbols-outlined text-[18px]">sort</span>
+                        Sort
+                    </button>
+</div>
+</div>
+<!-- Bento Grid / Cards Layout -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
+<!-- Card 1 -->
+<div class="bg-surface rounded-xl border border-outline-variant p-md flex flex-col gap-md hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition-shadow duration-200 group relative overflow-hidden">
+<!-- Decor element -->
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full -z-10 group-hover:bg-primary/10 transition-colors"></div>
+<div class="flex justify-between items-start">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[24px]">design_services</span>
+</div>
+<span class="px-sm py-xs bg-primary-container text-on-primary-container font-label-sm text-label-sm rounded-full">Host</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-xs group-hover:text-primary transition-colors">Product Design Team</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">Core team for UX/UI discussions, design system updates, and weekly critiques.</p>
+</div>
+<div class="mt-auto pt-md border-t border-surface-variant flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant">
+<div class="flex gap-md">
+<span class="flex items-center gap-xs"><span class="material-symbols-outlined text-[16px]">group</span> 12</span>
+<span class="flex items-center gap-xs"><span class="material-symbols-outlined text-[16px]">tag</span> 4</span>
+</div>
+<span class="text-xs">Active 2h ago</span>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface rounded-xl border border-outline-variant p-md flex flex-col gap-md hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition-shadow duration-200 group relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-secondary-container/20 rounded-bl-full -z-10 group-hover:bg-secondary-container/40 transition-colors"></div>
+<div class="flex justify-between items-start">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[24px]">terminal</span>
+</div>
+<span class="px-sm py-xs bg-surface-variant text-on-surface-variant font-label-sm text-label-sm rounded-full">Member</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-xs group-hover:text-primary transition-colors">Computer Science Club</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">Algorithm practice, hackathon planning, and general tech discussions.</p>
+</div>
+<div class="mt-auto pt-md border-t border-surface-variant flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant">
+<div class="flex gap-md">
+<span class="flex items-center gap-xs"><span class="material-symbols-outlined text-[16px]">group</span> 48</span>
+<span class="flex items-center gap-xs"><span class="material-symbols-outlined text-[16px]">tag</span> 12</span>
+</div>
+<span class="text-xs">Active 5m ago</span>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface rounded-xl border border-outline-variant p-md flex flex-col gap-md hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition-shadow duration-200 group relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-tertiary/5 rounded-bl-full -z-10 group-hover:bg-tertiary/10 transition-colors"></div>
+<div class="flex justify-between items-start">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-[24px]">campaign</span>
+</div>
+<span class="px-sm py-xs bg-surface-variant text-on-surface-variant font-label-sm text-label-sm rounded-full">Member</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-xs group-hover:text-primary transition-colors">Q3 Marketing Kickoff</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">Temporary group for aligning on Q3 goals, ad spend, and asset delivery.</p>
+</div>
+<div class="mt-auto pt-md border-t border-surface-variant flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant">
+<div class="flex gap-md">
+<span class="flex items-center gap-xs"><span class="material-symbols-outlined text-[16px]">group</span> 8</span>
+<span class="flex items-center gap-xs"><span class="material-symbols-outlined text-[16px]">tag</span> 2</span>
+</div>
+<span class="text-xs">Active 1d ago</span>
+</div>
+</div>
+<!-- Card 4 (Glassmorphism inspired styling) -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex flex-col gap-md hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-all duration-300 transform hover:-translate-y-1">
+<div class="flex justify-between items-start">
+<div class="w-12 h-12 rounded-full bg-gradient-to-br from-primary-container to-primary flex items-center justify-center text-on-primary shadow-sm">
+<span class="material-symbols-outlined text-[20px]">rocket_launch</span>
+</div>
+<span class="px-sm py-xs bg-primary text-on-primary font-label-sm text-label-sm rounded-full shadow-sm">Host</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-xs">Project Alpha Launch</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">War room for the upcoming major platform release. High priority communications only.</p>
+</div>
+<div class="mt-auto pt-md border-t border-surface-variant flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant">
+<div class="flex gap-sm">
+<!-- Avatar stack -->
+<div class="flex -space-x-2">
+<div class="w-6 h-6 rounded-full bg-secondary text-[10px] text-on-secondary flex items-center justify-center border-2 border-surface">D</div>
+<div class="w-6 h-6 rounded-full bg-tertiary text-[10px] text-on-tertiary flex items-center justify-center border-2 border-surface">S</div>
+<div class="w-6 h-6 rounded-full bg-outline text-[10px] text-surface flex items-center justify-center border-2 border-surface">+3</div>
+</div>
+</div>
+<span class="text-xs text-primary font-medium">Active Now</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Mobile Navigation (BottomNavBar substitute for small screens) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full bg-surface border-t border-outline-variant flex justify-around py-sm z-50 pb-safe">
+<a class="flex flex-col items-center p-xs text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">home</span>
+<span class="font-label-sm text-[10px] mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center p-xs text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">videocam</span>
+<span class="font-label-sm text-[10px] mt-1">Meetings</span>
+</a>
+<a class="flex flex-col items-center p-xs text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">groups</span>
+<span class="font-label-sm text-[10px] mt-1">Groups</span>
+</a>
+<a class="flex flex-col items-center p-xs text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">person</span>
+<span class="font-label-sm text-[10px] mt-1">Profile</span>
+</a>
+</nav>
+</body></html>
