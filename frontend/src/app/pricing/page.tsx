@@ -94,7 +94,7 @@ export default function PricingPage() {
               <tbody className="font-body-md text-body-md">
                 <TableRow label="Số lượng người tham dự tối đa" free="50" pro="500" />
                 <TableRow label="Giới hạn thời lượng họp" free="1 Giờ" pro="Không giới hạn" />
-                <TableRow label="Kho lưu trữ bản ghi đám mây" free="2 GB" pro="20 GB" />
+                <TableRow label="Kho lưu trữ bản ghi đám mây" free="2 GB" pro="200 GB" />
                 <TableRow label="AI Tóm tắt thông minh" free={false} pro={true} hasInfo="Tự động tạo biên bản cuộc họp" />
                 <TableRow label="Quản lý vai trò nâng cao" free={false} pro={true} />
                 <TableRow label="Hỗ trợ ưu tiên 24/7" free={false} pro={true} />

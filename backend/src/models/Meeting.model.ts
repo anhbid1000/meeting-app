@@ -5,7 +5,25 @@ export interface IMeeting extends Document {
   workspaceId: Types.ObjectId;
   channelId: Types.ObjectId;
   hostId: Types.ObjectId;
-  livekitRoomName: string; // Tên room trên LiveKit (workspaceId-channelId-meetingId)
+  livekitRoomName: string;
+  participants: {
+    userId: Types.ObjectId;
+    joinedAt: Date;
+    leftAt?: Date;
+  }[];
+  transcript?: string;
+  summary?: string;
+  chatLog?: {
+    userId: Types.ObjectId;
+    content: string;
+    timestamp: Date;
+  }[];
+  notes?: {
+    userId: Types.ObjectId;
+    content: string;
+    timestamp: Date;
+  }[];
+  durationMinutes?: number;
   status: 'live' | 'working' | 'ended';
   startedAt: Date;
   endedAt?: Date;
@@ -20,6 +38,24 @@ const meetingSchema = new Schema<IMeeting>({
   channelId: { type: Schema.Types.ObjectId, ref: 'Channel', required: true, index: true },
   hostId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   livekitRoomName: { type: String, required: true, unique: true },
+  participants: [{
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    joinedAt: { type: Date, default: Date.now },
+    leftAt: { type: Date }
+  }],
+  transcript: { type: String, default: "" },
+  summary: { type: String, default: "" },
+  chatLog: [{
+    userId: { type: Schema.Types.ObjectId, ref: 'User' },
+    content: { type: String },
+    timestamp: { type: Date, default: Date.now }
+  }],
+  notes: [{
+    userId: { type: Schema.Types.ObjectId, ref: 'User' },
+    content: { type: String },
+    timestamp: { type: Date, default: Date.now }
+  }],
+  durationMinutes: { type: Number, default: 0 },
   status: { type: String, enum: ['live', 'working', 'ended'], default: 'live' },
   startedAt: { type: Date, default: Date.now },
   endedAt: { type: Date },

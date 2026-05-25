@@ -1,12 +1,12 @@
 import { Types } from 'mongoose';
-import ChannelDAO from '../dao/ChannelDAO';
+import channelDAO, { ChannelListOptions } from '../dao/ChannelDAO';
 import Workspace from '../models/Workspace.model';
 import ChannelMember from '../models/ChannelMember.model';
 import { AppError } from '../utils/AppError';
 import { slugify } from '../utils/slugify';
-import ChannelJoinRequest from "../models/ChannelJoinRequest.model";
-import Message from "../models/Message.model";
-import { PermissionService } from "./Permission.service";
+import ChannelJoinRequest from '../models/ChannelJoinRequest.model';
+import Message from '../models/Message.model';
+import { PermissionService } from './Permission.service';
 
 interface CreateChannelData {
   workspaceId: string;
@@ -14,55 +14,58 @@ interface CreateChannelData {
   description?: string;
   type: 'public' | 'private';
   createdBy: string;
-  memberIds?: string[]; // For private channels
+  memberIds?: string[];
 }
 
 export const createChannel = async (data: CreateChannelData) => {
   const { workspaceId, name, description, type, createdBy, memberIds } = data;
 
-  // 1. Check workspace
   const workspace = await Workspace.findById(workspaceId);
   if (!workspace) {
     throw new AppError('Workspace không tồn tại', 404, 'WORKSPACE_NOT_FOUND');
   }
 
-  // 2. Generate slug and check existence
   const slug = slugify(name);
-  const existingChannel = await ChannelDAO.findBySlug(workspaceId, slug);
+  const existingChannel = await channelDAO.findBySlug(workspaceId, slug);
+
   if (existingChannel) {
-    throw new AppError('Channel với slug này đã tồn tại trong workspace', 400, 'CHANNEL_ALREADY_EXISTS');
+    throw new AppError(
+      'Channel với slug này đã tồn tại trong workspace',
+      400,
+      'CHANNEL_ALREADY_EXISTS'
+    );
   }
 
-  // 3. Determine initial members
   let initialMembers: Types.ObjectId[] = [];
+
   if (type === 'public') {
-    // Public: all current workspace members
-    initialMembers = workspace.members.map(m => m.userId as unknown as Types.ObjectId);
+    initialMembers = workspace.members.map(
+      (member) => member.userId as unknown as Types.ObjectId
+    );
   } else {
-    // Private: createdBy + selected members
     const uniqueMemberIds = new Set([createdBy, ...(memberIds || [])]);
-    initialMembers = Array.from(uniqueMemberIds).map(id => new Types.ObjectId(id));
+    initialMembers = Array.from(uniqueMemberIds).map(
+      (id) => new Types.ObjectId(id)
+    );
   }
 
-  // 4. Create channel
-  const channel = await ChannelDAO.create({
+  const channel = await channelDAO.create({
     workspaceId: new Types.ObjectId(workspaceId),
     name,
     description,
     slug,
     type,
     createdBy: new Types.ObjectId(createdBy),
-    members: initialMembers
+    members: initialMembers,
   } as any);
 
-  // 5. Create ChannelMember records
-  const channelMemberDocs = initialMembers.map(userId => ({
+  const channelMemberDocs = initialMembers.map((userId) => ({
     channelId: channel._id,
     workspaceId: new Types.ObjectId(workspaceId),
     userId,
     role: String(userId) === createdBy ? 'owner' : 'member',
     status: 'active',
-    joinedAt: new Date()
+    joinedAt: new Date(),
   }));
 
   await ChannelMember.insertMany(channelMemberDocs);
@@ -70,333 +73,287 @@ export const createChannel = async (data: CreateChannelData) => {
   return channel;
 };
 
+export const getChannelDirectory = async (
+  workspaceId: string,
+  options: ChannelListOptions,
+  userId?: string
+) => {
+  const { items, total, page, limit } = await channelDAO.findByWorkspace(
+    workspaceId,
+    options
+  );
 
-const channelDAO = new ChannelDAO();
+  const channelIds = items.map((item: any) => item._id);
 
-export class ChannelService {
-  static async getChannelDirectory(
-    workspaceId: string,
-    options: ChannelListOptions,
-    userId?: string,
-  ) {
-    const { items, total, page, limit } = await channelDAO.findByWorkspace(
-      workspaceId,
-      options,
-    );
+  let latestMessageByChannelId = new Map<
+    string,
+    {
+      lastMessageText?: string;
+      lastMessageSenderName?: string;
+      lastMessageAt?: Date;
+    }
+  >();
 
-    const channelIds = items.map((item: any) => item._id);
-    let latestMessageByChannelId = new Map<
-      string,
+  if (channelIds.length > 0) {
+    const lastMessages = await Message.aggregate([
       {
-        lastMessageText?: string;
-        lastMessageSenderName?: string;
-        lastMessageAt?: Date;
-      }
-    >();
-
-    if (channelIds.length > 0) {
-      const lastMessages = await Message.aggregate([
-        {
-          $match: {
-            channelId: { $in: channelIds },
-            isDeleted: { $ne: true },
-          },
+        $match: {
+          channelId: { $in: channelIds },
+          isDeleted: { $ne: true },
         },
-        { $sort: { createdAt: -1 } },
-        {
-          $group: {
-            _id: "$channelId",
-            lastMessageText: { $first: "$content" },
-            lastMessageAt: { $first: "$createdAt" },
-            lastMessageSenderId: { $first: "$userId" },
-          },
-        },
-        {
-          $lookup: {
-            from: "users",
-            localField: "lastMessageSenderId",
-            foreignField: "_id",
-            as: "sender",
-          },
-        },
-        {
-          $addFields: {
-            lastMessageSenderName: {
-              $ifNull: [
-                { $arrayElemAt: ["$sender.name", 0] },
-                {
-                  $ifNull: [{ $arrayElemAt: ["$sender.email", 0] }, "Teammate"],
-                },
-              ],
-            },
-          },
-        },
-        {
-          $project: {
-            sender: 0,
-            lastMessageSenderId: 0,
-          },
-        },
-      ]);
-
-      latestMessageByChannelId = new Map(
-        lastMessages.map((m: any) => [String(m._id), m]),
-      );
-    }
-
-    const enrichedItems = items.map((channel: any) => {
-      const latest = latestMessageByChannelId.get(String(channel._id));
-      return {
-        ...channel,
-        lastMessageText: latest?.lastMessageText,
-        lastMessageSenderName: latest?.lastMessageSenderName,
-        lastMessageAt: latest?.lastMessageAt || channel.lastMessageAt,
-      };
-    });
-
-    const unreadCountByChannelId = new Map<string, number>();
-    const mentionCountByChannelId = new Map<string, number>();
-
-    if (userId && channelIds.length > 0) {
-      const memberships = await ChannelMember.find({
-        channelId: { $in: channelIds },
-        userId,
-      })
-        .select("channelId lastReadAt")
-        .lean();
-
-      const memberByChannelId = new Map(
-        memberships.map((row: any) => [String(row.channelId), row]),
-      );
-
-      await Promise.all(
-        enrichedItems.map(async (channel: any) => {
-          const channelId = String(channel._id);
-          const membership = memberByChannelId.get(channelId);
-
-          if (!membership) {
-            unreadCountByChannelId.set(channelId, 0);
-            mentionCountByChannelId.set(channelId, 0);
-            return;
-          }
-
-          const filter: any = {
-            channelId: channel._id,
-            isDeleted: { $ne: true },
-          };
-
-          if (membership.lastReadAt) {
-            filter.createdAt = { $gt: membership.lastReadAt };
-          }
-
-          const mentionFilter: any = {
-            ...filter,
-            mentions: {
-              $in: [new Types.ObjectId(userId), userId],
-            },
-          };
-
-          const [unreadCount, mentionCount] = await Promise.all([
-            Message.countDocuments(filter),
-            Message.countDocuments(mentionFilter),
-          ]);
-
-          unreadCountByChannelId.set(channelId, unreadCount);
-          mentionCountByChannelId.set(channelId, mentionCount);
-        }),
-      );
-    }
-
-    const withUnread = enrichedItems.map((channel: any) => ({
-      ...channel,
-      unreadCount: unreadCountByChannelId.get(String(channel._id)) || 0,
-      mentionCount: mentionCountByChannelId.get(String(channel._id)) || 0,
-    }));
-
-    return {
-      data: withUnread,
-      meta: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
       },
-    };
-  }
-
-  static async createChannel(params: {
-    workspaceId: string;
-    userId: string;
-    name: string;
-    description?: string;
-    type?: "public" | "private";
-    category?: string;
-  }) {
-    const {
-      workspaceId,
-      userId,
-      name,
-      description,
-      type = "public",
-      category,
-    } = params;
-
-    // Basic validation
-    if (!name?.trim()) {
-      throw Object.assign(new Error("Channel name is required"), {
-        status: 400,
-      });
-    }
-
-    // Workspace must exist
-    const workspace = await Workspace.findById(workspaceId)
-      .select("ownerId channelCount plan")
-      .lean();
-    if (!workspace) {
-      throw Object.assign(new Error("Workspace not found"), { status: 404 });
-    }
-
-    // (Optional) enforce plan limits (simple version)
-    const maxChannels = workspace.plan === "pro" ? 20 : 5;
-    if ((workspace.channelCount ?? 0) >= maxChannels) {
-      throw Object.assign(new Error("Channel limit reached for your plan"), {
-        status: 403,
-      });
-    }
-
-    // Slug uniqueness in workspace
-    let slug = slugify(name);
-    let existing = await channelDAO.findBySlug(workspaceId, slug);
-    let originalSlug = slug;
-    let counter = 1;
-    while (existing) {
-      slug = `${originalSlug}-${counter++}`;
-      existing = await channelDAO.findBySlug(workspaceId, slug);
-    }
-
-    const channel = await channelDAO.create({
-      workspaceId: new Types.ObjectId(workspaceId) as any,
-      name: name.trim(),
-      description: description?.trim() || "",
-      slug,
-      type,
-      category: category?.trim() || "General",
-      createdBy: new Types.ObjectId(userId) as any,
-      members: [new Types.ObjectId(userId) as any],
-      memberCount: 1,
-      isArchived: false,
-    } as any);
-
-    // Create ChannelMember record as owner
-    await ChannelMember.create({
-      channelId: channel._id,
-      workspaceId: new Types.ObjectId(workspaceId),
-      userId: new Types.ObjectId(userId),
-      role: "owner",
-      joinedAt: new Date(),
-      lastReadAt: new Date(),
-      isMuted: false,
-      isFavorite: false,
-    });
-
-    // Update workspace channelCount
-    await Workspace.findByIdAndUpdate(workspaceId, {
-      $inc: { channelCount: 1 },
-    }).lean();
-
-    return channel;
-  }
-
-  static async updateChannel(params: {
-    channelId: string;
-    userId: string;
-    name?: string;
-    description?: string;
-    type?: "public" | "private";
-    category?: string;
-    isArchived?: boolean;
-  }) {
-    const { channelId, userId, name, description, type, category, isArchived } =
-      params;
-
-    // Check user is owner/admin
-    const canModify = await PermissionService.canModifyChannel(
-      userId,
-      channelId,
-    );
-    if (!canModify) {
-      throw Object.assign(
-        new Error("Forbidden: only owner/admin can modify channel"),
-        { status: 403 },
-      );
-    }
-
-    const update: any = {};
-    if (name !== undefined) update.name = name.trim();
-    if (description !== undefined) update.description = description.trim();
-    if (type !== undefined) update.type = type;
-    if (category !== undefined) update.category = category.trim();
-    if (isArchived !== undefined) update.isArchived = isArchived;
-
-    const updated = await channelDAO.updateById(channelId, {
-      $set: update,
-    } as any);
-    if (!updated) {
-      throw Object.assign(new Error("Channel not found"), { status: 404 });
-    }
-    return updated;
-  }
-
-  static async deleteChannel(params: { channelId: string; userId: string }) {
-    const { channelId, userId } = params;
-
-    // Check user is owner/admin (per your confirm #4)
-    const canModify = await PermissionService.canModifyChannel(
-      userId,
-      channelId,
-    );
-    if (!canModify) {
-      throw Object.assign(
-        new Error("Forbidden: only owner/admin can delete channel"),
-        { status: 403 },
-      );
-    }
-
-    const channel = await channelDAO.findById(channelId);
-    if (!channel) {
-      throw Object.assign(new Error("Channel not found"), { status: 404 });
-    }
-
-    // Hard delete + cascade cleanup (per your confirm #3)
-    await Promise.all([
-      ChannelMember.deleteMany({ channelId }),
-      Message.deleteMany({ channelId }),
-      ChannelJoinRequest.deleteMany({ channelId }),
+      {
+        $sort: {
+          createdAt: -1,
+        },
+      },
+      {
+        $group: {
+          _id: '$channelId',
+          lastMessageText: { $first: '$content' },
+          lastMessageAt: { $first: '$createdAt' },
+          lastMessageSenderId: { $first: '$userId' },
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'lastMessageSenderId',
+          foreignField: '_id',
+          as: 'sender',
+        },
+      },
+      {
+        $addFields: {
+          lastMessageSenderName: {
+            $ifNull: [
+              { $arrayElemAt: ['$sender.name', 0] },
+              {
+                $ifNull: [{ $arrayElemAt: ['$sender.email', 0] }, 'Teammate'],
+              },
+            ],
+          },
+        },
+      },
+      {
+        $project: {
+          sender: 0,
+          lastMessageSenderId: 0,
+        },
+      },
     ]);
 
-    await channelDAO.delete(channelId);
-    return true;
-  }
-
-  static async archiveChannel(params: { channelId: string; userId: string }) {
-    const { channelId, userId } = params;
-
-    // Check user is owner/admin (per your confirm #4)
-    const canModify = await PermissionService.canModifyChannel(
-      userId,
-      channelId,
+    latestMessageByChannelId = new Map(
+      lastMessages.map((message: any) => [String(message._id), message])
     );
-    if (!canModify) {
-      throw Object.assign(
-        new Error("Forbidden: only owner/admin can archive channel"),
-        { status: 403 },
-      );
-    }
-
-    const archived = await channelDAO.archive(channelId);
-    if (!archived) {
-      throw Object.assign(new Error("Channel not found"), { status: 404 });
-    }
-    return archived;
   }
-}
+
+  const enrichedItems = items.map((channel: any) => {
+    const latest = latestMessageByChannelId.get(String(channel._id));
+
+    return {
+      ...channel,
+      lastMessageText: latest?.lastMessageText,
+      lastMessageSenderName: latest?.lastMessageSenderName,
+      lastMessageAt: latest?.lastMessageAt || channel.lastMessageAt,
+    };
+  });
+
+  const unreadCountByChannelId = new Map<string, number>();
+  const mentionCountByChannelId = new Map<string, number>();
+
+  if (userId && channelIds.length > 0) {
+    const memberships = await ChannelMember.find({
+      channelId: { $in: channelIds },
+      userId: new Types.ObjectId(userId),
+    })
+      .select('channelId lastReadAt')
+      .lean();
+
+    const memberByChannelId = new Map(
+      memberships.map((row: any) => [String(row.channelId), row])
+    );
+
+    await Promise.all(
+      enrichedItems.map(async (channel: any) => {
+        const channelId = String(channel._id);
+        const membership = memberByChannelId.get(channelId);
+
+        if (!membership) {
+          unreadCountByChannelId.set(channelId, 0);
+          mentionCountByChannelId.set(channelId, 0);
+          return;
+        }
+
+        const filter: any = {
+          channelId: channel._id,
+          isDeleted: { $ne: true },
+        };
+
+        if (membership.lastReadAt) {
+          filter.createdAt = {
+            $gt: membership.lastReadAt,
+          };
+        }
+
+        const mentionFilter: any = {
+          ...filter,
+          mentions: {
+            $in: [new Types.ObjectId(userId), userId],
+          },
+        };
+
+        const [unreadCount, mentionCount] = await Promise.all([
+          Message.countDocuments(filter),
+          Message.countDocuments(mentionFilter),
+        ]);
+
+        unreadCountByChannelId.set(channelId, unreadCount);
+        mentionCountByChannelId.set(channelId, mentionCount);
+      })
+    );
+  }
+
+  const withUnread = enrichedItems.map((channel: any) => ({
+    ...channel,
+    unreadCount: unreadCountByChannelId.get(String(channel._id)) || 0,
+    mentionCount: mentionCountByChannelId.get(String(channel._id)) || 0,
+  }));
+
+  return {
+    data: withUnread,
+    meta: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+};
+
+export const updateChannel = async (params: {
+  channelId: string;
+  userId: string;
+  name?: string;
+  description?: string;
+  type?: 'public' | 'private';
+  category?: string;
+  isArchived?: boolean;
+}) => {
+  const { channelId, userId, name, description, type, category, isArchived } =
+    params;
+
+  const canModify = await PermissionService.canModifyChannel(userId, channelId);
+
+  if (!canModify) {
+    throw Object.assign(
+      new Error('Forbidden: only owner/admin can modify channel'),
+      {
+        status: 403,
+      }
+    );
+  }
+
+  const update: any = {};
+
+  if (name !== undefined) {
+    update.name = name.trim();
+    update.slug = slugify(name);
+  }
+
+  if (description !== undefined) {
+    update.description = description.trim();
+  }
+
+  if (type !== undefined) {
+    update.type = type;
+  }
+
+  if (category !== undefined) {
+    update.category = category.trim();
+  }
+
+  if (isArchived !== undefined) {
+    update.isArchived = isArchived;
+  }
+
+  const updated = await channelDAO.update(channelId, update);
+
+  if (!updated) {
+    throw Object.assign(new Error('Channel not found'), {
+      status: 404,
+    });
+  }
+
+  return updated;
+};
+
+export const deleteChannel = async (params: {
+  channelId: string;
+  userId: string;
+}) => {
+  const { channelId, userId } = params;
+
+  const canModify = await PermissionService.canModifyChannel(userId, channelId);
+
+  if (!canModify) {
+    throw Object.assign(
+      new Error('Forbidden: only owner/admin can delete channel'),
+      {
+        status: 403,
+      }
+    );
+  }
+
+  const channel = await channelDAO.findById(channelId);
+
+  if (!channel) {
+    throw Object.assign(new Error('Channel not found'), {
+      status: 404,
+    });
+  }
+
+  await Promise.all([
+    ChannelMember.deleteMany({
+      channelId: new Types.ObjectId(channelId),
+    }),
+    Message.deleteMany({
+      channelId: new Types.ObjectId(channelId),
+    }),
+    ChannelJoinRequest.deleteMany({
+      channelId: new Types.ObjectId(channelId),
+    }),
+  ]);
+
+  await channelDAO.delete(channelId);
+
+  return true;
+};
+
+export const archiveChannel = async (params: {
+  channelId: string;
+  userId: string;
+}) => {
+  const { channelId, userId } = params;
+
+  const canModify = await PermissionService.canModifyChannel(userId, channelId);
+
+  if (!canModify) {
+    throw Object.assign(
+      new Error('Forbidden: only owner/admin can archive channel'),
+      {
+        status: 403,
+      }
+    );
+  }
+
+  const archived = await channelDAO.archive(channelId);
+
+  if (!archived) {
+    throw Object.assign(new Error('Channel not found'), {
+      status: 404,
+    });
+  }
+
+  return archived;
+};

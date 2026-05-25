@@ -1,9 +1,10 @@
 import React, { useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import { fileApi } from '@/services/fileApi';
+import api from '@/services/api';
 
 interface MessageComposerProps {
   channelId?: string;
+  workspaceId?: string;
   disabled?: boolean;
   mentionUsers?: Array<{ id: string; name: string }>;
   replyTo?: {
@@ -26,6 +27,7 @@ interface MessageComposerProps {
       name: string;
       mimeType: string;
       size: number;
+      fileId?: String;
     }>;
     mentions?: string[];
   }) => Promise<void>;
@@ -71,6 +73,7 @@ const stripLeadingReplyMarkers = (value: string) =>
 
 export default function MessageComposer({
   channelId,
+  workspaceId,
   disabled,
   mentionUsers = [],
   replyTo,
@@ -215,36 +218,64 @@ export default function MessageComposer({
         setUploading(true);
         uploadedAttachments = [];
 
+        if (!workspaceId) {
+          throw new Error('Không tìm thấy workspace');
+        }
+
         for (let index = 0; index < selectedFiles.length; index += 1) {
           const file = selectedFiles[index];
           const key = fileKey(file, index);
           setUploadProgress((prev) => ({ ...prev, [key]: 0 }));
 
-          const uploaded = await fileApi.uploadFileToCloudinary(
-            channelId,
-            file,
-            (progressPercent) => {
-              setUploadProgress((prev) => ({
-                ...prev,
-                [key]: progressPercent,
-              }));
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('channelId', channelId);
+
+          const response = await api.post(
+            `/workspaces/${workspaceId}/files/upload`,
+            formData,
+            {
+              headers: { 'Content-Type': 'multipart/form-data' },
+              onUploadProgress: (event) => {
+                if (event.total) {
+                  const percent = Math.round((event.loaded * 100) / event.total);
+                  setUploadProgress((prev) => ({ ...prev, [key]: percent }));
+                }
+              },
             }
           );
-          uploadedAttachments.push(uploaded);
+
+          const result = response.data?.data;
+          const fileData = result?.file;
+          if (!fileData) {
+            throw new Error('Upload thất bại: không nhận được phản hồi');
+          }
+
+          uploadedAttachments.push({
+            url: fileData.cloudinaryUrl || '',
+            name: fileData.originalName || file.name,
+            mimeType: fileData.mimeType || file.type || 'application/octet-stream',
+            size: fileData.size || file.size,
+          });
         }
       }
+
+      // Optimistically clear UI
+      onCancelReply?.();
+      setContent('');
+      setFiles([]);
+      setUploadProgress({});
+      onTyping(false);
 
       await onSend({
         content: finalContent,
         mentions: parseMentions(text),
         attachments: uploadedAttachments,
       });
-      onCancelReply?.();
-      setContent('');
-      setFiles([]);
-      setUploadProgress({});
-      onTyping(false);
     } catch (error) {
+      // Revert if error
+      setContent(text);
+      setFiles(selectedFiles);
       const message =
         error instanceof Error
           ? error.message
@@ -464,11 +495,10 @@ export default function MessageComposer({
               key={user.id}
               type="button"
               onClick={() => handleMentionSelect(user)}
-              className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm ${
-                index === activeMentionIndex
-                  ? 'bg-[#edf3ff] text-[#1e4fb3]'
-                  : 'text-[#2a313c] hover:bg-[#f6f8fc]'
-              }`}
+              className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm ${index === activeMentionIndex
+                ? 'bg-[#edf3ff] text-[#1e4fb3]'
+                : 'text-[#2a313c] hover:bg-[#f6f8fc]'
+                }`}
             >
               <span className="truncate">{user.name}</span>
               <span className="text-xs text-[#8a90a0]">@{user.mentionKey}</span>

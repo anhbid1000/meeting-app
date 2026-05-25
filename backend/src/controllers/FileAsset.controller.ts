@@ -165,24 +165,124 @@ export const uploadWorkspaceFile = async (req: Request, res: Response, next: Nex
 //   }
 // };
 
-// export const getWorkspaceFile = async (req: Request, res: Response, next: NextFunction) => {
-//   try {
-//     const userId = req.user?.id;
-//     if (!userId) {
-//       throw new AppError('Cần đăng nhập để thực hiện thao tác này', 401, 'AUTH_REQUIRED');
-//     }
+export const getWorkspaceFile = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new AppError('Cần đăng nhập để thực hiện thao tác này', 401, 'AUTH_REQUIRED');
+    }
 
-//     const { fileId } = req.params;
-//     const file = await fileAssetService.getWorkspaceFile(String(fileId), userId, req.user?.role);
+    const { fileId } = req.params;
+    const file = await fileAssetService.getWorkspaceFile(String(fileId), userId, req.user?.role);
 
-//     return res.status(200).json({
-//       success: true,
-//       data: file,
-//     });
-// }  catch (error) {
-//     next(error);
-//   }
-// };
+    return res.status(200).json({
+      success: true,
+      data: file,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getChannelFiles = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new AppError('Cần đăng nhập để thực hiện thao tác này', 401, 'AUTH_REQUIRED');
+    }
+
+    const { channelId } = req.params;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+
+    const result = await fileAssetService.getChannelFiles({
+      userId,
+      channelId: String(channelId),
+      page,
+      limit,
+    });
+
+    return res.status(200).json({
+      success: true,
+      ...result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getChannelMedia = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new AppError('Cần đăng nhập để thực hiện thao tác này', 401, 'AUTH_REQUIRED');
+    }
+
+    const { channelId } = req.params;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+
+    const result = await fileAssetService.getChannelMedia({
+      userId,
+      channelId: String(channelId),
+      page,
+      limit,
+    });
+
+    return res.status(200).json({
+      success: true,
+      ...result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getChannelLinks = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new AppError('Cần đăng nhập để thực hiện thao tác này', 401, 'AUTH_REQUIRED');
+    }
+
+    const { channelId } = req.params;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+
+    const result = await fileAssetService.getChannelLinks({
+      userId,
+      channelId: String(channelId),
+      page,
+      limit,
+    });
+
+    return res.status(200).json({
+      success: true,
+      ...result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const downloadWorkspaceFile = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new AppError('Cần đăng nhập để thực hiện thao tác này', 401, 'AUTH_REQUIRED');
+    }
+
+    const { fileId } = req.params;
+    const downloadUrl = await fileAssetService.getSignedDownloadUrl(String(fileId), userId, req.user?.role);
+
+    return res.status(200).json({
+      success: true,
+      data: { downloadUrl },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 // export const getChannelFiles = async (
 //   req: Request,
@@ -208,25 +308,25 @@ export const uploadWorkspaceFile = async (req: Request, res: Response, next: Nex
 //   }
 // };
 
-// export const deleteWorkspaceFile = async (req: Request, res: Response, next: NextFunction) => {
-//   try {
-//     const userId = req.user?.id;
-//     if (!userId) {
-//       throw new AppError('Cần đăng nhập để thực hiện thao tác này', 401, 'AUTH_REQUIRED');
-//     }
+export const deleteWorkspaceFile = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new AppError('Cần đăng nhập để thực hiện thao tác này', 401, 'AUTH_REQUIRED');
+    }
 
-//     const { fileId } = req.params;
-//     const result = await fileAssetService.deleteWorkspaceFile(String(fileId), userId, req.user?.role);
+    const { fileId } = req.params;
+    const result = await fileAssetService.deleteWorkspaceFile(String(fileId), userId, req.user?.role);
 
-//     return res.status(200).json({
-//       success: true,
-//       message: 'Xoá file thành công',
-//       data: result,
-//     });
-//   } catch (error) {
-//     next(error);
-//   }
-// };
+    return res.status(200).json({
+      success: true,
+      message: 'Xoá file thành công',
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 // export const getChannelMedia = async (
 //   req: Request,
 //   res: Response,

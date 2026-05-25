@@ -10,6 +10,7 @@ type SidebarTab = 'members' | 'files' | 'pinned' | 'activity';
 interface RightSidebarProps {
   isOpen: boolean;
   channelId?: string;
+  workspaceId?: string;
   members: Array<{
     _id?: string;
     id?: string;
@@ -30,6 +31,7 @@ interface RightSidebarProps {
 export default function RightSidebar({
   isOpen,
   channelId,
+  workspaceId,
   members,
   messages,
   onlineUsers,
@@ -100,7 +102,9 @@ export default function RightSidebar({
             currentUserId={currentUserId}
           />
         ) : null}
-        {activeTab === 'files' ? <FilesTab channelId={channelId} /> : null}
+        {activeTab === 'files' ? (
+          <FilesTab channelId={channelId} workspaceId={workspaceId} />
+        ) : null}
         {activeTab === 'pinned' ? <PinnedTab channelId={channelId} /> : null}
         {activeTab === 'activity' ? <ActivityTab messages={messages} /> : null}
       </div>

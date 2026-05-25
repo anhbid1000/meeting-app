@@ -4,7 +4,7 @@ import type { ThreadReplyListResponse } from '@/types/message';
 const threadReplyApi = {
   async getReplies(messageId: string, page = 1, limit = 100) {
     const response = await api.get<ThreadReplyListResponse>(
-      `/api/v1/messages/${messageId}/replies?page=${page}&limit=${limit}`
+      `/messages/${messageId}/replies?page=${page}&limit=${limit}`
     );
     return response.data;
   },
@@ -22,19 +22,19 @@ const threadReplyApi = {
     }
   ) {
     const response = await api.post(
-      `/api/v1/messages/${messageId}/replies`,
+      `/messages/${messageId}/replies`,
       payload
     );
     return response.data;
   },
 
   async editReply(replyId: string, payload: { content: string }) {
-    const response = await api.patch(`/api/v1/replies/${replyId}`, payload);
+    const response = await api.patch(`/replies/${replyId}`, payload);
     return response.data;
   },
 
   async deleteReply(replyId: string) {
-    const response = await api.delete(`/api/v1/replies/${replyId}`);
+    const response = await api.delete(`/replies/${replyId}`);
     return response.data;
   },
 };

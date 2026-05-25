@@ -27,22 +27,23 @@ const resolveUploadUrl = (uploadUrl: string, mimeType: string) => {
 };
 
 export const fileApi = {
-  async getUploadSignature(params: {
+  async getUploadSignature(workspaceId: string, params: {
     channelId: string;
     fileName: string;
     mimeType: string;
   }): Promise<UploadSignaturePayload> {
-    const response = await api.post('/api/v1/files/upload', params);
+    const response = await api.post(`/workspaces/${workspaceId}/files/upload`, params);
     return response.data?.data;
   },
 
   async uploadFileToCloudinary(
+    workspaceId: string,
     channelId: string,
     file: File,
     onProgress?: UploadProgressCallback
   ) {
     const mimeType = file.type || 'application/octet-stream';
-    const signature = await this.getUploadSignature({
+    const signature = await this.getUploadSignature(workspaceId, {
       channelId,
       fileName: file.name,
       mimeType,
@@ -82,6 +83,7 @@ export const fileApi = {
   },
 
   async getChannelFiles(
+    workspaceId: string,
     channelId: string,
     query?: { page?: number; limit?: number }
   ): Promise<PaginatedResponse<FileAssetItem>> {
@@ -91,12 +93,13 @@ export const fileApi = {
 
     const suffix = params.toString() ? `?${params.toString()}` : '';
     const response = await api.get(
-      `/api/v1/channels/${channelId}/files${suffix}`
+      `/workspaces/${workspaceId}/files/channel/${channelId}/all${suffix}`
     );
     return response.data;
   },
 
   async getChannelMedia(
+    workspaceId: string,
     channelId: string,
     query?: { page?: number; limit?: number }
   ): Promise<PaginatedResponse<FileAssetItem>> {
@@ -106,12 +109,13 @@ export const fileApi = {
 
     const suffix = params.toString() ? `?${params.toString()}` : '';
     const response = await api.get(
-      `/api/v1/channels/${channelId}/media${suffix}`
+      `/workspaces/${workspaceId}/files/channel/${channelId}/media${suffix}`
     );
     return response.data;
   },
 
   async getChannelLinks(
+    workspaceId: string,
     channelId: string,
     query?: { page?: number; limit?: number }
   ): Promise<PaginatedResponse<ChannelLinkItem>> {
@@ -121,7 +125,7 @@ export const fileApi = {
 
     const suffix = params.toString() ? `?${params.toString()}` : '';
     const response = await api.get(
-      `/api/v1/channels/${channelId}/links${suffix}`
+      `/workspaces/${workspaceId}/files/channel/${channelId}/links${suffix}`
     );
     return response.data;
   },

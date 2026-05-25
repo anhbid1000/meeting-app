@@ -1,13 +1,31 @@
-import { Response, NextFunction } from "express";
+
 import { Types } from "mongoose";
-import { AuthenticatedRequest, WorkspaceRole } from "../types";
+import { Request, Response, NextFunction } from "express";
+import { WorkspaceRole } from "../types";
 import Workspace from "../models/Workspace.model";
 import ChannelMember from "../models/ChannelMember.model";
 import Channel from "../models/Channel.model";
 
-// Require workspace membership by resolving workspace from a channelId param
+const getMemberUserId = (member: any): string | null => {
+  if (!member) return null;
+
+  if (member.userId) {
+    return String(member.userId);
+  }
+
+  if (member._id) {
+    return String(member._id);
+  }
+
+  return String(member);
+};
+
+const isWorkspaceMember = (members: any[], userId: string) => {
+  return members.some((member: any) => getMemberUserId(member) === userId);
+};
+
 export const requireWorkspaceMemberByChannel = async (
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
@@ -18,6 +36,7 @@ export const requireWorkspaceMemberByChannel = async (
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
+
     if (!channelId) {
       return res.status(400).json({ message: "channelId is required" });
     }
@@ -29,6 +48,7 @@ export const requireWorkspaceMemberByChannel = async (
     const channel = await Channel.findById(channelId)
       .select("workspaceId")
       .lean();
+
     if (!channel) {
       return res.status(404).json({ message: "Channel not found" });
     }
@@ -36,20 +56,20 @@ export const requireWorkspaceMemberByChannel = async (
     const workspace = await Workspace.findById(channel.workspaceId)
       .select("_id ownerId members")
       .lean();
+
     if (!workspace) {
       return res.status(404).json({ message: "Workspace not found" });
     }
 
-    const resolvedWorkspaceId = workspace._id.toString();
+    const resolvedWorkspaceId = String(workspace._id);
 
-    // attach resolved workspace id for downstream handlers
     req.params.workspaceId = resolvedWorkspaceId;
-    req.query.workspaceId = resolvedWorkspaceId;
+    (req.query as any).workspaceId = resolvedWorkspaceId;
 
-    const isOwner = workspace.ownerId.toString() === userId;
-    const isMember =
-      Array.isArray(workspace.members) &&
-      workspace.members.some((m: any) => m.toString() === userId);
+    const members = Array.isArray(workspace.members) ? workspace.members : [];
+
+    const isOwner = String(workspace.ownerId) === userId;
+    const isMember = isWorkspaceMember(members, userId);
 
     if (!isOwner && !isMember) {
       return res
@@ -59,23 +79,17 @@ export const requireWorkspaceMemberByChannel = async (
 
     req.workspaceMember = {
       workspaceId: resolvedWorkspaceId,
-      role: isOwner ? "OWNER" : "MEMBER",
+      role: isOwner ? "owner" : "member",
     };
 
-    next();
+    return next();
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
-/**
- * Check user is member of workspace.
- * Role inference for current schema:
- * - ownerId === userId -> OWNER
- * - otherwise if in members[] -> MEMBER
- */
 export const requireWorkspaceMember = async (
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
@@ -87,6 +101,7 @@ export const requireWorkspaceMember = async (
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
+
     if (!workspaceId) {
       return res.status(400).json({ message: "workspaceId is required" });
     }
@@ -98,19 +113,20 @@ export const requireWorkspaceMember = async (
     )
       .select("_id ownerId members")
       .lean();
+
     if (!workspace) {
       return res.status(404).json({ message: "Workspace not found" });
     }
 
-    const resolvedWorkspaceId = workspace._id.toString();
+    const resolvedWorkspaceId = String(workspace._id);
 
     req.params.workspaceId = resolvedWorkspaceId;
-    req.query.workspaceId = resolvedWorkspaceId;
+    (req.query as any).workspaceId = resolvedWorkspaceId;
 
-    const isOwner = workspace.ownerId.toString() === userId;
-    const isMember = workspace.members.some(
-      (m: any) => m.toString() === userId,
-    );
+    const members = Array.isArray(workspace.members) ? workspace.members : [];
+
+    const isOwner = String(workspace.ownerId) === userId;
+    const isMember = isWorkspaceMember(members, userId);
 
     if (!isOwner && !isMember) {
       return res
@@ -120,23 +136,22 @@ export const requireWorkspaceMember = async (
 
     req.workspaceMember = {
       workspaceId: resolvedWorkspaceId,
-      role: isOwner ? "OWNER" : "MEMBER",
+      role: isOwner ? "owner" : "member",
     };
 
-    next();
+    return next();
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
 export const requireWorkspaceRole = (...roles: WorkspaceRole[]) => {
   return async (
-    req: AuthenticatedRequest,
+    req: Request,
     res: Response,
     next: NextFunction,
   ) => {
     try {
-      // Ensure workspace context available.
       if (!req.workspaceMember) {
         await new Promise<void>((resolve, reject) => {
           requireWorkspaceMember(req, res, (err?: any) =>
@@ -146,21 +161,22 @@ export const requireWorkspaceRole = (...roles: WorkspaceRole[]) => {
       }
 
       const currentRole = req.workspaceMember?.role;
+
       if (!currentRole || !roles.includes(currentRole)) {
         return res.status(403).json({
           message: `Forbidden: required role ${roles.join(" or ")}`,
         });
       }
 
-      next();
+      return next();
     } catch (error) {
-      next(error);
+      return next(error);
     }
   };
 };
 
 export const requireChannelMember = async (
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
@@ -171,11 +187,15 @@ export const requireChannelMember = async (
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
+
     if (!channelId) {
       return res.status(400).json({ message: "channelId is required" });
     }
 
-    // Prefer ChannelMember collection
+    if (!Types.ObjectId.isValid(channelId)) {
+      return res.status(400).json({ message: "Invalid channelId" });
+    }
+
     const channelMember = await ChannelMember.findOne({ channelId, userId })
       .select("role channelId")
       .lean();
@@ -185,16 +205,19 @@ export const requireChannelMember = async (
         channelId,
         role: channelMember.role,
       };
+
       return next();
     }
 
-    // Fallback to Channel.members[] for backward compatibility
     const channel = await Channel.findById(channelId).select("members").lean();
+
     if (!channel) {
       return res.status(404).json({ message: "Channel not found" });
     }
 
-    const isMember = channel.members.some((m: any) => m.toString() === userId);
+    const members = Array.isArray(channel.members) ? channel.members : [];
+    const isMember = isWorkspaceMember(members, userId);
+
     if (!isMember) {
       return res
         .status(403)
@@ -206,19 +229,14 @@ export const requireChannelMember = async (
       role: "member",
     };
 
-    next();
+    return next();
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
-/**
- * Favorite permission:
- * - public channel: workspace member is enough
- * - private channel: must be channel member
- */
 export const requireFavoriteAccess = async (
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
@@ -229,13 +247,16 @@ export const requireFavoriteAccess = async (
       return res.status(400).json({ message: "channelId is required" });
     }
 
+    if (!Types.ObjectId.isValid(channelId)) {
+      return res.status(400).json({ message: "Invalid channelId" });
+    }
+
     const channel = await Channel.findById(channelId).select("type").lean();
 
     if (!channel) {
       return res.status(404).json({ message: "Channel not found" });
     }
 
-    // Always require workspace membership first.
     await new Promise<void>((resolve, reject) => {
       requireWorkspaceMemberByChannel(req, res, (err?: any) =>
         err ? reject(err) : resolve(),
@@ -250,8 +271,8 @@ export const requireFavoriteAccess = async (
       });
     }
 
-    next();
+    return next();
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };

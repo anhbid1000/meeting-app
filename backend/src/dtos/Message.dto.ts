@@ -5,6 +5,7 @@ const MessageAttachmentDTO = z.object({
   name: z.string(),
   mimeType: z.string(),
   size: z.number(),
+  fileId: z.string().optional(),
 });
 
 export const CreateMessageDTO = z

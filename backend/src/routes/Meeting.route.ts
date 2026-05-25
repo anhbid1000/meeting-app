@@ -7,4 +7,5 @@ const router = Router({ mergeParams: true });
 // Mounted at /workspaces/:workspaceId/channels/:channelId/meetings
 router.post("/", auth, meetingController.createMeeting);
 
+
 export default router;

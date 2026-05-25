@@ -7,6 +7,7 @@ export interface IMessageAttachment {
   name: string;
   mimeType: string;
   size: number;
+  fileId?: string;
 }
 
 export interface IMessage extends Document {
@@ -29,10 +30,11 @@ export interface IMessage extends Document {
 
 const messageAttachmentSchema = new Schema<IMessageAttachment>(
   {
+    fileId: { type: String },
     url: { type: String, required: true },
     name: { type: String, required: true, trim: true },
     mimeType: { type: String, required: true, trim: true },
-    size: { type: Number, required: true }
+    size: { type: Number, required: true },
   },
   { _id: false }
 );

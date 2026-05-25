@@ -40,6 +40,7 @@ type ChannelItem = {
 export default function DashboardPage() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+  const setUser = useAuthStore((state) => state.setUser);
   const firstName = user?.name?.trim().split(/\s+/)[0] || "bạn";
 
   const [meetings, setMeetings] = useState<MeetingItem[]>([]);
@@ -64,6 +65,37 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
+    const maybeCheckExpiryAndDowngrade = async () => {
+      if (!user) return;
+
+      const plan = String(user.subscriptionPlan || user.plan || 'free').toLowerCase();
+      if (plan !== 'pro' || !user.subscriptionExpireTime) return;
+
+      const expireAt = new Date(user.subscriptionExpireTime).getTime();
+      if (Number.isNaN(expireAt)) return;
+
+      const remainingMs = expireAt - Date.now();
+      const twentyMinutesMs = 20 * 60 * 1000;
+
+      // Chỉ check khi còn dưới 20 phút theo yêu cầu
+      if (remainingMs > twentyMinutesMs) return;
+
+      try {
+        const res = await api.post('/users/subscription/check-expiry');
+        const payload = res.data?.data;
+        if (payload?.downgraded) {
+          setUser({
+            ...user,
+            plan: 'free',
+            subscriptionPlan: 'free',
+            subscriptionExpireTime: undefined,
+          });
+        }
+      } catch (err) {
+        console.error('Không thể kiểm tra hết hạn gói Pro:', err);
+      }
+    };
+
     const fetchDashboardData = async () => {
       try {
         setIsLoading(true);
@@ -131,8 +163,9 @@ export default function DashboardPage() {
       }
     };
 
+    void maybeCheckExpiryAndDowngrade();
     fetchDashboardData();
-  }, [user]);
+  }, [user, setUser]);
 
   const todayStr = new Date().toLocaleDateString("vi-VN", {
     weekday: "long",

@@ -38,6 +38,18 @@ export default function Sidebar() {
   const { user, clearAuth } = useAuthStore();
   const socket = useSocketStore((state) => state.socket);
 
+  // Create meeting modal states
+  const [isCreateMeetingModalOpen, setIsCreateMeetingModalOpen] = useState(false);
+  const [createMeetingModalVisible, setCreateMeetingModalVisible] = useState(false);
+  const [workspaces, setWorkspaces] = useState<Array<{ _id: string; name: string }>>([]);
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(null);
+  const [channels, setChannels] = useState<Array<{ _id: string; name: string }>>([]);
+  const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
+  const [meetingTitle, setMeetingTitle] = useState('');
+  const [meetingDescription, setMeetingDescription] = useState('');
+  const [isCreatingMeeting, setIsCreatingMeeting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
 
@@ -130,6 +142,98 @@ export default function Sidebar() {
     setIsNotificationOpen(false);
   };
 
+  const openCreateMeetingModal = () => {
+    setIsCreateMeetingModalOpen(true);
+    setTimeout(() => setCreateMeetingModalVisible(true), 10);
+    setError(null);
+  };
+
+  const closeCreateMeetingModal = () => {
+    setCreateMeetingModalVisible(false);
+    setTimeout(() => {
+      setIsCreateMeetingModalOpen(false);
+      setSelectedWorkspaceId(null);
+      setSelectedChannelId(null);
+      setMeetingTitle('');
+      setMeetingDescription('');
+    }, 200);
+    setIsCreateMeetingModalOpen(false);
+  };
+
+  // Fetch workspaces when user is available
+  useEffect(() => {
+    if (user) {
+      fetchWorkspaces();
+    }
+  }, [user]);
+
+  const fetchWorkspaces = async () => {
+    try {
+      const res = await api.get('/workspaces/me');
+      // Assuming response format: { success: true, data: [ { _id, name, ... } ] }
+      setWorkspaces(res.data?.data || []);
+    } catch (err) {
+      console.error('Failed to fetch workspaces', err);
+      setWorkspaces([]);
+    }
+  };
+
+  // Fetch channels when workspace changes
+  useEffect(() => {
+    if (selectedWorkspaceId) {
+      fetchChannels(selectedWorkspaceId);
+    } else {
+      setChannels([]);
+    }
+  }, [selectedWorkspaceId]);
+
+  const fetchChannels = async (workspaceId: string) => {
+    try {
+      const res = await api.get(`/workspaces/${workspaceId}/channels`);
+      setChannels(res.data?.data || []);
+    } catch (err) {
+      console.error('Failed to fetch channels for workspace', err);
+      setChannels([]);
+    }
+  };
+
+  const handleCreateMeeting = async () => {
+    if (!meetingTitle.trim()) {
+      setError('Tiêu đề cuộc họp là bắt buộc');
+      return;
+    }
+    if (!selectedWorkspaceId || !selectedChannelId) {
+      setError('Vui lòng chọn workspace và kênh');
+      return;
+    }
+
+    setIsCreatingMeeting(true);
+    setError(null);
+    try {
+      const res = await api.post(
+        `/workspaces/${selectedWorkspaceId}/channels/${selectedChannelId}/meetings`,
+        { title: meetingTitle.trim(), description: meetingDescription.trim() }
+      );
+      const meeting = res.data?.data;
+      if (meeting && meeting._id) {
+        // Close modal and navigate to the meeting lobby
+        closeCreateMeetingModal();
+        router.push(`/meetings?meetingId=${meeting._id}&workspaceId=${selectedWorkspaceId}&channelId=${selectedChannelId}`);
+      } else {
+        setError('Không thể tạo cuộc họp');
+      }
+    } catch (err) {
+      console.error('Create meeting failed', err);
+      const message =
+        typeof (err as { response?: { data?: { message?: string } } })?.response?.data?.message === 'string'
+          ? (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+          : undefined;
+      setError(message || 'Tạo cuộc họp thất bại');
+    } finally {
+      setIsCreatingMeeting(false);
+    }
+  };
+
   const handleMarkAllRead = async () => {
     await notificationApi.markAllAsRead();
     void refetchUnreadCount();
@@ -199,18 +303,27 @@ export default function Sidebar() {
               {user?.email || 'example@vimeet.com'}
             </p>
 
-            <div className="flex items-center gap-2 mt-0.5">
-              <p className="font-label-sm text-label-sm text-primary">
-                {currentPlan}
-              </p>
+            <div className="flex flex-col gap-1 mt-0.5">
+              <div className="flex items-center gap-2">
+                <p className="font-label-sm text-label-sm text-primary">
+                  {currentPlan}
+                </p>
 
-              {currentPlan === 'Free Plan' && (
-                <button
-                  type="button"
-                  className="text-[10px] font-bold bg-tertiary text-on-tertiary px-1.5 py-0.5 rounded-full hover:bg-tertiary/90 transition-colors"
-                >
-                  Nâng cấp Pro
-                </button>
+                {currentPlan === 'Free Plan' && (
+                  <button
+                    type="button"
+                    onClick={() => router.push('/subscription')}
+                    className="cursor-pointer text-[10px] font-bold bg-tertiary text-on-tertiary px-1.5 py-0.5 rounded-full hover:bg-tertiary/90 transition-colors"
+                  >
+                    Nâng cấp Pro
+                  </button>
+                )}
+              </div>
+
+              {currentPlan === 'Pro Plan' && user?.subscriptionExpireTime && (
+                <p className="font-label-sm text-label-sm text-on-surface-variant">
+                  Hết hạn: {new Date(user.subscriptionExpireTime).toLocaleString('vi-VN')}
+                </p>
               )}
             </div>
           </div>
@@ -219,7 +332,8 @@ export default function Sidebar() {
         {/* CTA Button */}
         <button
           type="button"
-          className="w-full bg-primary hover:bg-primary/90 text-on-primary font-label-md text-label-md py-sm px-md rounded-lg mb-lg flex items-center justify-center gap-sm transition-colors shadow-sm"
+          onClick={openCreateMeetingModal}
+          className="w-full bg-primary hover:bg-primary/90 text-on-primary font-label-md text-label-md py-sm px-md rounded-lg mb-lg flex items-center justify-center gap-sm transition-colors shadow-sm cursor-pointer"
         >
           <span
             className="material-symbols-outlined"
@@ -227,7 +341,7 @@ export default function Sidebar() {
           >
             add
           </span>
-          New Collaboration
+          Cuộc họp mới
         </button>
 
         {/* Notifications */}
@@ -281,11 +395,10 @@ export default function Sidebar() {
                   notifications.map((item) => (
                     <div
                       key={item._id}
-                      className={`group flex gap-3 rounded-xl p-3 transition-colors ${
-                        item.isRead
-                          ? 'bg-transparent hover:bg-surface-container'
-                          : 'bg-primary/5 hover:bg-primary/10'
-                      }`}
+                      className={`group flex gap-3 rounded-xl p-3 transition-colors ${item.isRead
+                        ? 'bg-transparent hover:bg-surface-container'
+                        : 'bg-primary/5 hover:bg-primary/10'
+                        }`}
                     >
                       <button
                         type="button"
@@ -338,11 +451,10 @@ export default function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-md px-md py-sm rounded-lg font-label-md text-label-md transition-all duration-200 ease-in-out ${
-                  isActive
-                    ? 'bg-secondary-container dark:bg-on-secondary-fixed-variant text-on-secondary-container dark:text-secondary-fixed border-l-4 border-primary'
-                    : 'text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high dark:hover:bg-surface-container'
-                }`}
+                className={`flex items-center gap-md px-md py-sm rounded-lg font-label-md text-label-md transition-all duration-200 ease-in-out ${isActive
+                  ? 'bg-secondary-container dark:bg-on-secondary-fixed-variant text-on-secondary-container dark:text-secondary-fixed border-l-4 border-primary'
+                  : 'text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high dark:hover:bg-surface-container'
+                  }`}
               >
                 <span
                   className="material-symbols-outlined"
@@ -370,11 +482,10 @@ export default function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-md px-md py-sm rounded-lg font-label-md text-label-md transition-all duration-200 ease-in-out ${
-                  isActive
-                    ? 'bg-secondary-container text-on-secondary-container'
-                    : 'text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high dark:hover:bg-surface-container'
-                }`}
+                className={`flex items-center gap-md px-md py-sm rounded-lg font-label-md text-label-md transition-all duration-200 ease-in-out ${isActive
+                  ? 'bg-secondary-container text-on-secondary-container'
+                  : 'text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high dark:hover:bg-surface-container'
+                  }`}
               >
                 <span className="material-symbols-outlined">{item.icon}</span>
                 {item.label}
@@ -392,6 +503,127 @@ export default function Sidebar() {
           </button>
         </div>
       </nav>
+
+      {isCreateMeetingModalOpen ? (
+        <div
+          className={`fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs transition-opacity duration-200 ${createMeetingModalVisible ? 'opacity-100' : 'opacity-0'}`}
+          onClick={closeCreateMeetingModal}
+        >
+          <div
+            className={`w-full max-w-md bg-surface-container-lowest rounded-3xl border border-outline-variant p-6 shadow-2xl flex flex-col gap-6 transition-all duration-200 ${createMeetingModalVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}
+            style={{ width: '100%', maxWidth: '440px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-semibold text-primary uppercase tracking-wider">New Meeting</p>
+                <h3 className="text-xl font-bold text-on-surface mt-1">Tạo cuộc họp mới</h3>
+              </div>
+              <button
+                type="button"
+                onClick={closeCreateMeetingModal}
+                className="cursor-pointer w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-variant text-on-surface-variant transition-colors"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+
+            {error ? (
+              <div className="rounded-xl border border-error/20 bg-error-container/10 px-4 py-3 text-sm text-error">
+                {error}
+              </div>
+            ) : (
+              <p className="text-sm text-on-surface-variant bg-surface-container-low p-3 rounded-xl border border-outline-variant/50">
+                Chọn workspace và kênh để bắt đầu cuộc họp ngay lập tức với các thành viên.
+              </p>
+            )}
+
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Workspace</label>
+                <div className="relative">
+                  <select
+                    className="w-full cursor-pointer appearance-none rounded-xl border border-outline-variant/30 bg-surface-container-highest px-4 py-2.5 text-sm text-on-surface focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                    value={selectedWorkspaceId || ''}
+                    onChange={(e) => {
+                      const value = e.target.value || null;
+                      setSelectedWorkspaceId(value);
+                      setSelectedChannelId(null);
+                    }}
+                  >
+                    <option value="">Chọn workspace</option>
+                    {workspaces.map((w) => (
+                      <option key={w._id} value={w._id}>
+                        {w.name}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">arrow_drop_down</span>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Kênh</label>
+                <div className="relative">
+                  <select
+                    className="w-full cursor-pointer appearance-none rounded-xl border border-outline-variant/30 bg-surface-container-highest px-4 py-2.5 text-sm text-on-surface focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all disabled:opacity-50"
+                    value={selectedChannelId || ''}
+                    onChange={(e) => setSelectedChannelId(e.target.value || null)}
+                    disabled={!selectedWorkspaceId}
+                  >
+                    <option value="">Chọn kênh</option>
+                    {channels.map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">arrow_drop_down</span>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Tiêu đề</label>
+                <input
+                  className="w-full rounded-xl border border-outline-variant/30 bg-surface-container-highest px-4 py-2.5 text-sm text-on-surface focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                  value={meetingTitle}
+                  onChange={(e) => setMeetingTitle(e.target.value)}
+                  placeholder="Ví dụ: Thảo luận dự án A"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Mô tả (tuỳ chọn)</label>
+                <textarea
+                  className="min-h-[80px] w-full rounded-xl border border-outline-variant/30 bg-surface-container-highest px-4 py-2.5 text-sm text-on-surface focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"
+                  value={meetingDescription}
+                  onChange={(e) => setMeetingDescription(e.target.value)}
+                  placeholder="Mục tiêu cuộc họp..."
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={closeCreateMeetingModal}
+                className="flex-1 cursor-pointer rounded-xl border border-outline-variant px-4 py-2.5 text-sm font-bold text-on-surface hover:bg-surface-container-high transition-all active:scale-95"
+                disabled={isCreatingMeeting}
+              >
+                Huỷ
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleCreateMeeting()}
+                className="flex-[2] cursor-pointer rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-on-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-50"
+                disabled={isCreatingMeeting}
+              >
+                {isCreatingMeeting ? 'Đang khởi tạo...' : 'Bắt đầu ngay'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {showLogoutConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 px-4">

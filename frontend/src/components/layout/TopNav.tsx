@@ -75,10 +75,11 @@ export default function TopNav() {
             </Link>
 
             <button
-              onClick={authLogout}
+              onClick={logout}
               className="font-label-md text-label-md text-secondary hover:text-error transition-colors hidden md:block"
+              type="button"
             >
-              Dang xuat
+              Đăng xuất
             </button>
           </>
         ) : (

@@ -8,8 +8,8 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
     <AuthGuard>
+      <PresenceBootstrap />
       <div className="flex min-h-screen bg-background">
         <Sidebar />
         <main className="flex-1 ml-0 md:ml-sidebar_width p-md md:p-lg lg:p-xl">
@@ -17,14 +17,5 @@ export default function DashboardLayout({
         </main>
       </div>
     </AuthGuard>
-    <div className="flex min-h-screen bg-background">
-      <PresenceBootstrap />
-      <Sidebar />
-      <main className="flex-1 ml-0 md:ml-sidebar_width p-md md:p-lg lg:p-xl">
-        {children}
-      </main>
-    </div>
-    </>
   );
-  
 }

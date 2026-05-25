@@ -6,18 +6,13 @@ import { applyDevAuthFromUrlOrFallback } from '@/lib/devAuth';
 import { useSocket } from '@/hooks/useSocket';
 
 export default function PresenceBootstrap() {
-  const storeToken = useAuthStore((state) => state.token);
+  const storeToken = useAuthStore((state) => state.accessToken);
 
   useEffect(() => {
     applyDevAuthFromUrlOrFallback();
   }, []);
 
-  const token = useMemo(() => {
-    if (typeof window === 'undefined') return null;
-    const persisted = localStorage.getItem('accessToken');
-    if (persisted) return persisted;
-    return storeToken;
-  }, [storeToken]);
+  const token = storeToken;
 
   useSocket(token);
 

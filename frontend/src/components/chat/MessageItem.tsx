@@ -1,5 +1,8 @@
 import React, { useMemo, useState } from 'react';
+import toast from 'react-hot-toast';
+import api from '@/services/api';
 import type { ChatMessage } from '@/types/message';
+
 
 interface MessageItemProps {
   message: ChatMessage;
@@ -26,9 +29,6 @@ interface MessageItemProps {
 
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '🎉', '🔥', '😮'];
 const FILE_ONLY_SENTINEL_CONTENT = '[attachment]';
-const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
-
 const IMAGE_MIME_PREFIX = 'image/';
 const VIDEO_MIME_PREFIX = 'video/';
 const PDF_MIME = 'application/pdf';
@@ -70,37 +70,6 @@ const getFileCategory = (mimeType?: string) => {
   if (normalizedMime === PDF_MIME) return 'pdf';
   if (OFFICE_MIME_PATTERNS.includes(normalizedMime)) return 'office';
   return 'file';
-};
-
-const buildOpenUrl = (url: string, mimeType?: string) => {
-  const normalizedUrl = normalizeCloudinaryFileUrl(url, mimeType);
-  const category = getFileCategory(mimeType);
-
-  if (category === 'image' || category === 'video') {
-    return normalizedUrl;
-  }
-
-  const encoded = encodeURIComponent(normalizedUrl);
-  if (category === 'pdf') {
-    return `${BACKEND_URL}/api/v1/files/open?url=${encoded}&mimeType=${encodeURIComponent(
-      mimeType || PDF_MIME
-    )}`;
-  }
-
-  if (category === 'office') {
-    return `https://view.officeapps.live.com/op/view.aspx?src=${encoded}`;
-  }
-
-  return normalizedUrl;
-};
-
-const buildDownloadUrl = (url: string, fileName: string, mimeType?: string) => {
-  const normalizedUrl = normalizeCloudinaryFileUrl(url, mimeType);
-  return `${BACKEND_URL}/api/v1/files/download?url=${encodeURIComponent(
-    normalizedUrl
-  )}&fileName=${encodeURIComponent(fileName || 'download')}&mimeType=${encodeURIComponent(
-    mimeType || 'application/octet-stream'
-  )}`;
 };
 
 const formatFileSize = (size: number) => {
@@ -286,15 +255,13 @@ export default function MessageItem({
       className={`group flex ${isOwn ? 'justify-end' : 'justify-start'}`}
     >
       <div
-        className={`relative flex max-w-[95%] items-end gap-2 md:max-w-[86%] ${
-          isOwn ? 'flex-row' : 'flex-row-reverse'
-        }`}
+        className={`relative flex max-w-[95%] items-end gap-2 md:max-w-[86%] ${isOwn ? 'flex-row' : 'flex-row-reverse'
+          }`}
       >
         {!message.isDeleted ? (
           <div
-            className={`flex items-center gap-1 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 ${
-              isOwn ? 'justify-end' : 'justify-start'
-            }`}
+            className={`flex items-center gap-1 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 ${isOwn ? 'justify-end' : 'justify-start'
+              }`}
           >
             <button
               type="button"
@@ -333,9 +300,8 @@ export default function MessageItem({
 
               {showReactionPicker ? (
                 <div
-                  className={`absolute z-20 mt-1 flex items-center gap-1 rounded-xl border border-[#d8dce6] bg-white p-1.5 shadow-[0_10px_24px_rgba(15,23,42,0.16)] ${
-                    isOwn ? 'left-0' : 'right-0'
-                  }`}
+                  className={`absolute z-20 mt-1 flex items-center gap-1 rounded-xl border border-[#d8dce6] bg-white p-1.5 shadow-[0_10px_24px_rgba(15,23,42,0.16)] ${isOwn ? 'left-0' : 'right-0'
+                    }`}
                 >
                   {REACTION_EMOJIS.map((emoji) => {
                     const existing = (message.reactions || []).find(
@@ -356,9 +322,8 @@ export default function MessageItem({
                           onToggleReaction(message._id, emoji, hasReacted);
                           setShowReactionPicker(false);
                         }}
-                        className={`cursor-pointer rounded-lg px-1.5 py-1 text-sm transition-colors ${
-                          hasReacted ? 'bg-[#e8efff]' : 'hover:bg-[#f3f5fb]'
-                        }`}
+                        className={`cursor-pointer rounded-lg px-1.5 py-1 text-sm transition-colors ${hasReacted ? 'bg-[#e8efff]' : 'hover:bg-[#f3f5fb]'
+                          }`}
                       >
                         {emoji}
                       </button>
@@ -384,9 +349,8 @@ export default function MessageItem({
 
               {showMoreMenu ? (
                 <div
-                  className={`absolute z-20 mt-1 w-36 rounded-xl border border-[#d8dce6] bg-white p-1 shadow-[0_10px_24px_rgba(15,23,42,0.16)] ${
-                    isOwn ? 'left-0' : 'right-0'
-                  }`}
+                  className={`absolute z-20 mt-1 w-36 rounded-xl border border-[#d8dce6] bg-white p-1 shadow-[0_10px_24px_rgba(15,23,42,0.16)] ${isOwn ? 'left-0' : 'right-0'
+                    }`}
                 >
                   {isOwn ? (
                     <button
@@ -444,11 +408,10 @@ export default function MessageItem({
         ) : null}
 
         <div
-          className={`relative rounded-2xl px-3 py-2.5 ${
-            isOwn && !isFileOnlyMessage
+          className={`relative rounded-2xl px-3 py-2.5 ${isOwn && !isFileOnlyMessage
               ? 'bg-[#2f63d3] text-white shadow-[0_6px_14px_rgba(47,99,211,0.24)]'
               : 'border border-[#e2e6ef] bg-white text-[#21262a] shadow-[0_2px_6px_rgba(15,23,42,0.06)]'
-          }`}
+            }`}
         >
           {message.isPinned ? (
             <span
@@ -471,11 +434,10 @@ export default function MessageItem({
                 );
                 target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
               }}
-              className={`mb-2 rounded-lg border-l-2 px-2 py-1 text-xs ${
-                isOwn
+              className={`mb-2 rounded-lg border-l-2 px-2 py-1 text-xs ${isOwn
                   ? 'border-white/70 bg-white/20 text-white/90'
                   : 'border-[#9ab4ef] bg-[#edf3ff] text-[#37518c]'
-              }`}
+                }`}
             >
               Replying to {repliedAuthor}: {repliedPreviewShort}
             </button>
@@ -484,15 +446,14 @@ export default function MessageItem({
           <div className="flex items-start justify-between gap-3">
             {shouldShowMessageText ? (
               <p
-                className={`whitespace-pre-wrap break-words text-[15px] leading-relaxed ${
-                  message.isDeleted
+                className={`whitespace-pre-wrap break-words text-[15px] leading-relaxed ${message.isDeleted
                     ? isOwn
                       ? 'italic text-white/80'
                       : 'italic text-[#8a90a0]'
                     : isOwn
                       ? 'text-white'
                       : 'text-[#21262a]'
-                }`}
+                  }`}
               >
                 {label}
               </p>
@@ -506,114 +467,93 @@ export default function MessageItem({
 
           {message.attachments && message.attachments.length > 0 ? (
             <div className="mt-2 space-y-2">
-              {message.attachments.map((file) => (
-                <div
-                  key={`${message._id}-${file.url}`}
-                  className={`overflow-hidden rounded-[18px] border text-xs ${
-                    isOwn && !isFileOnlyMessage
-                      ? 'border-white/25 bg-white/10 text-white'
-                      : 'border-[#d7dae6] bg-white text-[#1f2937] shadow-[0_8px_24px_rgba(15,23,42,0.08)]'
-                  }`}
-                >
-                  <a
-                    href={buildOpenUrl(file.url, file.mimeType)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={`flex h-28 items-center justify-center ${getPreviewBackground(
-                      file.mimeType,
-                      isOwn && !isFileOnlyMessage
-                    )}`}
-                    title="Mở file"
-                  >
-                    {getFileCategory(file.mimeType) === 'image' ? (
-                      <img
-                        src={normalizeCloudinaryFileUrl(
-                          file.url,
-                          file.mimeType
-                        )}
-                        alt={file.name}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <span
-                        className={`material-symbols-outlined text-[34px] ${
-                          isOwn && !isFileOnlyMessage
-                            ? 'text-white/85'
-                            : 'text-[#4e6688]'
-                        }`}
-                      >
-                        {getFileIcon(file.mimeType)}
-                      </span>
-                    )}
-                  </a>
+              {message.attachments.map((file) => {
+                const fileUrl = normalizeCloudinaryFileUrl(file.url, file.mimeType);
+                const fileCategory = getFileCategory(file.mimeType);
+                const isImage = fileCategory === 'image';
+                const attachmentTitle = file.name || 'Tập tin đính kèm';
+                const openAttachment = () => {
+                  window.open(fileUrl, '_blank', 'noopener,noreferrer');
+                };
 
-                  <div className="flex items-center justify-between gap-3 px-4 py-3">
-                    <a
-                      href={buildOpenUrl(file.url, file.mimeType)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="min-w-0 flex-1"
-                      title="Mở file"
-                    >
-                      <div className="flex items-center gap-3">
+                return (
+                  <div
+                    key={`${message._id}-${file.url}`}
+                    className={`w-full max-w-[360px] overflow-hidden rounded-2xl border text-xs ${isOwn && !isFileOnlyMessage
+                        ? 'border-white/25 bg-white/10 text-white'
+                        : 'border-[#d7dae6] bg-white text-[#1f2937] shadow-[0_8px_24px_rgba(15,23,42,0.08)]'
+                      }`}
+                  >
+                    {isImage ? (
+                      <button
+                        type="button"
+                        onClick={openAttachment}
+                        className="block h-44 w-full overflow-hidden bg-[#eef4ff] text-left"
+                        title="Xem tập tin"
+                      >
+                        <img
+                          src={fileUrl}
+                          alt={attachmentTitle}
+                          className="h-full w-full object-cover"
+                        />
+                      </button>
+                    ) : null}
+
+                    <div className="flex items-center gap-3 px-3 py-3">
+                      <button
+                        type="button"
+                        onClick={openAttachment}
+                        className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                        title="Xem tập tin"
+                      >
                         <span
-                          className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
-                            isOwn && !isFileOnlyMessage
+                          className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${isOwn && !isFileOnlyMessage
                               ? 'bg-white/15 text-white'
                               : 'bg-[#ffe3dd] text-[#c94938]'
-                          }`}
+                            }`}
                         >
                           <span className="material-symbols-outlined text-[22px]">
                             {getFileIcon(file.mimeType)}
                           </span>
                         </span>
 
-                        <div className="min-w-0">
-                          <p
-                            className={`truncate text-[15px] font-semibold ${
-                              isOwn && !isFileOnlyMessage
+                        <span className="min-w-0 flex-1">
+                          <span
+                            className={`block truncate text-[14px] font-semibold leading-5 ${isOwn && !isFileOnlyMessage
                                 ? 'text-white'
                                 : 'text-[#172033]'
-                            }`}
+                              }`}
                           >
-                            {file.name}
-                          </p>
-                          <p
-                            className={`text-sm ${
-                              isOwn && !isFileOnlyMessage
+                            {attachmentTitle}
+                          </span>
+                          <span
+                            className={`mt-0.5 block truncate text-xs ${isOwn && !isFileOnlyMessage
                                 ? 'text-white/80'
                                 : 'text-[#5f6b7e]'
-                            }`}
+                              }`}
                           >
-                            {formatFileSize(file.size)} •{' '}
-                            {getFileTypeLabel(file.mimeType)}
-                          </p>
-                        </div>
-                      </div>
-                    </a>
+                            {formatFileSize(file.size)} • {getFileTypeLabel(file.mimeType)}
+                          </span>
+                        </span>
+                      </button>
 
-                    <a
-                      href={buildDownloadUrl(
-                        file.url,
-                        file.name,
-                        file.mimeType
-                      )}
-                      target="_blank"
-                      rel="noreferrer"
-                      className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border ${
-                        isOwn && !isFileOnlyMessage
-                          ? 'border-white/20 text-white hover:bg-white/15'
-                          : 'border-[#d6ddea] text-[#44628f] hover:bg-[#eef3fb]'
-                      }`}
-                      title="Tải về"
-                    >
-                      <span className="material-symbols-outlined text-[20px]">
-                        download
-                      </span>
-                    </a>
+                      <button
+                        type="button"
+                        onClick={openAttachment}
+                        className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border ${isOwn && !isFileOnlyMessage
+                            ? 'border-white/20 text-white hover:bg-white/15'
+                            : 'border-[#d6ddea] text-[#44628f] hover:bg-[#eef3fb]'
+                          }`}
+                        title="Xem tập tin"
+                      >
+                        <span className="material-symbols-outlined text-[19px]">
+                          visibility
+                        </span>
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : null}
 
@@ -648,15 +588,14 @@ export default function MessageItem({
                       key={`${message._id}-${reaction.emoji}`}
                       type="button"
                       onClick={() => onOpenReactionDetails(message._id)}
-                      className={`cursor-pointer inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors ${
-                        hasReacted
+                      className={`cursor-pointer inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors ${hasReacted
                           ? isOwn
                             ? 'border-white/70 bg-white/25 text-white'
                             : 'border-[#a8bdf1] bg-[#edf3ff] text-[#244a97]'
                           : isOwn
                             ? 'border-white/40 bg-white/10 text-white/90 hover:bg-white/20'
                             : 'border-[#d3d8e5] bg-white text-[#586173] hover:bg-[#f5f7fc]'
-                      }`}
+                        }`}
                       title={tooltip}
                     >
                       <span>{reaction.emoji}</span>

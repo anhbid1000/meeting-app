@@ -52,6 +52,12 @@ export const registerMessageBusHandlers = (io: Server) => {
             ? workspace.members
             : [];
 
+          const memberUserIds = workspaceMembers
+            .map((member: any) =>
+              member?.userId?.toString?.() || member?.toString?.() || ""
+            )
+            .filter(Boolean);
+
           const mentionIds = normalizeMentionIds(message?.mentions);
           const payload = {
             channelId,
@@ -66,11 +72,8 @@ export const registerMessageBusHandlers = (io: Server) => {
             mentions: mentionIds,
           };
 
-          workspaceMembers.forEach((memberId: any) => {
-            const userId = memberId?.toString?.();
-            if (userId) {
-              io.to(`user:${userId}`).emit("channel:activity:update", payload);
-            }
+          memberUserIds.forEach((userId: string) => {
+            io.to(`user:${userId}`).emit("channel:activity:update", payload);
           });
         })
         .catch(() => {

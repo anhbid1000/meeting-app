@@ -34,14 +34,29 @@ function CustomMeetingRoom({ meetingTitle, meetingId, onLeave }: { meetingTitle:
   const [activeTab, setActiveTab] = useState<"chat" | "notes">("notes");
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<{ from: string; text: string; ts: number }[]>([]);
+  const [noteInput, setNoteInput] = useState("");
+  const [noteMessages, setNoteMessages] = useState<{ from: string; text: string; ts: number }[]>([]);
+  const [aiSummary, setAiSummary] = useState("");
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
 
   useEffect(() => {
-    const onData = (payload: Uint8Array, participant?: any) => {
+    const onData = (payload: Uint8Array, participant?: { name?: string; identity?: string }) => {
       try {
         const raw = new TextDecoder().decode(payload);
         const msg = JSON.parse(raw);
         if (msg?.type === "chat") {
           setChatMessages((prev) => [
+            ...prev,
+            {
+              from: participant?.name || participant?.identity || "Người lạ",
+              text: String(msg.text || ""),
+              ts: Date.now(),
+            },
+          ]);
+        }
+
+        if (msg?.type === "note") {
+          setNoteMessages((prev) => [
             ...prev,
             {
               from: participant?.name || participant?.identity || "Người lạ",
@@ -59,23 +74,114 @@ function CustomMeetingRoom({ meetingTitle, meetingId, onLeave }: { meetingTitle:
     };
   }, [room]);
 
+  useEffect(() => {
+    const loadMeetingContext = async () => {
+      try {
+        const res = await api.get(`/meetings/${meetingId}`);
+        const meeting = res.data?.data;
+        const notes = Array.isArray(meeting?.notes) ? meeting.notes : [];
+        const chats = Array.isArray(meeting?.chatLog) ? meeting.chatLog : [];
+
+        setNoteMessages(notes.map((n: { userId?: { name?: string; email?: string } | null; content?: string; timestamp?: string | Date }) => ({
+          from: n?.userId?.name || n?.userId?.email || "Người dùng",
+          text: String(n?.content || ""),
+          ts: n?.timestamp ? new Date(n.timestamp).getTime() : Date.now(),
+        })));
+
+        setChatMessages(chats.map((c: { userId?: { name?: string; email?: string } | null; content?: string; timestamp?: string | Date }) => ({
+          from: c?.userId?.name || c?.userId?.email || "Người dùng",
+          text: String(c?.content || ""),
+          ts: c?.timestamp ? new Date(c.timestamp).getTime() : Date.now(),
+        })));
+
+        setAiSummary(String(meeting?.summary || ""));
+      } catch (error) {
+        console.error("Lỗi tải notes/chat/summary:", error);
+      }
+    };
+
+    void loadMeetingContext();
+  }, [meetingId]);
+
   const sendChat = async () => {
     const text = chatInput.trim();
     if (!text) return;
 
-    setChatMessages((prev) => [
-      ...prev,
-      { from: "Bạn", text, ts: Date.now() },
-    ]);
-    setChatInput("");
-
+    // 1. Gửi realtime qua LiveKit
     const payload = new TextEncoder().encode(JSON.stringify({ type: "chat", text }));
     try {
       room.localParticipant.publishData(payload, { reliable: true });
     } catch (e) {
-      console.error("Lỗi gửi tin nhắn:", e);
+      console.error("Lỗi gửi tin nhắn LiveKit:", e);
+    }
+
+    // 2. Lưu vào DB qua API backend
+    try {
+      await api.post(`/meetings/${meetingId}/chat-log`, {
+        content: text,
+        timestamp: new Date().toISOString()
+      });
+      setChatMessages((prev) => [
+        ...prev,
+        { from: "Bạn", text, ts: Date.now() },
+      ]);
+      setChatInput("");
+    } catch (e) {
+      console.error("Lỗi lưu chat log:", e);
+      // Vẫn show UI dù lưu thất bại (best effort)
+      setChatMessages((prev) => [
+        ...prev,
+        { from: "Bạn", text, ts: Date.now() },
+      ]);
+      setChatInput("");
     }
   };
+
+  const sendNote = async () => {
+    const text = noteInput.trim();
+    if (!text) return;
+
+    const payload = new TextEncoder().encode(JSON.stringify({ type: "note", text }));
+    try {
+      room.localParticipant.publishData(payload, { reliable: true });
+    } catch (e) {
+      console.error("Lỗi gửi note LiveKit:", e);
+    }
+
+    try {
+      await api.post(`/meetings/${meetingId}/notes`, {
+        content: text,
+        timestamp: new Date().toISOString(),
+      });
+      setNoteMessages((prev) => [...prev, { from: "Bạn", text, ts: Date.now() }]);
+      setNoteInput("");
+    } catch (e) {
+      console.error("Lỗi lưu note:", e);
+      setNoteMessages((prev) => [...prev, { from: "Bạn", text, ts: Date.now() }]);
+      setNoteInput("");
+    }
+  };
+
+  const generateSummary = async () => {
+    try {
+      setIsGeneratingSummary(true);
+      const res = await api.post(`/meetings/${meetingId}/summary`);
+      const summary = String(res.data?.data?.summary || "");
+      setAiSummary(summary);
+    } catch (e) {
+      console.error("Lỗi tạo tóm tắt AI:", e);
+      alert("Không thể tạo tóm tắt AI. Kiểm tra cấu hình LLM_API_URL / LLM_API_KEY.");
+    } finally {
+      setIsGeneratingSummary(false);
+    }
+  };
+
+  const screenShareTracks = tracks.filter((t) => t.source === Track.Source.ScreenShare);
+  const hasActiveScreenShare = screenShareTracks.length > 0;
+  const primaryScreenShareTrack = screenShareTracks[0];
+  const secondaryTracks = hasActiveScreenShare
+    ? tracks.filter((t) => !(t.participant.identity === primaryScreenShareTrack.participant.identity && t.source === Track.Source.ScreenShare))
+    : tracks;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-surface-container-low text-on-surface">
@@ -104,38 +210,61 @@ function CustomMeetingRoom({ meetingTitle, meetingId, onLeave }: { meetingTitle:
         <main className="relative z-0 flex flex-1 items-center justify-center bg-[#121212] p-md transition-all duration-300 md:p-lg md:pr-[280px]">
           {/* Ô hiển thị Participant Grid */}
           <div className="flex h-full w-full items-center justify-center">
-            <div className="grid w-full max-w-6xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {tracks.map((trackRef, index) => {
-                const isCamera = trackRef.source === Track.Source.Camera;
-                const isLocal = trackRef.participant.identity === localParticipant.identity;
+            {!hasActiveScreenShare ? (
+              <div className="grid w-full max-w-6xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {tracks.map((trackRef, index) => {
+                  const isLocal = trackRef.participant.identity === localParticipant.identity;
 
-                return (
-                  <div
-                    key={`${trackRef.participant.identity}-${trackRef.source}-${index}`}
-                    className={`relative aspect-video max-h-[240px] overflow-hidden rounded-2xl bg-[#1e1e1e] shadow-xl border-2 ${isLocal ? 'border-primary/50' : 'border-white/5'}`}
-                  >
-                    {/* Luôn render ParticipantTile cho Video */}
-                    <ParticipantTile
-                      trackRef={trackRef}
-                      className="h-full w-full object-cover"
-                    />
-
-                    {/* Overlay tên và mic - đặt ở góc dưới cùng */}
-                    <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-none">
-                      <div className="flex items-center gap-2 rounded-full bg-black/40 backdrop-blur-md px-3 py-1 text-white border border-white/10">
-                        <MaterialSymbol
-                          icon={trackRef.participant.isMicrophoneEnabled ? "mic" : "mic_off"}
-                          className={`!text-[14px] ${trackRef.participant.isMicrophoneEnabled ? 'text-success' : 'text-error'}`}
-                        />
-                        <span className="text-[12px] font-medium truncate max-w-[100px]">
-                          {isLocal ? "Bạn" : trackRef.participant.name || trackRef.participant.identity}
-                        </span>
+                  return (
+                    <div
+                      key={`${trackRef.participant.identity}-${trackRef.source}-${index}`}
+                      className={`relative aspect-video max-h-[240px] overflow-hidden rounded-2xl bg-[#1e1e1e] shadow-xl border-2 ${isLocal ? 'border-primary/50' : 'border-white/5'}`}
+                    >
+                      <ParticipantTile trackRef={trackRef} className="h-full w-full object-cover" />
+                      <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-none">
+                        <div className="flex items-center gap-2 rounded-full bg-black/40 backdrop-blur-md px-3 py-1 text-white border border-white/10">
+                          <MaterialSymbol
+                            icon={trackRef.participant.isMicrophoneEnabled ? "mic" : "mic_off"}
+                            className={`!text-[14px] ${trackRef.participant.isMicrophoneEnabled ? 'text-success' : 'text-error'}`}
+                          />
+                          <span className="text-[12px] font-medium truncate max-w-[100px]">
+                            {isLocal ? "Bạn" : trackRef.participant.name || trackRef.participant.identity}
+                          </span>
+                        </div>
                       </div>
                     </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex h-full w-full gap-4">
+                <div className="relative flex-1 overflow-hidden rounded-2xl border-2 border-primary/40 bg-[#1e1e1e] shadow-2xl">
+                  <ParticipantTile trackRef={primaryScreenShareTrack} className="h-full w-full object-contain bg-black" />
+                  <div className="absolute left-3 top-3 rounded-full bg-black/50 px-3 py-1 text-xs font-semibold text-white">
+                    Đang chia sẻ màn hình
                   </div>
-                );
-              })}
-            </div>
+                </div>
+
+                <div className="w-[220px] shrink-0 overflow-y-auto rounded-2xl border border-white/10 bg-black/25 p-2">
+                  <div className="flex flex-col gap-2">
+                    {secondaryTracks.map((trackRef, index) => {
+                      const isLocal = trackRef.participant.identity === localParticipant.identity;
+                      return (
+                        <div
+                          key={`${trackRef.participant.identity}-${trackRef.source}-mini-${index}`}
+                          className="relative aspect-video overflow-hidden rounded-xl border border-white/10 bg-[#1e1e1e]"
+                        >
+                          <ParticipantTile trackRef={trackRef} className="h-full w-full object-cover" />
+                          <div className="absolute bottom-1 left-1 rounded bg-black/50 px-2 py-0.5 text-[10px] text-white truncate max-w-[90%]">
+                            {isLocal ? 'Bạn' : trackRef.participant.name || trackRef.participant.identity}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </main>
 
@@ -189,24 +318,53 @@ function CustomMeetingRoom({ meetingTitle, meetingId, onLeave }: { meetingTitle:
               </div>
             </div>
           ) : (
-            <>
-              <div className="flex flex-1 flex-col gap-md overflow-y-auto p-md">
-                <div className="flex shrink-0 items-center justify-between">
-                  <div>
-                    <h2 className="text-label-md font-bold text-on-surface">Bản ghi & Ghi chú</h2>
+            <div className="flex flex-1 flex-col overflow-hidden">
+              <div className="flex items-center justify-between border-b border-outline-variant p-sm">
+                <h2 className="text-label-md font-bold text-on-surface">Ghi chú chung</h2>
+                <button
+                  onClick={generateSummary}
+                  disabled={isGeneratingSummary}
+                  className="cursor-pointer rounded-full bg-primary-container px-3 py-1.5 text-label-sm font-label-sm text-on-primary-container disabled:opacity-60"
+                >
+                  {isGeneratingSummary ? 'Đang tóm tắt...' : 'Tóm tắt AI'}
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-md space-y-3">
+                {noteMessages.length === 0 ? (
+                  <div className="text-sm text-on-surface-variant text-center mt-8">Chưa có ghi chú nào.</div>
+                ) : noteMessages.map((m, idx) => (
+                  <div key={idx} className={`flex flex-col ${m.from === 'Bạn' ? 'items-end' : 'items-start'}`}>
+                    <div className="text-[10px] text-on-surface-variant px-1 mb-1">{m.from}</div>
+                    <div className={`max-w-[92%] rounded-2xl px-3 py-2 text-sm shadow-sm ${m.from === 'Bạn' ? 'bg-primary text-on-primary rounded-tr-none' : 'bg-surface-container-highest text-on-surface rounded-tl-none'}`}>
+                      {m.text}
+                    </div>
                   </div>
-                  <button className="flex cursor-pointer items-center gap-1 rounded-full bg-primary-container px-3 py-1.5 text-label-sm font-label-sm text-on-primary-container shadow-sm transition-colors hover:bg-primary-container/90">
-                    <MaterialSymbol icon="fiber_manual_record" className="!text-[16px]" /> Ghi âm
+                ))}
+
+                {aiSummary && (
+                  <div className="mt-3 rounded-xl border border-primary/30 bg-primary/5 p-sm">
+                    <div className="mb-1 text-xs font-semibold text-primary">Tóm tắt AI</div>
+                    <div className="text-xs text-on-surface whitespace-pre-wrap">{aiSummary}</div>
+                  </div>
+                )}
+              </div>
+
+              <div className="shrink-0 border-t border-outline-variant bg-surface-container-lowest p-sm">
+                <div className="flex gap-2">
+                  <input
+                    value={noteInput}
+                    onChange={(e) => setNoteInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && sendNote()}
+                    className="flex-1 rounded-full border border-outline-variant bg-surface px-4 py-2 text-sm text-on-surface focus:border-primary focus:outline-none"
+                    placeholder="Nhập ghi chú cho cả phòng..."
+                  />
+                  <button onClick={sendNote} className="cursor-pointer flex items-center justify-center h-9 w-9 rounded-full bg-primary text-on-primary hover:bg-primary/90">
+                    <MaterialSymbol icon="send" className="!text-[18px]" />
                   </button>
                 </div>
-                <div className="flex flex-1 flex-col gap-sm">
-                  <div className="rounded-md border-l-2 border-primary bg-surface-container-highest p-sm"><p className="text-body-sm text-on-surface text-xs italic opacity-60 text-center">Ghi chú AI đang được cập nhật...</p></div>
-                </div>
               </div>
-              <div className="shrink-0 border-t border-outline-variant bg-surface-container-lowest p-sm">
-                <button className="w-full cursor-pointer rounded-md border border-outline-variant py-2 text-label-sm font-label-sm text-on-surface transition-colors hover:bg-surface-container-high">Xuất báo cáo</button>
-              </div>
-            </>
+            </div>
           )}
         </aside>
       </div>
@@ -247,6 +405,7 @@ export default function MeetingsPage() {
 
   const [isJoined, setIsJoined] = useState(false);
   const [isLoading, setIsLoading] = useState(Boolean(meetingId));
+  const [isLeaving, setIsLeaving] = useState(false);
   const [error, setError] = useState("");
 
   // Lobby States
@@ -279,6 +438,23 @@ export default function MeetingsPage() {
     }
   }, []);
 
+  const leaveMeetingAndExit = useCallback(async () => {
+    if (!meetingId || isLeaving) {
+      router.push("/dashboard");
+      return;
+    }
+
+    try {
+      setIsLeaving(true);
+      await api.patch(`/meetings/${meetingId}/leave`);
+    } catch (err) {
+      console.error("leaveMeeting error:", err);
+    } finally {
+      setIsLeaving(false);
+      router.push("/dashboard");
+    }
+  }, [meetingId, isLeaving, router]);
+
   const handleCancelLobby = () => {
     stopPreviewTracks();
     setVideoEnabled(false);
@@ -306,8 +482,12 @@ export default function MeetingsPage() {
         setToken(data?.token || "");
         setLivekitUrl(data?.livekitUrl || "");
         setMeetingTitle(data?.meeting?.title || "Cuộc họp");
-      } catch (err: any) {
-        setError(err?.response?.data?.message || "Không thể tham gia cuộc họp.");
+      } catch (err) {
+        const message =
+          typeof (err as { response?: { data?: { message?: string } } })?.response?.data?.message === 'string'
+            ? (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+            : undefined;
+        setError(message || "Không thể tham gia cuộc họp.");
       } finally {
         setIsLoading(false);
       }
@@ -592,7 +772,7 @@ export default function MeetingsPage() {
         <CustomMeetingRoom
           meetingTitle={meetingTitle}
           meetingId={meetingId}
-          onLeave={() => router.push("/dashboard")}
+          onLeave={leaveMeetingAndExit}
         />
       </LiveKitRoom>
     </div>

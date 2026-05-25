@@ -3,14 +3,12 @@ import { AppToaster } from "@/components/ui/Toast";
 import UnifiedProgressBar from "@/components/ui/UnifiedProgressBar";
 import "./globals.css";
 import { Providers } from '@/components/providers/Providers';
-
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "ViMeet - Video Conferencing Platform",
   description: "High-fidelity video meetings with AI-powered summaries and real-time collaboration",
 };
-
-import { Suspense } from "react";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -26,13 +24,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="min-h-screen flex flex-col antialiased">
-        <Suspense fallback={null}>
-          <UnifiedProgressBar />
-        </Suspense>``
-        {children}
-        <AppToaster />
-        <Providers>{children}</Providers>
-        </body>
+        <Providers>
+          <Suspense fallback={null}>
+            <UnifiedProgressBar />
+          </Suspense>
+          {children}
+          <AppToaster />
+        </Providers>
+      </body>
     </html>
   );
 }

@@ -10,6 +10,7 @@ export interface ChannelListOptions {
   page?: number;
   limit?: number;
   sort?: 'activity' | 'alphabetical' | 'members' | 'name' | 'memberCount' | 'createdAt';
+  channelId?: string;
 }
 
 export class ChannelDAO extends BaseDAO<IChannel> {
@@ -32,11 +33,16 @@ export class ChannelDAO extends BaseDAO<IChannel> {
       page = 1,
       limit = 20,
       sort = 'activity',
+      channelId,
     } = options;
 
     const filter: any = {
       workspaceId: new Types.ObjectId(workspaceId),
     };
+
+    if (channelId && Types.ObjectId.isValid(channelId)) {
+      filter._id = new Types.ObjectId(channelId);
+    }
 
     if (typeof isArchived === 'boolean') {
       filter.isArchived = isArchived;
@@ -76,16 +82,35 @@ export class ChannelDAO extends BaseDAO<IChannel> {
             ? { createdAt: -1, updatedAt: -1 }
             : { lastMessageAt: -1, updatedAt: -1 };
 
-    const [items, total] = await Promise.all([
-      this.model
-        .find(filter)
-        .sort(sortSpec)
-        .skip(skip)
-        .limit(limit)
-        .lean(),
+    const channels = await this.model
+      .find(filter)
+      .sort(sortSpec)
+      .skip(skip)
+      .limit(limit)
+      .lean();
 
-      this.model.countDocuments(filter),
-    ]);
+    const channelIds = channels.map((ch) => ch._id);
+
+    let memberCountMap = new Map<string, number>();
+
+    if (channelIds.length > 0) {
+      const ChannelMember = (await import('../models/ChannelMember.model')).default;
+      const memberCounts = await ChannelMember.aggregate([
+        { $match: { channelId: { $in: channelIds } } },
+        { $group: { _id: '$channelId', count: { $sum: 1 } } },
+      ]);
+
+      memberCountMap = new Map(
+        memberCounts.map((row: any) => [String(row._id), row.count])
+      );
+    }
+
+    const items = channels.map((channel) => ({
+      ...channel,
+      memberCount: memberCountMap.get(String(channel._id)) ?? 0,
+    }));
+
+    const total = await this.model.countDocuments(filter);
 
     return {
       items,

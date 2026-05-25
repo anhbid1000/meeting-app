@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { ChannelMemberService } from "../services/ChannelMember.service";
 import { PermissionService } from "../services/Permission.service";
 import Channel from "../models/Channel.model";
+import { Types } from "mongoose";
 
 const parseParam = (param: string | string[]): string => {
   return Array.isArray(param) ? param[0] : param;
@@ -15,6 +16,10 @@ export const joinChannel = async (
   try {
     const userId = (req as any).user.id;
     const channelId = parseParam(req.params.channelId);
+
+    if (!Types.ObjectId.isValid(channelId)) {
+      return res.status(400).json({ message: "Invalid channelId format" });
+    }
 
     const canJoin = await PermissionService.canJoinChannel(userId, channelId);
     if (!canJoin) {

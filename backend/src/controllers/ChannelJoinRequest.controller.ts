@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { ChannelJoinRequestService } from "../services/ChannelJoinRequest.service";
+import { Types } from "mongoose";
 
 const parseParam = (param: string | string[]): string => {
   return Array.isArray(param) ? param[0] : param;
@@ -13,6 +14,11 @@ export const createRequest = async (
   try {
     const userId = (req as any).user.id;
     const channelId = parseParam(req.params.channelId);
+
+    if (!Types.ObjectId.isValid(channelId)) {
+      return res.status(400).json({ message: "Invalid channelId format" });
+    }
+
     const { message } = req.body;
 
     const result = await ChannelJoinRequestService.createRequest({

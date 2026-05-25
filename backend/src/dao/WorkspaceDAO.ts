@@ -7,6 +7,18 @@ export class WorkspaceDAO extends BaseDAO<IWorkspace> {
     super(Workspace);
   }
 
+  async find(userId: string) {
+    try {
+      return await Workspace.find({
+        'members.userId': new Types.ObjectId(userId)
+      })
+        .select('_id')
+        .lean();
+    } catch (error) {
+      console.error(`DAO Find Error: ${error}`);
+      throw error;
+    }
+  };
   async findBySlug(slug: string) {
     return this.model.findOne({ slug }).lean();
   }

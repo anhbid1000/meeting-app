@@ -17,7 +17,7 @@ export const messageApi = {
 
     const suffix = params.toString() ? `?${params.toString()}` : '';
     const response = await api.get(
-      `/api/v1/channels/${channelId}/messages${suffix}`
+      `/channels/${channelId}/messages${suffix}`
     );
     return response.data;
   },
@@ -37,39 +37,39 @@ export const messageApi = {
     }
   ) {
     const response = await api.post(
-      `/api/v1/channels/${channelId}/messages`,
+      `/channels/${channelId}/messages`,
       payload
     );
     return response.data;
   },
 
   async editMessage(messageId: string, payload: { content: string }) {
-    const response = await api.patch(`/api/v1/messages/${messageId}`, payload);
+    const response = await api.patch(`/messages/${messageId}`, payload);
     return response.data;
   },
 
   async deleteMessage(messageId: string) {
-    const response = await api.delete(`/api/v1/messages/${messageId}`);
+    const response = await api.delete(`/messages/${messageId}`);
     return response.data;
   },
 
   async pinMessage(messageId: string) {
-    const response = await api.patch(`/api/v1/messages/${messageId}/pin`);
+    const response = await api.patch(`/messages/${messageId}/pin`);
     return response.data;
   },
 
   async unpinMessage(messageId: string) {
-    const response = await api.patch(`/api/v1/messages/${messageId}/unpin`);
+    const response = await api.patch(`/messages/${messageId}/unpin`);
     return response.data;
   },
 
   async getPinnedMessages(channelId: string) {
-    const response = await api.get(`/api/v1/channels/${channelId}/pinned`);
+    const response = await api.get(`/channels/${channelId}/pinned`);
     return response.data;
   },
 
   async addReaction(messageId: string, emoji: string) {
-    const response = await api.post(`/api/v1/messages/${messageId}/reactions`, {
+    const response = await api.post(`/messages/${messageId}/reactions`, {
       emoji,
     });
     return response.data;
@@ -78,7 +78,7 @@ export const messageApi = {
   async removeReaction(messageId: string, emoji: string) {
     const encodedEmoji = encodeURIComponent(emoji);
     const response = await api.delete(
-      `/api/v1/messages/${messageId}/reactions/${encodedEmoji}`
+      `/messages/${messageId}/reactions/${encodedEmoji}`
     );
     return response.data;
   },

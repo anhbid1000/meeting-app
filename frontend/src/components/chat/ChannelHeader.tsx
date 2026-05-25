@@ -1,7 +1,12 @@
 import React from 'react';
+import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
+import api from '@/services/api';
 
 interface ChannelHeaderProps {
   channelName: string;
+  channelId?: string;
+  workspaceId?: string;
   description?: string;
   memberCount: number;
   isPrivate?: boolean;
@@ -16,6 +21,8 @@ interface ChannelHeaderProps {
 
 export default function ChannelHeader({
   channelName,
+  channelId,
+  workspaceId,
   description,
   memberCount,
   isPrivate,
@@ -23,7 +30,41 @@ export default function ChannelHeader({
   memberAvatars = [],
   onToggleSidebar,
 }: ChannelHeaderProps) {
+  const router = useRouter();
   const shownMembers = memberAvatars.slice(0, 3);
+  const [isCreatingMeeting, setIsCreatingMeeting] = React.useState(false);
+
+  const handleCreateMeeting = async () => {
+    if (!workspaceId || !channelId) {
+      toast.error('Không tìm thấy thông tin kênh để tạo cuộc họp.');
+      return;
+    }
+
+    try {
+      setIsCreatingMeeting(true);
+      const res = await api.post(
+        `/workspaces/${workspaceId}/channels/${channelId}/meetings`,
+        {
+          title: `Cuộc họp nhanh - ${new Date().toLocaleString('vi-VN')}`,
+        }
+      );
+
+      const meetingId = res.data?.data?._id;
+      if (!meetingId) {
+        toast.error('Tạo cuộc họp thành công nhưng không lấy được mã cuộc họp.');
+        return;
+      }
+
+      router.push(
+        `/meetings?meetingId=${meetingId}&workspaceId=${workspaceId}&channelId=${channelId}`
+      );
+    } catch (err) {
+      console.error('Không thể tạo cuộc họp:', err);
+      toast.error('Không thể tạo cuộc họp. Vui lòng thử lại.');
+    } finally {
+      setIsCreatingMeeting(false);
+    }
+  };
 
   return (
     <header className="flex h-16 items-center justify-between border-b border-[#e3e7ef] bg-white px-4 md:px-5">
@@ -84,19 +125,29 @@ export default function ChannelHeader({
 
         <button
           type="button"
-          className="hidden rounded-md bg-[#0f55cc] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0d49ac] md:block"
+          disabled={isCreatingMeeting || !workspaceId || !channelId}
+          onClick={handleCreateMeeting}
+          className="hidden rounded-md bg-[#0f55cc] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0d49ac] disabled:opacity-50 disabled:cursor-not-allowed md:block"
         >
-          Join Meeting
+          {isCreatingMeeting ? 'Đang tạo...' : 'Tạo Cuộc họp'}
         </button>
 
         <button
           type="button"
-          className="rounded-md bg-[#0f55cc] p-2 text-white transition-colors hover:bg-[#0d49ac] md:hidden"
-          title="Join meeting"
+          disabled={isCreatingMeeting || !workspaceId || !channelId}
+          onClick={handleCreateMeeting}
+          className="rounded-md bg-[#0f55cc] p-2 text-white transition-colors hover:bg-[#0d49ac] disabled:opacity-50 disabled:cursor-not-allowed md:hidden"
+          title="Tạo Cuộc họp"
         >
-          <span className="material-symbols-outlined text-[18px]">
-            videocam
-          </span>
+          {isCreatingMeeting ? (
+            <span className="material-symbols-outlined text-[18px] animate-spin">
+              progress_activity
+            </span>
+          ) : (
+            <span className="material-symbols-outlined text-[18px]">
+              videocam
+            </span>
+          )}
         </button>
 
         <div

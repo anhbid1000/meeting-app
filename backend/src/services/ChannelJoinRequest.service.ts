@@ -11,6 +11,7 @@ const requestDAO = new ChannelJoinRequestDAO();
 
 const getWorkspaceNotificationRecipients = async (workspaceId: string) => {
   const Workspace = (await import("../models/Workspace.model")).default;
+
   const workspace = await Workspace.findById(workspaceId)
     .select("ownerId members")
     .lean();
@@ -18,27 +19,25 @@ const getWorkspaceNotificationRecipients = async (workspaceId: string) => {
   if (!workspace) return [] as string[];
 
   const userIds = new Set<string>();
+
   if (workspace.ownerId) {
     userIds.add(String(workspace.ownerId));
   }
 
   const members = Array.isArray(workspace.members) ? workspace.members : [];
-  if (members.length > 0) {
-    const users = await Workspace.db
-      .collection("users")
-      .find({ _id: { $in: members } }, { projection: { role: 1 } })
-      .toArray();
 
-    users.forEach((user: any) => {
-      if (user?.role === "owner" || user?.role === "admin") {
-        userIds.add(String(user._id));
+  members.forEach((member: any) => {
+    if (member?.role === "owner" || member?.role === "admin") {
+      const memberUserId = member?.userId ?? member?._id;
+
+      if (memberUserId) {
+        userIds.add(String(memberUserId));
       }
-    });
-  }
+    }
+  });
 
   return Array.from(userIds);
 };
-
 export class ChannelJoinRequestService {
   /**
    * User request to join a private channel.
@@ -91,7 +90,9 @@ export class ChannelJoinRequestService {
     const isWorkspaceOwner = workspace.ownerId?.toString?.() === userId;
     const isWorkspaceMember =
       Array.isArray(workspace.members) &&
-      workspace.members.some((m: any) => m.toString() === userId);
+      workspace.members.some(
+        (m: any) => m.userId?.toString() === userId || m.toString() === userId,
+      );
     if (!isWorkspaceOwner && !isWorkspaceMember) {
       throw Object.assign(
         new Error("Forbidden: you are not a member of the workspace"),

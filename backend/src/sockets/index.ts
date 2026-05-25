@@ -1,5 +1,5 @@
 import { Server } from "socket.io";
-import { socketAuthMiddleware } from "./socket.middleware";
+import { socketAuthMiddleware } from "../middlewares/socket.middleware";
 import {
   handleChannelSocket,
   registerChannelBusHandlers,

@@ -17,11 +17,32 @@ export interface WorkspaceMembership {
   role: WorkspaceRole;
 }
 
+export interface AuthenticatedRequest extends Express.Request {
+  user?: AuthUser;
+  workspace?: IWorkspace;
+  workspaceMember?: {
+    workspaceId: string;
+    role: WorkspaceRole;
+  };
+  channelMember?: {
+    channelId: string;
+    role: string;
+  };
+}
+
 declare global {
   namespace Express {
     interface Request {
       user?: AuthUser;
       workspace?: IWorkspace;
+      workspaceMember?: {
+        workspaceId: string;
+        role: WorkspaceRole;
+      };
+      channelMember?: {
+        channelId: string;
+        role: string;
+      };
     }
   }
 }

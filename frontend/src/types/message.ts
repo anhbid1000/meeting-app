@@ -5,6 +5,7 @@ export interface MessageAttachment {
   name: string;
   mimeType: string;
   size: number;
+  fileId?: string;
 }
 
 export interface MessageReaction {

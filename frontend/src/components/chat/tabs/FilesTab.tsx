@@ -5,11 +5,10 @@ import type { FileAssetItem, ChannelLinkItem } from '@/types/file';
 
 interface FilesTabProps {
   channelId?: string;
+  workspaceId?: string;
 }
 
 type FilesFilter = 'all' | 'images' | 'documents' | 'links';
-const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
 
 const IMAGE_MIME_PREFIX = 'image/';
 const VIDEO_MIME_PREFIX = 'video/';
@@ -54,37 +53,6 @@ const normalizeCloudinaryFileUrl = (url: string, mimeType?: string) => {
   }
 };
 
-const buildOpenUrl = (url: string, mimeType?: string) => {
-  const normalizedUrl = normalizeCloudinaryFileUrl(url, mimeType);
-  const category = getFileCategory(mimeType);
-
-  if (category === 'image' || category === 'video') {
-    return normalizedUrl;
-  }
-
-  const encoded = encodeURIComponent(normalizedUrl);
-  if (category === 'pdf') {
-    return `${BACKEND_URL}/api/v1/files/open?url=${encoded}&mimeType=${encodeURIComponent(
-      mimeType || PDF_MIME
-    )}`;
-  }
-
-  if (category === 'office') {
-    return `https://view.officeapps.live.com/op/view.aspx?src=${encoded}`;
-  }
-
-  return normalizedUrl;
-};
-
-const buildDownloadUrl = (url: string, fileName: string, mimeType?: string) => {
-  const normalizedUrl = normalizeCloudinaryFileUrl(url, mimeType);
-  return `${BACKEND_URL}/api/v1/files/download?url=${encodeURIComponent(
-    normalizedUrl
-  )}&fileName=${encodeURIComponent(fileName || 'download')}&mimeType=${encodeURIComponent(
-    mimeType || 'application/octet-stream'
-  )}`;
-};
-
 const getFileTypeLabel = (mimeType?: string) => {
   const category = getFileCategory(mimeType);
   if (category === 'image') return 'Image';
@@ -110,27 +78,36 @@ const formatSize = (bytes: number) => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
-export default function FilesTab({ channelId }: FilesTabProps) {
+export default function FilesTab({ channelId, workspaceId }: FilesTabProps) {
   const [activeFilter, setActiveFilter] = React.useState<FilesFilter>('all');
 
   const filesQuery = useQuery({
     queryKey: ['channel-files', channelId],
-    queryFn: () => fileApi.getChannelFiles(channelId as string, { limit: 100 }),
-    enabled: Boolean(channelId),
+    queryFn: () =>
+      fileApi.getChannelFiles(workspaceId as string, channelId as string, {
+        limit: 100,
+      }),
+    enabled: Boolean(channelId && workspaceId),
     staleTime: 15000,
   });
 
   const mediaQuery = useQuery({
     queryKey: ['channel-media', channelId],
-    queryFn: () => fileApi.getChannelMedia(channelId as string, { limit: 100 }),
-    enabled: Boolean(channelId),
+    queryFn: () =>
+      fileApi.getChannelMedia(workspaceId as string, channelId as string, {
+        limit: 100,
+      }),
+    enabled: Boolean(channelId && workspaceId),
     staleTime: 15000,
   });
 
   const linksQuery = useQuery({
     queryKey: ['channel-links', channelId],
-    queryFn: () => fileApi.getChannelLinks(channelId as string, { limit: 100 }),
-    enabled: Boolean(channelId),
+    queryFn: () =>
+      fileApi.getChannelLinks(workspaceId as string, channelId as string, {
+        limit: 100,
+      }),
+    enabled: Boolean(channelId && workspaceId),
     staleTime: 15000,
   });
 
@@ -245,12 +222,17 @@ export default function FilesTab({ channelId }: FilesTabProps) {
               key={file._id}
               className="overflow-hidden rounded-[18px] border border-[#d8e0ef] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.08)]"
             >
-              <a
-                href={buildOpenUrl(file.cloudinaryUrl, file.mimeType)}
-                target="_blank"
-                rel="noreferrer"
-                className="flex h-28 items-center justify-center bg-[#eef0f4]"
-                title="Mở file"
+              <button
+                type="button"
+                onClick={() => {
+                  window.open(
+                    normalizeCloudinaryFileUrl(file.cloudinaryUrl, file.mimeType),
+                    '_blank',
+                    'noopener,noreferrer'
+                  );
+                }}
+                className="flex h-28 items-center justify-center bg-[#eef0f4] w-full"
+                title="Xem file"
               >
                 {getFileCategory(file.mimeType) === 'image' ? (
                   <img
@@ -266,15 +248,20 @@ export default function FilesTab({ channelId }: FilesTabProps) {
                     {getFileIcon(file.mimeType)}
                   </span>
                 )}
-              </a>
+              </button>
 
               <div className="flex items-center justify-between gap-3 px-4 py-3">
-                <a
-                  href={buildOpenUrl(file.cloudinaryUrl, file.mimeType)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="min-w-0 flex-1"
-                  title="Mở file"
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.open(
+                      normalizeCloudinaryFileUrl(file.cloudinaryUrl, file.mimeType),
+                      '_blank',
+                      'noopener,noreferrer'
+                    );
+                  }}
+                  className="min-w-0 flex-1 text-left"
+                  title="Xem file"
                 >
                   <div className="flex items-center gap-3">
                     <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#ffe3dd] text-[#c94938]">
@@ -292,23 +279,24 @@ export default function FilesTab({ channelId }: FilesTabProps) {
                       </p>
                     </div>
                   </div>
-                </a>
+                </button>
 
-                <a
-                  href={buildDownloadUrl(
-                    file.cloudinaryUrl,
-                    file.fileName,
-                    file.mimeType
-                  )}
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.open(
+                      normalizeCloudinaryFileUrl(file.cloudinaryUrl, file.mimeType),
+                      '_blank',
+                      'noopener,noreferrer'
+                    );
+                  }}
                   className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#d6ddea] text-[#44628f] hover:bg-[#eef3fb]"
-                  title="Tải file"
+                  title="Xem file"
                 >
                   <span className="material-symbols-outlined text-[20px]">
                     download
                   </span>
-                </a>
+                </button>
               </div>
             </li>
           ))}

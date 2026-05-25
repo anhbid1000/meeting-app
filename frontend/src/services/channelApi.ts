@@ -27,7 +27,7 @@ export const channelApi = {
     if (query?.sort) params.append('sort', query.sort);
 
     const response = await api.get(
-      `/api/v1/workspaces/${workspaceId}/channels?${params.toString()}`
+      `/workspaces/${workspaceId}/channels?${params.toString()}`
     );
     return response.data;
   },
@@ -36,26 +36,26 @@ export const channelApi = {
    * Get a single channel by ID
    */
   async getChannel(channelId: string) {
-    const response = await api.get(`/api/v1/channels/${channelId}`);
+    const response = await api.get(`/channels/${channelId}`);
     return response.data;
   },
 
   async getChannelMembers(channelId: string, page = 1, limit = 200) {
     const response = await api.get(
-      `/api/v1/channels/${channelId}/members?page=${page}&limit=${limit}`
+      `/channels/${channelId}/members?page=${page}&limit=${limit}`
     );
     return response.data;
   },
 
   async getInviteCandidates(channelId: string) {
     const response = await api.get(
-      `/api/v1/channels/${channelId}/invite-candidates`
+      `/channels/${channelId}/invite-candidates`
     );
     return response.data;
   },
 
   async inviteMember(channelId: string, userId: string) {
-    const response = await api.post(`/api/v1/channels/${channelId}/invite`, {
+    const response = await api.post(`/channels/${channelId}/invite`, {
       userId,
     });
     return response.data;
@@ -74,7 +74,7 @@ export const channelApi = {
     }
   ) {
     const response = await api.post(
-      `/api/v1/workspaces/${workspaceId}/channels`,
+      `/workspaces/${workspaceId}/channels`,
       data
     );
     return response.data;
@@ -93,7 +93,7 @@ export const channelApi = {
       isArchived?: boolean;
     }>
   ) {
-    const response = await api.patch(`/api/v1/channels/${channelId}`, data);
+    const response = await api.patch(`/channels/${channelId}`, data);
     return response.data;
   },
 
@@ -101,14 +101,14 @@ export const channelApi = {
    * Delete a channel
    */
   async deleteChannel(channelId: string) {
-    await api.delete(`/api/v1/channels/${channelId}`);
+    await api.delete(`/channels/${channelId}`);
   },
 
   /**
    * Archive a channel
    */
   async archiveChannel(channelId: string) {
-    const response = await api.patch(`/api/v1/channels/${channelId}/archive`);
+    const response = await api.patch(`/channels/${channelId}/archive`);
     return response.data;
   },
 
@@ -116,7 +116,7 @@ export const channelApi = {
    * Join a public channel (no approval needed)
    */
   async joinChannel(channelId: string) {
-    const response = await api.post(`/api/v1/channels/${channelId}/join`);
+    const response = await api.post(`/channels/${channelId}/join`);
     return response.data;
   },
 
@@ -124,14 +124,14 @@ export const channelApi = {
    * Leave a channel
    */
   async leaveChannel(channelId: string) {
-    await api.post(`/api/v1/channels/${channelId}/leave`);
+    await api.post(`/channels/${channelId}/leave`);
   },
 
   /**
    * Request access to a private channel
    */
   async requestAccess(channelId: string, message?: string) {
-    const response = await api.post(`/api/v1/channels/${channelId}/requests`, {
+    const response = await api.post(`/channels/${channelId}/requests`, {
       message,
     });
     return response.data;
@@ -142,7 +142,7 @@ export const channelApi = {
    */
   async getPendingRequests(channelId: string, page = 1, limit = 20) {
     const response = await api.get(
-      `/api/v1/channels/${channelId}/requests?status=pending&page=${page}&limit=${limit}`
+      `/channels/${channelId}/requests?status=pending&page=${page}&limit=${limit}`
     );
     return response.data;
   },
@@ -152,7 +152,7 @@ export const channelApi = {
    */
   async approveRequest(channelId: string, requestId: string) {
     const response = await api.patch(
-      `/api/v1/channels/${channelId}/requests/${requestId}/approve`
+      `/channels/${channelId}/requests/${requestId}/approve`
     );
     return response.data;
   },
@@ -162,7 +162,7 @@ export const channelApi = {
    */
   async rejectRequest(channelId: string, requestId: string, reason?: string) {
     const response = await api.patch(
-      `/api/v1/channels/${channelId}/requests/${requestId}/reject`,
+      `/channels/${channelId}/requests/${requestId}/reject`,
       { reason }
     );
     return response.data;
@@ -171,7 +171,7 @@ export const channelApi = {
    * Get user's pending join requests
    */
   async getMyPendingRequests() {
-    const response = await api.get('/api/v1/channels/my-pending-requests');
+    const response = await api.get('/channels/my-pending-requests');
     return response.data;
   },
 
@@ -179,7 +179,7 @@ export const channelApi = {
    * Get latest sent request status per channel for current user
    */
   async getMyRequests() {
-    const response = await api.get('/api/v1/channels/my-requests');
+    const response = await api.get('/channels/my-requests');
     return response.data;
   },
 
@@ -187,14 +187,14 @@ export const channelApi = {
    * Toggle channel favorite for current user
    */
   async favoriteChannel(channelId: string, isFavorite: boolean) {
-    const response = await api.patch(`/api/v1/channels/${channelId}/favorite`, {
+    const response = await api.patch(`/channels/${channelId}/favorite`, {
       isFavorite,
     });
     return response.data;
   },
 
   async markChannelRead(channelId: string, timestamp?: string) {
-    const response = await api.patch(`/api/v1/channels/${channelId}/read`, {
+    const response = await api.patch(`/channels/${channelId}/read`, {
       timestamp,
     });
     return response.data;

@@ -134,7 +134,7 @@ export default function ChannelDirectoryPage() {
         filters.sort,
       ],
       queryFn: () =>
-        channelApi.getChannelDirectory(workspace.slug, {
+        channelApi.getChannelDirectory(workspace._id, {
           search: filters.search,
           type: filters.type,
           category: filters.category,
@@ -142,7 +142,7 @@ export default function ChannelDirectoryPage() {
           limit: filters.limit,
           sort: filters.sort,
         }),
-      enabled: !!workspace.slug,
+      enabled: !!workspace._id,
       staleTime: 30000,
     })),
   });
@@ -219,7 +219,10 @@ export default function ChannelDirectoryPage() {
           );
 
           const effectiveMemberCount =
-            memberCountOverrides[channel._id] ?? channel.memberCount ?? 0;
+            memberCountOverrides[channel._id] ??
+            (Array.isArray(channel.members)
+              ? channel.members.length
+              : channel.memberCount ?? 0);
           const effectiveUnreadCount =
             realtimeUnreadOverrides[channel._id] ?? channel.unreadCount ?? 0;
           const effectiveMentionCount =
@@ -464,7 +467,7 @@ export default function ChannelDirectoryPage() {
   const handleCopyLink = async (channelId: string) => {
     if (typeof window === 'undefined') return;
     const target = channels.find((ch) => ch._id === channelId);
-    const path = target?.slug || target?._id || channelId;
+    const path = target?._id || channelId;
     const url = `${window.location.origin}/channels/${path}`;
     await navigator.clipboard.writeText(url);
     toast.success('Channel link copied');
@@ -487,7 +490,7 @@ export default function ChannelDirectoryPage() {
     setRealtimeUnreadOverrides((prev) => ({ ...prev, [channelId]: 0 }));
     setRealtimeMentionOverrides((prev) => ({ ...prev, [channelId]: 0 }));
 
-    const path = target?.slug || target?._id || channelId;
+    const path = target?._id || channelId;
     router.push(`/channels/${path}`);
   };
 

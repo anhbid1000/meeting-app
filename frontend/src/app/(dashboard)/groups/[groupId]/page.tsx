@@ -106,9 +106,13 @@ const Page = () => {
       toast.success('Tạo channel thành công');
       closeCreateChannelModal();
       fetchWorkspaceDetail();
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error(err.response?.data?.message || 'Tạo channel thất bại');
+      const message =
+        typeof (err as { response?: { data?: { message?: string } } })?.response?.data?.message === 'string'
+          ? (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+          : undefined;
+      toast.error(message || 'Tạo channel thất bại');
     } finally {
       setIsCreatingChannel(false);
     }
@@ -284,7 +288,12 @@ const Page = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
             {channels.map((channel) => (
-              <div key={channel._id} className="bg-surface-container-lowest p-lg rounded-xl border border-outline-variant hover:shadow-md transition-all group">
+              <button
+                key={channel._id}
+                type="button"
+                onClick={() => router.push(`/channels/${channel._id}`)}
+                className="cursor-pointer w-full text-left bg-surface-container-lowest p-lg rounded-xl border border-outline-variant hover:shadow-md transition-all group"
+              >
                 <div className="flex justify-between items-start mb-md">
                   <div className="flex items-center gap-sm">
                     <div className="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary">
@@ -306,7 +315,7 @@ const Page = () => {
                 <div className="font-label-sm text-label-sm text-on-surface-variant">
                   {channel.memberCount || 0} members
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         )}

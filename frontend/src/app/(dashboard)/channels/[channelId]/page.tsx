@@ -145,8 +145,8 @@ export default function ChannelPage({ params }: ChannelPageProps) {
     queries: workspaces.map((workspace) => ({
       queryKey: ['chat-channel-directory', workspace._id],
       queryFn: () =>
-        channelApi.getChannelDirectory(workspace.slug, { page: 1, limit: 200 }),
-      enabled: !!workspace.slug,
+        channelApi.getChannelDirectory(workspace._id, { page: 1, limit: 200 }),
+      enabled: !!workspace._id,
       staleTime: 30000,
     })),
   });
@@ -155,15 +155,14 @@ export default function ChannelPage({ params }: ChannelPageProps) {
     for (const query of channelQueries) {
       const list: Channel[] = query.data?.data || [];
       const found = list.find(
-        (channel) => channel._id === channelKey || channel.slug === channelKey
+        (channel) => channel._id === channelKey
       );
       if (found) return found;
     }
     return null;
   }, [channelQueries, channelKey]);
 
-  const resolvedChannelId =
-    activeChannel?._id || (isLegacyObjectId ? channelKey : null);
+  const resolvedChannelId = channelKey;
 
   const isChannelMember = useMemo(() => {
     const userId = currentUser?.id;
@@ -766,6 +765,8 @@ export default function ChannelPage({ params }: ChannelPageProps) {
         <div className="flex min-w-0 flex-1 flex-col">
           <ChannelHeader
             channelName={activeChannel?.name || shortId(channelKey)}
+            channelId={resolvedChannelId}
+            workspaceId={activeChannel?.workspaceId || ''}
             description={activeChannel?.description}
             memberCount={activeChannel?.memberCount || 0}
             isPrivate={activeChannel?.type === 'private'}
@@ -893,6 +894,7 @@ export default function ChannelPage({ params }: ChannelPageProps) {
 
           <MessageComposer
             channelId={resolvedChannelId || undefined}
+            workspaceId={activeChannel?.workspaceId || ''}
             disabled={!isConnected || !isChannelMember || !resolvedChannelId}
             mentionUsers={members
               .filter(
@@ -919,6 +921,7 @@ export default function ChannelPage({ params }: ChannelPageProps) {
         <RightSidebar
           isOpen={isSidebarOpen}
           channelId={resolvedChannelId || undefined}
+          workspaceId={activeChannel?.workspaceId || undefined}
           members={members.map((member) => ({
             id: member.id,
             name: member.name,

@@ -1,10 +1,12 @@
 import { Types } from 'mongoose';
 import cloudinary from '../config/cloudinary';
-import FileAssetDAO from '../dao/FileAssetDAO';
+import * as FileAssetDAO from '../dao/FileAssetDAO';
 import Workspace from '../models/Workspace.model';
 import Channel from '../models/Channel.model';
+import Message from '../models/Message.model';
 import { AppError } from '../utils/AppError';
 import crypto from 'crypto';
+import { MessageService } from './Message.service';
 
 const GB = 1024 * 1024 * 1024;
 
@@ -33,13 +35,15 @@ const buildDownloadUrl = (cloudinaryUrl: string) => {
 };
 
 const sanitizeFileName = (name: string) => {
-  return name
-    .replace(/\.[^/.]+$/, '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zA-Z0-9-_]/g, '-')
-    .replace(/-+/g, '-')
-    .slice(0, 80) || 'file';
+  return (
+    name
+      .replace(/\.[^/.]+$/, '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9-_]/g, '-')
+      .replace(/-+/g, '-')
+      .slice(0, 80) || 'file'
+  );
 };
 
 const mapCloudinaryUploadError = (error: any) => {
@@ -52,16 +56,12 @@ const mapCloudinaryUploadError = (error: any) => {
     return new AppError(
       'Cloudinary cấu hình không khớp (cloud_name/api_key/api_secret). Vui lòng kiểm tra lại biến môi trường Cloudinary.',
       500,
-      'CLOUDINARY_CONFIG_MISMATCH'
+      'CLOUDINARY_CONFIG_MISMATCH',
     );
   }
 
   if (/api key/i.test(rawMessage) || /signature/i.test(rawMessage) || /authorization/i.test(rawMessage)) {
-    return new AppError(
-      'Cloudinary xác thực thất bại. Vui lòng kiểm tra API Key/Secret.',
-      500,
-      'CLOUDINARY_AUTH_FAILED'
-    );
+    return new AppError('Cloudinary xác thực thất bại. Vui lòng kiểm tra API Key/Secret.', 500, 'CLOUDINARY_AUTH_FAILED');
   }
 
   return new AppError(rawMessage, 500, 'CLOUDINARY_UPLOAD_FAILED');
@@ -78,11 +78,7 @@ const getCloudinaryResourceType = (mimeType?: string): 'image' | 'video' | 'raw'
   return 'raw';
 };
 
-const uploadBufferToCloudinary = (
-  file: Express.Multer.File,
-  workspaceId: string,
-  channelId: string
-) => {
+const uploadBufferToCloudinary = (file: Express.Multer.File, workspaceId: string, channelId: string) => {
   return new Promise<any>((resolve, reject) => {
     const resourceType = getCloudinaryResourceType(file.mimetype);
 
@@ -103,7 +99,7 @@ const uploadBufferToCloudinary = (
         }
 
         resolve(result);
-      }
+      },
     );
 
     stream.end(file.buffer);
@@ -180,7 +176,11 @@ export const uploadWorkspaceFile = async ({
     throw new AppError('Channel không tồn tại trong workspace này', 404, 'CHANNEL_NOT_FOUND');
   }
 
-  if (appRole !== 'admin' && Array.isArray(channel.members) && !channel.members.some((memberId: any) => String(memberId) === userId)) {
+  if (
+    appRole !== 'admin' &&
+    Array.isArray(channel.members) &&
+    !channel.members.some((memberId: any) => String(memberId) === userId)
+  ) {
     throw new AppError('Bạn không thuộc channel này nên không thể upload file', 403, 'CHANNEL_FORBIDDEN');
   }
 
@@ -207,6 +207,22 @@ export const uploadWorkspaceFile = async ({
     cloudinaryUrl,
     downloadUrl,
   } as any);
+
+  await MessageService.sendMessage({
+    channelId,
+    userId,
+    content: '[attachment]',
+    attachments: [
+      {
+        url: asset.cloudinaryUrl,
+        name: asset.originalName,
+        mimeType: asset.mimeType,
+        size: asset.size,
+        fileId: String(asset._id),
+      },
+    ],
+    type: 'file',
+  });
 
   const storage = await getWorkspaceStorageSummary(workspaceId);
 
@@ -264,7 +280,7 @@ export const deleteWorkspaceFile = async (fileId: string, userId: string, appRol
   }
 
   assertWorkspaceAccess(workspace, userId, appRole);
-  
+
   // Chỉ owner hoặc admin của app mới có quyền xoá
   if (appRole !== 'admin') {
     const membership = getMembership(workspace, userId);
@@ -292,4 +308,135 @@ export const deleteWorkspaceFile = async (fileId: string, userId: string, appRol
 
   const storage = await getWorkspaceStorageSummary(String(asset.workspaceId));
   return { storage };
+};
+
+export const getChannelFiles = async (params: {
+  userId: string;
+  channelId: string;
+  page?: number;
+  limit?: number;
+}) => {
+  const { userId, channelId, page, limit } = params;
+
+  const channel = await Channel.findById(channelId).lean();
+  if (!channel) {
+    throw new AppError('Channel không tồn tại', 404, 'CHANNEL_NOT_FOUND');
+  }
+
+  const workspace = await Workspace.findById(channel.workspaceId).lean();
+  if (!workspace) {
+    throw new AppError('Workspace không tồn tại', 404, 'WORKSPACE_NOT_FOUND');
+  }
+
+  assertWorkspaceAccess(workspace, userId);
+
+  return FileAssetDAO.listByChannel({
+    channelId,
+    page,
+    limit,
+  });
+};
+
+export const getChannelMedia = async (params: {
+  userId: string;
+  channelId: string;
+  page?: number;
+  limit?: number;
+}) => {
+  const { userId, channelId, page, limit } = params;
+
+  const channel = await Channel.findById(channelId).lean();
+  if (!channel) {
+    throw new AppError('Channel không tồn tại', 404, 'CHANNEL_NOT_FOUND');
+  }
+
+  const workspace = await Workspace.findById(channel.workspaceId).lean();
+  if (!workspace) {
+    throw new AppError('Workspace không tồn tại', 404, 'WORKSPACE_NOT_FOUND');
+  }
+
+  assertWorkspaceAccess(workspace, userId);
+
+  return FileAssetDAO.listByChannel({
+    channelId,
+    page,
+    limit,
+    mimeRegex: /^(image|video)\//i,
+  });
+};
+
+export const getChannelLinks = async (params: {
+  userId: string;
+  channelId: string;
+  page?: number;
+  limit?: number;
+}) => {
+  const { userId, channelId, page, limit } = params;
+
+  const channel = await Channel.findById(channelId).lean();
+  if (!channel) {
+    throw new AppError('Channel không tồn tại', 404, 'CHANNEL_NOT_FOUND');
+  }
+
+  const workspace = await Workspace.findById(channel.workspaceId).lean();
+  if (!workspace) {
+    throw new AppError('Workspace không tồn tại', 404, 'WORKSPACE_NOT_FOUND');
+  }
+
+  assertWorkspaceAccess(workspace, userId);
+
+  const safePage = Math.max(1, page || 1);
+  const safeLimit = Math.min(100, Math.max(1, limit || 20));
+  const skip = (safePage - 1) * safeLimit;
+
+  // Link parsing from messages
+  const messagesWithLinks = await Message.find({
+    channelId: new Types.ObjectId(channelId),
+    content: { $regex: /https?:\/\/[^\s]+/i },
+    isDeleted: false,
+  })
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(safeLimit)
+    .lean();
+
+  const total = await Message.countDocuments({
+    channelId: new Types.ObjectId(channelId),
+    content: { $regex: /https?:\/\/[^\s]+/i },
+    isDeleted: false,
+  });
+
+  const links: any[] = [];
+  messagesWithLinks.forEach((msg) => {
+    const urls = msg.content.match(/https?:\/\/[^\s]+/gi) || [];
+    urls.forEach((url) => {
+      links.push({
+        url,
+        messageId: msg._id,
+        createdAt: msg.createdAt,
+      });
+    });
+  });
+
+  return {
+    data: links,
+    meta: {
+      page: safePage,
+      limit: safeLimit,
+      total,
+      totalPages: Math.ceil(total / safeLimit),
+    },
+  };
+};
+
+// NOTE: this project previously had richer file/message attachment indexing.
+// For now, keep a no-op implementation to avoid breaking MessageService.
+export const recordMessageAttachments = async (_params: {
+  userId: string;
+  channelId: string;
+  workspaceId: string;
+  messageId: string;
+  attachments: any[];
+}) => {
+  return;
 };

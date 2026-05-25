@@ -1,37 +1,10 @@
 import { Router } from "express";
-import { auth } from "../middlewares/auth.middleware";
-import { validate } from "../middlewares/validate.middleware";
-import { CreateUploadSignatureDTO } from "../dtos/FileAsset.dto";
-import * as fileAssetController from "../controllers/FileAsset.controller";
+
+// NOTE: Legacy file endpoints were removed/disabled during refactor.
+// Workspace-scoped file APIs are served via:
+//   /api/v1/workspaces/:workspaceId/files (FileAsset.route.ts)
+// Keep this router empty to avoid broken exports during TS compile.
 
 const router = Router();
-
-router.get("/files/open", fileAssetController.openFileAsset);
-router.get("/files/download", fileAssetController.downloadFileAsset);
-
-router.post(
-  "/files/upload",
-  auth,
-  validate(CreateUploadSignatureDTO),
-  fileAssetController.createUploadSignature,
-);
-
-router.get(
-  "/channels/:channelId/files",
-  auth,
-  fileAssetController.getChannelFiles,
-);
-
-router.get(
-  "/channels/:channelId/media",
-  auth,
-  fileAssetController.getChannelMedia,
-);
-
-router.get(
-  "/channels/:channelId/links",
-  auth,
-  fileAssetController.getChannelLinks,
-);
 
 export default router;

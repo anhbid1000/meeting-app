@@ -85,11 +85,11 @@ export default function FilePage() {
   const [workspaces, setWorkspaces] = useState<WorkspaceItem[]>([]);
   const [allWorkspaceData, setAllWorkspaceData] = useState<Record<string, WorkspaceData>>({});
   const [workspaceRoleById, setWorkspaceRoleById] = useState<Record<string, WorkspaceRole>>({});
-  
+
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string>('');
   const [selectedChannelId, setSelectedChannelId] = useState<string>('');
   const [uploadFile, setUploadFile] = useState<File | null>(null);
-  
+
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
@@ -110,7 +110,7 @@ export default function FilePage() {
       const res = await api.get('/workspaces/me?page=1&limit=100');
       const items = res.data?.data || [];
       setWorkspaces(items);
-      
+
       // Fetch preview data for all workspaces
       const dataMap: Record<string, WorkspaceData> = {};
       const roleMap: Record<string, WorkspaceRole> = {};
@@ -276,7 +276,7 @@ export default function FilePage() {
           const data = allWorkspaceData[ws._id];
           const storagePercent = getStoragePercent(data?.storage);
           const storageBarColor = getStorageBarColor(storagePercent);
-          
+
           return (
             <section key={ws._id} className="space-y-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -544,9 +544,9 @@ export default function FilePage() {
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
-            
+
             <p className="text-on-surface-variant mb-6 leading-relaxed text-sm">
-              Bạn có chắc chắn muốn xoá tập tin <strong className="text-on-surface">"{fileToDelete?.originalName}"</strong>? 
+              Bạn có chắc chắn muốn xoá tập tin <strong className="text-on-surface">"{fileToDelete?.originalName}"</strong>?
               Hành động này sẽ xoá file vĩnh viễn khỏi Cloudinary và cơ sở dữ liệu. <span className="text-error font-bold underline">Không thể hoàn tác</span>.
             </p>
 

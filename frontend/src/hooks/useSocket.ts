@@ -26,8 +26,18 @@ export const useSocket = (token: string | null) => {
     const socket = getSocket(token);
     setSocket(socket);
 
-    const onConnect = () => setConnected(true);
-    const onDisconnect = () => setConnected(false);
+    const onConnect = () => {
+      console.log('[socket] Connected');
+      setConnected(true);
+    };
+    const onDisconnect = () => {
+      console.log('[socket] Disconnected');
+      setConnected(false);
+    };
+    const onConnectError = (error: Error) => {
+      console.error('[socket] Connection error:', error.message);
+      setConnected(false);
+    };
 
     const onMessageNew = (message: ChatMessage) => addMessage(message);
     const onMessageUpdate = (message: ChatMessage) => {
@@ -159,6 +169,7 @@ export const useSocket = (token: string | null) => {
 
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
+    socket.on('connect_error', onConnectError);
     socket.on('message:new', onMessageNew);
     socket.on('message:update', onMessageUpdate);
     socket.on('message:pin', onMessagePin);
@@ -196,6 +207,7 @@ export const useSocket = (token: string | null) => {
     return () => {
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
+      socket.off('connect_error', onConnectError);
       socket.off('message:new', onMessageNew);
       socket.off('message:update', onMessageUpdate);
       socket.off('message:pin', onMessagePin);

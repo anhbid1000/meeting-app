@@ -35,15 +35,8 @@ const io = new Server(server, {
   },
 });
 
-// Lang nghe su kien ket noi co ban (Socket handshake)
-io.on("connection", (socket) => {
-  console.log("Mot nguoi dung vua ket noi voi ID:", socket.id);
-
-  // Lang nghe khi nguoi dung ngat ket noi
-  socket.on("disconnect", () => {
-    console.log("Nguoi dung da ngat ket noi:", socket.id);
-  });
-});
+// Register full socket handlers (auth + channel rooms + message bus + presence)
+setupSocketHandlers(io);
 
 // Ket noi MongoDB
 mongoose

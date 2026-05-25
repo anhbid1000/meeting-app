@@ -53,7 +53,6 @@ const applyUser = (user: DevUser) => {
     token: user.token,
   });
 
-  localStorage.setItem('accessToken', user.token);
   localStorage.setItem('devUserKey', user.key);
 };
 
@@ -77,9 +76,6 @@ export const applyDevAuthFromUrlOrFallback = () => {
     }
   }
 
-  const existingToken = localStorage.getItem('accessToken');
-  if (existingToken) return;
-
   const devToken = process.env.NEXT_PUBLIC_DEV_TOKEN;
   const devUserId = process.env.NEXT_PUBLIC_DEV_USER_ID;
   const devUserEmail = process.env.NEXT_PUBLIC_DEV_USER_EMAIL;
@@ -93,5 +89,4 @@ export const applyDevAuthFromUrlOrFallback = () => {
     name: devUserName || devUserEmail,
     token: devToken,
   });
-  localStorage.setItem('accessToken', devToken);
 };

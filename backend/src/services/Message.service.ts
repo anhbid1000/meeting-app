@@ -7,7 +7,7 @@ import Message from "../models/Message.model";
 import ChannelMember from "../models/ChannelMember.model";
 import { realtimeBus } from "../utils/realtime";
 import { NotificationService } from "./Notification.service";
-import { FileAssetService } from "./FileAsset.service";
+import { recordMessageAttachments } from "./AttachmentIndex.service";
 
 const messageDAO = new MessageDAO();
 const FILE_ONLY_SENTINEL_CONTENT = "[attachment]";
@@ -72,7 +72,7 @@ export class MessageService {
     } as any);
 
     if (attachments.length) {
-      await FileAssetService.recordMessageAttachments({
+      await recordMessageAttachments({
         userId,
         channelId,
         workspaceId: String(channel.workspaceId),
@@ -271,11 +271,11 @@ export class MessageService {
 
     const rawName = Types.ObjectId.isValid(userId)
       ? await Message.db
-          .collection("users")
-          .findOne(
-            { _id: new Types.ObjectId(userId) },
-            { projection: { name: 1, email: 1 } },
-          )
+        .collection("users")
+        .findOne(
+          { _id: new Types.ObjectId(userId) },
+          { projection: { name: 1, email: 1 } },
+        )
       : null;
 
     const displayName =
@@ -339,11 +339,11 @@ export class MessageService {
 
     const rawName = Types.ObjectId.isValid(userId)
       ? await Message.db
-          .collection("users")
-          .findOne(
-            { _id: new Types.ObjectId(userId) },
-            { projection: { name: 1, email: 1 } },
-          )
+        .collection("users")
+        .findOne(
+          { _id: new Types.ObjectId(userId) },
+          { projection: { name: 1, email: 1 } },
+        )
       : null;
 
     const displayName =

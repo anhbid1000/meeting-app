@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import * as channelService from '../services/Channel.service';
+import * as ChannelService from '../services/Channel.service';
 import { AppError } from '../utils/AppError';
 import { Types } from "mongoose";
 import Channel from "../models/Channel.model";
@@ -66,12 +66,12 @@ export const getChannel = async (
 
     const users = memberObjectIds.length
       ? await Channel.db
-          .collection("users")
-          .find(
-            { _id: { $in: memberObjectIds } },
-            { projection: { name: 1, email: 1, avatar: 1 } },
-          )
-          .toArray()
+        .collection("users")
+        .find(
+          { _id: { $in: memberObjectIds } },
+          { projection: { name: 1, email: 1, avatar: 1 } },
+        )
+        .toArray()
       : [];
 
     const userMap = new Map(users.map((user: any) => [String(user._id), user]));
@@ -118,7 +118,7 @@ export const createChannel = async (req: Request, res: Response, next: NextFunct
       throw new AppError('Trạng thái channel phải là public hoặc private', 400, 'VALIDATION_ERROR');
     }
 
-    const channel = await channelService.createChannel({
+    const channel = await ChannelService.createChannel({
       workspaceId,
       name,
       description,

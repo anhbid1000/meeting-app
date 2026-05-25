@@ -267,3 +267,67 @@ export const sendMeetingReminderEmail = async ({
     `,
   });
 };
+
+interface SendUpgradeProEmailParams {
+  email: string;
+  name: string;
+  expireTime: Date;
+}
+
+export const sendUpgradeProEmail = async ({
+  email,
+  name,
+  expireTime,
+}: SendUpgradeProEmailParams) => {
+  await getTransporter().sendMail({
+    from: getMailFrom(),
+    to: email,
+    subject: "[ViMeet] Bạn đã nâng cấp gói Pro thành công",
+    html: `
+      <div style="font-family: Arial, sans-serif; color: #111827; line-height: 1.6;">
+        <h2 style="color: #0b55d9;">Nâng cấp gói Pro thành công 🎉</h2>
+        <p>Xin chào ${name},</p>
+        <p>Bạn đã kích hoạt thành công gói <strong>Pro</strong> (dùng thử 1 ngày) trên ViMeet.</p>
+        <p><strong>Thời hạn:</strong> đến ${expireTime.toLocaleString("vi-VN")}</p>
+        <p>Quyền lợi Pro hiện tại của bạn đã được cập nhật:</p>
+        <ul>
+          <li><strong>200GB lưu trữ Cloud</strong> (Nâng cấp từ 2GB)</li>
+          <li><strong>Tối đa 500 thành viên / Workspace</strong> (Nâng cấp từ 50)</li>
+          <li>Tạo Workspace không giới hạn</li>
+          <li>Tóm tắt AI trong lịch sử cuộc họp</li>
+        </ul>
+        <p>Các Workspace do bạn làm chủ đã được tự động nâng cấp lên gói Pro.</p>
+        <p>Cảm ơn bạn đã sử dụng ViMeet.</p>
+      </div>
+    `,
+  });
+};
+
+interface SendSubscriptionExpiredEmailParams {
+  email: string;
+  name: string;
+}
+
+export const sendSubscriptionExpiredEmail = async ({
+  email,
+  name,
+}: SendSubscriptionExpiredEmailParams) => {
+  await getTransporter().sendMail({
+    from: getMailFrom(),
+    to: email,
+    subject: "[ViMeet] Gói Pro của bạn đã hết hạn",
+    html: `
+      <div style="font-family: Arial, sans-serif; color: #111827; line-height: 1.6;">
+        <h2 style="color: #d32f2f;">Gói Pro đã hết hạn</h2>
+        <p>Xin chào ${name},</p>
+        <p>Gói Pro của bạn đã hết hạn. Hệ thống đã tự động chuyển tài khoản về gói <strong>Free</strong>.</p>
+        <p>Giới hạn hiện tại:</p>
+        <ul>
+          <li>2GB lưu trữ Cloud / Workspace</li>
+          <li>Tối đa 50 thành viên / Workspace</li>
+        </ul>
+        <p>Bạn có thể nâng cấp lại bất cứ lúc nào.</p>
+      </div>
+    `,
+  });
+};

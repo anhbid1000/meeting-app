@@ -33,6 +33,7 @@ const toSafeUser = (user: IUser) => ({
   role: user.role,
   plan: user.plan || "free",
   subscriptionPlan: user.subscriptionPlan || user.plan || "free",
+  subscriptionExpireTime: user.subscriptionExpireTime,
   emailVerified: user.emailVerified,
   workspaces: user.workspaces.map((item) => ({
     workspaceId: String(item.workspaceId),
